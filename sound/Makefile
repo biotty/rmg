@@ -1,12 +1,11 @@
-
-CXX=c++ -g --std=c++11 -Wall -Werror
-#CXX=c++ -O2 --std=c++11 -Wall -Werror
+CXX=c++ -g --std=c++11 -Wall -Werror -fPIC
+#CXX=c++ -O2 --std=c++11 -Wall -Werror -fPIC
 
 GTEST_I=-I$(HOME)/gtest/include
 GTEST_L=$(HOME)/gtest/lib/gtest_main.a -lpthread
 
 .PHONY: sw
-sw: cmusic caudio digitarp test
+sw: amuse mrender digitarp test
 
 .PHONY: media
 media: digitarp.mp3
@@ -18,21 +17,21 @@ digitarp.wav: digitarp
 	./digitarp > $@
 
 .PHONY: interactive
-interactive: caudio
-	./caudio
+interactive: amuse
+	./amuse
 
 .PHONY: test
 test: ringbuf_test
 	./ringbuf_test
 
-cmusic: cmusic.o midi.o filter.o
+mrender: mrender.o midi.o filter.o
 	$(CXX) -o $@ $^ -lm
 
 midi.o: midi.hpp samplerate.hpp
 filter.o: filter.hpp samplerate.hpp
 
-caudio: caudio.o page.o book.o screen.o orchestra.o speaker.o recorder.o \
- unit.o generators.o builders.o envelopes.o filters.o musicm.o
+amuse: amuse.o page.o book.o screen.o orchestra.o speaker.o recorder.o \
+  synth.a
 	$(CXX) -o $@ $^ -lncurses -lSDL -lm
 
 book.o: book.hpp page.hpp
@@ -41,6 +40,10 @@ screen.o: screen.cpp screen.hpp orchestra.hpp page.hpp book.hpp
 orchestra.o: orchestra.cpp orchestra.hpp generators.hpp
 speaker.o: speaker.cpp speaker.hpp ringbuf.hpp
 recorder.o: recorder.cpp recorder.hpp
+
+synth.a: unit.o generators.o builders.o envelopes.o filters.o musicm.o
+	$(AR) cr $@ $^
+
 unit.o: unit.cpp unit.hpp
 generators.o: generators.cpp generators.hpp unit.hpp filters.hpp
 builders.o: builders.cpp builders.hpp generators.hpp filters.hpp
@@ -53,15 +56,10 @@ clean:
 
 .PHONY: sweep
 sweep: clean
-	rm -f caudio cmusic digitarp *.wav *.mp3 /tmp/*.wav
-
-.PHONY: dist
-dist: sweep
-	tar cjf ../`basename $(PWD)`.tbz -C .. `basename $(PWD)`
+	rm -f amuse mrender digitarp *.wav *.mp3 /tmp/*.wav
 
 ringbuf_test: ringbuf_test.o
 	$(CXX) -o $@ $^ $(GTEST_L)
 
 ringbuf_test.o: ringbuf_test.cpp
 	$(CXX) -c $(GTEST_I) $^
-

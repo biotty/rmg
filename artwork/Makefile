@@ -1,4 +1,3 @@
-
 .PHONY: sw
 sw: lib
 
@@ -15,8 +14,8 @@ real_sound: compo.raw
 compo.raw: lib standcompo.py
 	PYTHONPATH=lib/python python standcompo.py > $@
 
-lib: setup.py sound
-	python $^ install --home .
+lib: setup.py sound_sw
+	python setup.py install --home .
 
 .PHONY: sound_sw
 sound_sw:

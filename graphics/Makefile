@@ -1,4 +1,3 @@
-
 #CC=cc -g -pg --std=c11 -Wall -Werror
 CC=cc -O2 --std=c11 -Wall -Werror
 
@@ -124,8 +123,3 @@ clean:
 .PHONY: sweep
 sweep: clean
 	rm -f *_test cray cwave cfluid *.world core* *.png *.jpeg *.avi *.mp4 *.pnm
-
-.PHONY: dist
-dist: sweep
-	tar cjf ../`basename $(PWD)`.tbz -C .. `basename $(PWD)`
-
