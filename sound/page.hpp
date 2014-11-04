@@ -5,7 +5,7 @@
 
 #include <map>
 
-struct screen;
+class screen;
 
 #define BE 32
 
