@@ -3,7 +3,7 @@
 
 #include "ringbuf.hpp"
 #include "unitfwd.hpp"
-#include "SDL/SDL.h"
+#include "SDL.h"
 
 class speaker
 {
