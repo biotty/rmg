@@ -1,8 +1,6 @@
-#CC=cc -g -pg --std=c11 -Wall -Werror
-CC=cc -O2 --std=c11 -Wall -Werror
-
-#CXX=c++ -g -pg --std=c++11 -Wall -Werror
-CXX=c++ -O2 --std=c++11 -Wall -Werror
+CFLAGS = -Wall -std=c99 `sdl2-config --cflags`
+CXXFLAGS = -Wall -std=c++11 `sdl2-config --cflags`
+LDFLAGS = -lm
 
 .PHONY: sw
 sw: cray cwave cfluid tests
@@ -11,13 +9,13 @@ sw: cray cwave cfluid tests
 media: random.jpeg dragon.png tree.jpeg fl.mp4 fz.mp4 cloud.avi
 
 cray: cray.o raytracer.a
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 cwave: cwave.o image.o color.o photo.o
-	$(CXX) -o $@ $^ -lm
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 cfluid: cfluid.o image.o color.o photo.o
-	$(CXX) -o $@ $^ -lm
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 .PHONY: tests
 tests: direction_test sphere_test plane_test cone_test observer_test matrix_test color_test bitarray_test scene_test trace_test

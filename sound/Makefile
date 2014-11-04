@@ -1,11 +1,15 @@
-CXX=c++ -g --std=c++11 -Wall -Werror -fPIC
+CFLAGS = -Wall -std=c99 -fPIC `sdl2-config --cflags`
+CXXFLAGS = -Wall -std=c++11 -fPIC `sdl2-config --cflags`
+LDFLAGS=`sdl2-config --libs` -lncurses -lm
+
+#CXX=c++ -g --std=c++11 -Wall -Werror -fPIC
 #CXX=c++ -O2 --std=c++11 -Wall -Werror -fPIC
 
 GTEST_I=-I$(HOME)/gtest/include
 GTEST_L=$(HOME)/gtest/lib/gtest_main.a -lpthread
 
 .PHONY: sw
-sw: amuse mrender digitarp test
+sw: amuse mrender digitarp
 
 .PHONY: media
 media: digitarp.mp3
@@ -25,14 +29,14 @@ test: ringbuf_test
 	./ringbuf_test
 
 mrender: mrender.o midi.o filter.o
-	$(CXX) -o $@ $^ -lm
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 midi.o: midi.hpp samplerate.hpp
 filter.o: filter.hpp samplerate.hpp
 
 amuse: amuse.o page.o book.o screen.o orchestra.o speaker.o recorder.o \
   synth.a
-	$(CXX) -o $@ $^ -lncurses -lSDL -lm
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 book.o: book.hpp page.hpp
 page.o: page.hpp screen.hpp builders.hpp filters.hpp musicm.hpp
@@ -59,7 +63,7 @@ sweep: clean
 	rm -f amuse mrender digitarp *.wav *.mp3 /tmp/*.wav
 
 ringbuf_test: ringbuf_test.o
-	$(CXX) -o $@ $^ $(GTEST_L)
+	$(CXX) -o $@ $^ $(GTEST_L) $(LDFLAGS)
 
 ringbuf_test.o: ringbuf_test.cpp
 	$(CXX) -c $(GTEST_I) $^
