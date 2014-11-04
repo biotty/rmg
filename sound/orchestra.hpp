@@ -42,7 +42,7 @@ struct instruction
     instruction(double f, double d, double h, params p);
 };
 
-class orchestra
+struct orchestra
 {
     std::vector<std::function<sound_entry(instruction)>> a;
     std::vector<std::function<bu_ptr(bu_ptr, mv_ptr, double u, double t)>> e;
