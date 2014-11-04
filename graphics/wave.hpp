@@ -1,4 +1,4 @@
-#ifndef WAVE_HPP
+#ifndef WAVE_hPP
 #define WAVE_HPP
 
 #include "flow.hpp"

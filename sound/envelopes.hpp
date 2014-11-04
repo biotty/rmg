@@ -4,7 +4,6 @@
 #include "unitfwd.hpp"
 #include <vector>
 #include <memory>
-#include <functional>
 
 #define SC 21
 

@@ -1,7 +1,7 @@
 #include "speaker.hpp"
 
 #include "unit.hpp"
-#include "SDL.h"
+#include "SDL/SDL.h"
 
 void speaker::put(double y)
 {
