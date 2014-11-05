@@ -116,7 +116,7 @@ fl.mp4: py/globe.py cfluid cmd.sh
 .PHONY:
 clean:
 	@rm -rf movie.d fract.d
-	@rm -vf *.[oa] *.gch
+	@rm -f *.[oa] *.gch
 	@find py -name "*.pyc" -delete
 
 .PHONY:
