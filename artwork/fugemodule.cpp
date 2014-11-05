@@ -1,8 +1,8 @@
 #include "Python.h"
-#include "../sound/unit.hpp"
-#include "../sound/generators.hpp"
-#include "../sound/builders.hpp"
-#include "../sound/musicm.hpp"
+#include "unit.hpp"
+#include "generators.hpp"
+#include "builders.hpp"
+#include "musicm.hpp"
 #include <stdexcept>
 #include <iostream>
 #include <cstdint>

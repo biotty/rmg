@@ -1,5 +1,5 @@
-CFLAGS = -Wall -std=c99 `sdl2-config --cflags`
-CXXFLAGS = -Wall -std=c++11 `sdl2-config --cflags`
+CFLAGS = -Wall -Wextra -std=c11
+CXXFLAGS = -Wall -Wextra -std=c++11
 LDFLAGS = -lm
 
 .PHONY: sw
@@ -56,34 +56,34 @@ stack.o:    stack.h
 trace.o:    trace.h
 
 direction_test: direction_test.o raytracer.a
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 sphere_test: sphere_test.o raytracer.a
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 plane_test: plane_test.o raytracer.a
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 cone_test: cone_test.o raytracer.a
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 observer_test: observer_test.o raytracer.a
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 color_test: color_test.o raytracer.a
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 matrix_test: matrix_test.o raytracer.a
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 bitarray_test: bitarray_test.o raytracer.a
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 scene_test: scene_test.o raytracer.a
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 trace_test: trace_test.o raytracer.a
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 random.world: py/random_.py py/rmg/scene.py
 	py/random_.py 16 > random.world
@@ -113,11 +113,13 @@ fl.mp4: py/globe.py cfluid cmd.sh
 	mv *.jpeg /tmp/
 	./cmd.sh /tmp/ $@
 
-.PHONY: clean
+.PHONY:
 clean:
-	rm -rf movie.d fract.d
-	rm -f *.[oa] *.gch; find py -name "*.pyc" -delete
+	@rm -rf movie.d fract.d
+	@rm -vf *.[oa] *.gch
+	@find py -name "*.pyc" -delete
 
-.PHONY: sweep
+.PHONY:
 sweep: clean
-	rm -f *_test cray cwave cfluid *.world core* *.png *.jpeg *.avi *.mp4 *.pnm
+	@rm -f *_test cray cwave cfluid core* \
+		*.png *.jpeg *.avi *.mp4 *.pnm

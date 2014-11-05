@@ -2,8 +2,7 @@ BINDIR=bin
 OBJDIR=obj
 LIBDIR=lib
 
-CFLAGS = -Wall -std=c99 -MMD -MP -fPIC `sdl2-config --cflags` -I ./include
-CXXFLAGS = -Wall -std=c++11 -MMD -MP -fPIC `sdl2-config --cflags` -I ./include
+CXXFLAGS=-Wall -Wextra -std=c++11 -MMD -MP -fPIC `sdl2-config --cflags` -I ./include
 LDFLAGS=`sdl2-config --libs` -lncurses -lm
 
 GTEST_I=-I$(HOME)/gtest/include
@@ -11,10 +10,12 @@ GTEST_L=$(HOME)/gtest/lib/gtest_main.a -lpthread
 
 VPATH = src
 
-RENDER_OBJ=\
+MRENDER_OBJ=\
 	   $(OBJDIR)/mrender.o \
 	   $(OBJDIR)/midi.o \
 	   $(OBJDIR)/filter.o
+
+DIGITARP_OBJ=$(OBJDIR)/digitarp.o
 
 AMUSE_OBJ=\
 	  $(OBJDIR)/amuse.o \
@@ -23,7 +24,6 @@ AMUSE_OBJ=\
 	  $(OBJDIR)/screen.o \
 	  $(OBJDIR)/orchestra.o \
 	  $(OBJDIR)/speaker.o \
-	  $(OBJDIR)/speaker.o \
 	  $(OBJDIR)/recorder.o
 
 SYNTH_OBJ=\
@@ -31,45 +31,39 @@ SYNTH_OBJ=\
 	  $(OBJDIR)/generators.o \
 	  $(OBJDIR)/builders.o \
 	  $(OBJDIR)/envelopes.o \
-	  $(OBJDIR)/filter.o \
 	  $(OBJDIR)/filters.o \
 	  $(OBJDIR)/musicm.o
 
 ALL_OBJECTS=\
-	$(RENDER_OBJ) \
+	$(MRENDER_OBJ) \
+	$(DIGITARP_OBJ) \
 	$(AMUSE_OBJ) \
 	$(SYNTH_OBJ) \
 
 MRENDER=$(BINDIR)/mrender
-AMUSE=$(BINDIR)/amuse
 DIGITARP=$(BINDIR)/digitarp
-
-all: dirs $(AMUSE) $(MRENDER)
-
-$(OBJDIR)/%.o: %.c Makefile $(AMUSE) render
-	$(CC) -c -o $@ $< $(CFLAGS)
-
-$(OBJDIR)/%.o: %.cpp Makefile
-	$(CXX) -c -o $@ $< $(CXXFLAGS)
-
+AMUSE=$(BINDIR)/amuse
+SYNTH=$(LIBDIR)/synth.a
 
 .PHONY:
-dirs:
-	@mkdir -p $(BINDIR) $(OBJDIR) $(LIBDIR)
+all: $(AMUSE) $(DIGITARP) $(MRENDER)
 
-.PHONY: sw
-sw: $(AMUSE) $(MRENDER) $(DIGITARP)
+$(OBJDIR) $(LIBDIR) $(BINDIR):
+	@mkdir -p $@
 
-.PHONY: media
-media: digitarp.mp3
+$(OBJDIR)/%.o: %.cpp Makefile $(OBJDIR)
+	$(CXX) -c -o $@ $< $(CXXFLAGS)
+
+.PHONY:
+media: out.mp3
 
 %.mp3: %.wav
 	lame -mm -r -s 44.1 --signed --bitwidth 16 --little-endian $^ $@
 
-digitarp.wav: $(DIGITARP)
+out.wav: $(DIGITARP)
 	./$(DIGITARP) > $@
 
-.PHONY: interactive
+.PHONY:
 interactive: $(AMUSE)
 	./$(AMUSE)
 
@@ -77,29 +71,28 @@ interactive: $(AMUSE)
 test: ringbuf_test
 	./ringbuf_test
 
-$(MRENDER): $(RENDER_OBJ)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+$(MRENDER): $(BINDIR) $(MRENDER_OBJ)
+	$(CXX) -o $@ $(MRENDER_OBJ) $(LDFLAGS)
 
-$(AMUSE): $(AMUSE_OBJ) $(LIBDIR)/synth.a
-	$(CXX) -o $@ $^ $(LDFLAGS)
+$(DIGITARP): $(BINDIR) $(DIGITARP_OBJ)
+	$(CXX) -o $@ $(DIGITARP_OBJ) $(LDFLAGS)
 
-$(LIBDIR)/synth.a: $(SYNTH_OBJ)
-	$(AR) cr $@ $^
+$(AMUSE): $(BINDIR) $(AMUSE_OBJ) $(SYNTH)
+	$(CXX) -o $@ $(AMUSE_OBJ) $(SYNTH) $(LDFLAGS)
 
-.PHONY: clean
+$(SYNTH): $(LIBDIR) $(SYNTH_OBJ)
+	$(AR) cr $@ $(SYNTH_OBJ)
+
+.PHONY:
 clean:
-	@rm -vf \
-	    $(OBJDIR)/* \
-	    $(LIBDIR)/* \
-	    $(BINDIR)/* \
-	      *.gch ringbuf_test
-	find py -name "*.pyc" -delete
+	@rm -rf $(OBJDIR)
+	@rm -f *.gch ringbuf_test
+	@find py -name "*.pyc" -delete
 
-.PHONY: sweep
+.PHONY:
 sweep: clean
-	@rm -vf \
-	    $(BINDIR)/*
-	    *.wav *.mp3 /tmp/*.wav
+	@rm -rf $(LIBDIR) $(BINDIR)
+	@rm -f *.wav *.mp3
 
 ringbuf_test: $(OBJDIR)/ringbuf_test.o
 	$(CXX) -o $@ $^ $(GTEST_L) $(LDFLAGS)

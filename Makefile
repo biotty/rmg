@@ -4,8 +4,8 @@ PRODUCTS=sound graphics artwork
 all: sound graphics artwork
 
 .PHONY:
-clean:
-	$(foreach product,$(PRODUCTS),make -C $(product) clean;)
+clean sweep:
+	@$(foreach product,$(PRODUCTS),make -C $(product) $@;)
 
 $(PRODUCTS):
-	$(MAKE) -C $@
+	@$(MAKE) -C $@
