@@ -116,10 +116,10 @@ fl.mp4: py/globe.py cfluid cmd.sh
 .PHONY:
 clean:
 	@rm -rf movie.d fract.d
-	@rm -f *.[oa] *.gch
+	@rm -f *.[oa] *.gch *_test 
 	@find py -name "*.pyc" -delete
 
 .PHONY:
 sweep: clean
-	@rm -f *_test cray cwave cfluid core* \
+	@rm -f cray cwave cfluid core* \
 		*.png *.jpeg *.avi *.mp4 *.pnm

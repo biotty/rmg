@@ -12,10 +12,10 @@ real_sound: compo.raw
 	aplay -c 1 -r 44100 -f s16_le < compo.raw
 
 compo.raw: lib standcompo.py
-	PYTHONPATH=lib/python python standcompo.py > $@
+	PYTHONPATH=lib/python ./standcompo.py > $@
 
 lib: setup.py sound_lib
-	python setup.py install --home .
+	./setup.py install --home .
 
 .PHONY:
 sound_lib:
