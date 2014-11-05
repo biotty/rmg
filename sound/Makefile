@@ -1,11 +1,64 @@
-CXX=c++ -g --std=c++11 -Wall -Werror -fPIC
-#CXX=c++ -O2 --std=c++11 -Wall -Werror -fPIC
+BINDIR=bin
+OBJDIR=obj
+LIBDIR=lib
+
+CFLAGS = -Wall -std=c99 -MMD -MP -fPIC `sdl2-config --cflags` -I ./include
+CXXFLAGS = -Wall -std=c++11 -MMD -MP -fPIC `sdl2-config --cflags` -I ./include
+LDFLAGS=`sdl2-config --libs` -lncurses -lm
 
 GTEST_I=-I$(HOME)/gtest/include
 GTEST_L=$(HOME)/gtest/lib/gtest_main.a -lpthread
 
+VPATH = src
+
+RENDER_OBJ=\
+	   $(OBJDIR)/mrender.o \
+	   $(OBJDIR)/midi.o \
+	   $(OBJDIR)/filter.o
+
+AMUSE_OBJ=\
+	  $(OBJDIR)/amuse.o \
+	  $(OBJDIR)/page.o \
+	  $(OBJDIR)/book.o \
+	  $(OBJDIR)/screen.o \
+	  $(OBJDIR)/orchestra.o \
+	  $(OBJDIR)/speaker.o \
+	  $(OBJDIR)/speaker.o \
+	  $(OBJDIR)/recorder.o
+
+SYNTH_OBJ=\
+	  $(OBJDIR)/unit.o \
+	  $(OBJDIR)/generators.o \
+	  $(OBJDIR)/builders.o \
+	  $(OBJDIR)/envelopes.o \
+	  $(OBJDIR)/filter.o \
+	  $(OBJDIR)/filters.o \
+	  $(OBJDIR)/musicm.o
+
+ALL_OBJECTS=\
+	$(RENDER_OBJ) \
+	$(AMUSE_OBJ) \
+	$(SYNTH_OBJ) \
+
+MRENDER=$(BINDIR)/mrender
+AMUSE=$(BINDIR)/amuse
+DIGITARP=$(BINDIR)/digitarp
+
+all: dirs $(AMUSE) $(MRENDER)
+
+$(OBJDIR)/%.o: %.c Makefile $(AMUSE) render
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(OBJDIR)/%.o: %.cpp Makefile
+	$(CXX) -c -o $@ $< $(CXXFLAGS)
+
+
+.PHONY:
+dirs:
+	@mkdir -p $(BINDIR) $(OBJDIR) $(LIBDIR)
+
 .PHONY: sw
-sw: amuse mrender digitarp test
+sw: $(AMUSE) $(MRENDER) $(DIGITARP)
 
 .PHONY: media
 media: digitarp.mp3
@@ -13,53 +66,45 @@ media: digitarp.mp3
 %.mp3: %.wav
 	lame -mm -r -s 44.1 --signed --bitwidth 16 --little-endian $^ $@
 
-digitarp.wav: digitarp
-	./digitarp > $@
+digitarp.wav: $(DIGITARP)
+	./$(DIGITARP) > $@
 
 .PHONY: interactive
-interactive: amuse
-	./amuse
+interactive: $(AMUSE)
+	./$(AMUSE)
 
 .PHONY: test
 test: ringbuf_test
 	./ringbuf_test
 
-mrender: mrender.o midi.o filter.o
-	$(CXX) -o $@ $^ -lm
+$(MRENDER): $(RENDER_OBJ)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
-midi.o: midi.hpp samplerate.hpp
-filter.o: filter.hpp samplerate.hpp
+$(AMUSE): $(AMUSE_OBJ) $(LIBDIR)/synth.a
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
-amuse: amuse.o page.o book.o screen.o orchestra.o speaker.o recorder.o \
-  synth.a
-	$(CXX) -o $@ $^ -lncurses -lSDL -lm
-
-book.o: book.hpp page.hpp
-page.o: page.hpp screen.hpp builders.hpp filters.hpp musicm.hpp
-screen.o: screen.cpp screen.hpp orchestra.hpp page.hpp book.hpp
-orchestra.o: orchestra.cpp orchestra.hpp generators.hpp
-speaker.o: speaker.cpp speaker.hpp ringbuf.hpp
-recorder.o: recorder.cpp recorder.hpp
-
-synth.a: unit.o generators.o builders.o envelopes.o filters.o musicm.o
+$(LIBDIR)/synth.a: $(SYNTH_OBJ)
 	$(AR) cr $@ $^
-
-unit.o: unit.cpp unit.hpp
-generators.o: generators.cpp generators.hpp unit.hpp filters.hpp
-builders.o: builders.cpp builders.hpp generators.hpp filters.hpp
-envelopes.o: envelopes.cpp envelopes.hpp math.hpp
-filters.o: filters.hpp ringbuf.hpp math.hpp
 
 .PHONY: clean
 clean:
-	rm -f *.[oa] *.gch ringbuf_test; find py -name "*.pyc" -delete
+	@rm -vf \
+	    $(OBJDIR)/* \
+	    $(LIBDIR)/* \
+	    $(BINDIR)/* \
+	      *.gch ringbuf_test
+	find py -name "*.pyc" -delete
 
 .PHONY: sweep
 sweep: clean
-	rm -f amuse mrender digitarp *.wav *.mp3 /tmp/*.wav
+	@rm -vf \
+	    $(BINDIR)/*
+	    *.wav *.mp3 /tmp/*.wav
 
-ringbuf_test: ringbuf_test.o
-	$(CXX) -o $@ $^ $(GTEST_L)
+ringbuf_test: $(OBJDIR)/ringbuf_test.o
+	$(CXX) -o $@ $^ $(GTEST_L) $(LDFLAGS)
 
 ringbuf_test.o: ringbuf_test.cpp
 	$(CXX) -c $(GTEST_I) $^
+
+-include $(ALL_OBJECTS:.o=.d)
