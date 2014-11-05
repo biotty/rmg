@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 
 from math import floor, pi, cos, sin
 from math_ import rnd, matrix_multiply

@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef MIDI_HPP
 #define MIDI_HPP
 

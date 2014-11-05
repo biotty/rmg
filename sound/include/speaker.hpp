@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef SPEAKER_HPP
 #define SPEAKER_HPP
 

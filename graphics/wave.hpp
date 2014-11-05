@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef WAVE_HPP
 #define WAVE_HPP
 

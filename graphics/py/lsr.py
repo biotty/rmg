@@ -1,5 +1,8 @@
-#! /usr/bin/env python
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 
 from rmg.board import Board, Pencil
 from rmg.draw import Drawing, TreeBuilder

@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 
 #include "sky.h"
 #include "photo.h"

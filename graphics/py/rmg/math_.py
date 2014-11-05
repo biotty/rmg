@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 
 from math import pi, sin, cos
 from random import random as random_

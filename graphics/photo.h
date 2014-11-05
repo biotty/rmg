@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef PHOTO_H
 #define PHOTO_H
 

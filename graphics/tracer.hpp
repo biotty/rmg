@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef TRACER_HPP
 #define TRACER_HPP
 

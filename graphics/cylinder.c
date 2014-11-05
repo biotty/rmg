@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 
 #include "cylinder.h"
 #include "math.h"

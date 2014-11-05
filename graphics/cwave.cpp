@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 
 #include "wave.hpp"
 #include "linear.hpp"

@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef CYLINDER_H
 #define CYLINDER_H
 

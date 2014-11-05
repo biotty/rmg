@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 
 from rmg.color import Color
 from rmg.plane import XY

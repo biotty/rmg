@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef OBSERVER_H
 #define OBSERVER_H
 

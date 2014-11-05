@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef RINGBUF_HPP
 #define RINGBUF_HPP
 

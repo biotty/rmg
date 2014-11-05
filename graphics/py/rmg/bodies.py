@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 
 class Manipulation:
     def __init__(self, r, theta, phi, delta):

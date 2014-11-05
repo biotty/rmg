@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 """PNM (or JPEG) filter facility; read, buffer and write a set of files"""
 #note:  pure black-white not supported (P4); only gray (P5) and color (P6)
 

@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 from distutils.core import setup, Extension
 
 fuge = Extension('fuge',

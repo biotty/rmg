@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 
 from rmg.color import Color, white, black, Optics
 from rmg.map import OpticsFactor, AxisMap

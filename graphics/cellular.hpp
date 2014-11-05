@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef CELLULAR_HPP
 #define CELLULAR_HPP
 

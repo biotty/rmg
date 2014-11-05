@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #include "generators.hpp"
 #include "math.hpp"
 #include <algorithm>

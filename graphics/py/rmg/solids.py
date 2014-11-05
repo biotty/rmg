@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 from rmg.bodies import Manipulation, Inter, Plane, Sphere, Sphere_, Cylinder, Cylinder_, Cone, Cone_
 from rmg.space import Point, Direction, mean
 

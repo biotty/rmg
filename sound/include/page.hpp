@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef PAGE_HPP
 #define PAGE_HPP
 

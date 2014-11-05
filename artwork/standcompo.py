@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 from orchestra import Pause, Harmonics, Mouth, TenseString, Fm
 from effects import Comb, Echo
 from music import NoteComposition

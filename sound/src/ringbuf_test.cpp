@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #include "ringbuf.hpp"
 #include "gtest/gtest.h"
 

@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef PLANAR_HPP
 #define PLANAR_HPP
 

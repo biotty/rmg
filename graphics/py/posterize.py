@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 
 from rmg.color import Color, InkColor, white_ink
 from rmg.board import Photo, Image, Board

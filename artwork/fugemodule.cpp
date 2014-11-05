@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #include "Python.h"
 #include "unit.hpp"
 #include "generators.hpp"

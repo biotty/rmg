@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 
 from math import pi, acos, asin
 from math_ import matrix_multiply, Rx, Ry, Rz, rnd

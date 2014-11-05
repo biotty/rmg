@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef DIRECTION_H
 #define DIRECTION_H
 

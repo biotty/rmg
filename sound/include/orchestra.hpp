@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef ORCHESTRA_HPP
 #define ORCHESTRA_HPP
 

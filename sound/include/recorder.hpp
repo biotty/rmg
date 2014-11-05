@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef RECORDER_HPP
 #define RECORDER_HPP
 

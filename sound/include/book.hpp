@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef BOOK_HPP
 #define BOOK_HPP
 

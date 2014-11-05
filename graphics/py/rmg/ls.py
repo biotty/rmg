@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 """Parametric Context-Sensitive Bracketed Lindenmayer System"""
 
 from re import compile as COMPILE, sub as SUB

@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 
 from rmg.math_ import unit_angle, matrix_multiply, rnd
 from math import sin, cos, pi

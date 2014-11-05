@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #include "musicm.hpp"
 #include <stdexcept>
 #include <cstdlib>

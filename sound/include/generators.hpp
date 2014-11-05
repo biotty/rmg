@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef GENERATORS_HPP
 #define GENERATORS_HPP
 

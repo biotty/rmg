@@ -1,5 +1,8 @@
-#! /usr/bin/env python
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 
 from rmg.board import Photo, Board
 from rmg.plane import XY

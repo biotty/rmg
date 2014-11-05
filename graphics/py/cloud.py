@@ -1,4 +1,8 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 
 from math import sin, cos, pi
 from rmg.math_ import unit_angle, rnd, rnd_select

@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef BUILDERS_HPP
 #define BUILDERS_HPP
 

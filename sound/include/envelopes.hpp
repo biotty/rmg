@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef ENVELOPES_HPP
 #define ENVELOPES_HPP
 

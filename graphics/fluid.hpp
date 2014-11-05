@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef FLUID_HPP
 #define FLUID_HPP
 

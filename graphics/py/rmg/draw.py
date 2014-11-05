@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+#
+#       © Christian Sommerfeldt Øien
+#       All rights reserved
 from rmg.plane import XY
 from rmg.math_ import Rx, Ry, Rz, matrix_multiply, unit_angle
 from rmg.space import Point, Direction, Box, origo

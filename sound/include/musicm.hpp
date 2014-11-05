@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef MUSICM_HPP
 #define MUSICM_HPP
 

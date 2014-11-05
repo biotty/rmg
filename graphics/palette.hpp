@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef PALETTE_HPP
 #define PALETTE_HPP
 

@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef FILTERS_HPP
 #define FILTERS_HPP
 

@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef UNITFWD_HPP
 #define UNITFWD_HPP
 

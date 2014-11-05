@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #include "envelopes.hpp"
 
 #include "generators.hpp"

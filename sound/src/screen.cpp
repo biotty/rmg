@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #include "screen.hpp"
 #include "page.hpp"
 #include "book.hpp"

@@ -1,3 +1,5 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 #ifndef LINEAR_HPP
 #define LINEAR_HPP
 
