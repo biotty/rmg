@@ -22,6 +22,17 @@ void multiply(double m, filter::biquad & f) {
 double rnd(double a, double b)
 { return a + std::rand() * (b - a) / RAND_MAX; }
 
+double omega(double s) { return 2 * pi * s / SAMPLERATE; }
+double alpha_pass(double w, double q) { return .5 * sin(w) / q; }
+double alpha_shelf(double w, double e, double z)
+{
+    return .5 * sin(w) * sqrt((e + 1 / e) * (1 / z - 1) + 2);
+}
+double alpha_peaking(double w, double b)
+{
+    return sin(w) * sinh(.5 * log(2) * b * w / sin(w));
+}
+
 } //namespace
 
 namespace filter {
@@ -82,115 +93,117 @@ double biquad::shift(double x)
     return y;
 }
 
-void biquad::lowpass(double s, double q)
+double biquad::set_a_pass(double w, double alpha)
 {
-    double w = 2 * pi * s / SAMPLERATE;
-    double a0, alpha = .5 * sin(w) / q;
-    b1 = 1 - cos(w);
-    b0 = b1 * .5;
-    b2 = b0;
+    double a0;
     a1 = -2 * cos(w);
     a0 = 1 + alpha;
     a2 = 1 - alpha;
-    multiply(1 / a0, *this);
+    return a0;
+}
+
+void biquad::lowpass(double s, double q)
+{
+    double w = omega(s);
+    double a = alpha_pass(w, q);
+    b1 = 1 - cos(w);
+    b0 = b1 * .5;
+    b2 = b0;
+    multiply(1 / set_a_pass(w, a), *this);
 }
 
 void biquad::highpass(double s, double q)
 {
-    double w = 2 * pi * s / SAMPLERATE; // same as lowpass
-    double a0, alpha = .5 * sin(w) / q;  // idem
+    double w = omega(s);
+    double a = alpha_pass(w, q);
     b1 = -1 - cos(w);
     b0 = b1 * -.5;
     b2 = b0;
-    a1 = -2 * cos(w);  // same as lowpass
-    a0 = 1 + alpha;  // ^
-    a2 = 1 - alpha;  // ^
-    multiply(1 / a0, *this);
+    multiply(1 / set_a_pass(w, a), *this);
 }
 
 void biquad::bandpass(double s, double q)
 {
-    double w = 2 * pi * s / SAMPLERATE; // same as lowpass
-    double a0, alpha = .5 * sin(w) / q;  // idem
+    double w = omega(s);
+    double a = alpha_pass(w, q);
     b1 = 0;
-    b0 = alpha;
+    b0 = a;
     b2 = -b0;
-    a1 = -2 * cos(w);  // same as lowpass
-    a0 = 1 + alpha;  // ^
-    a2 = 1 - alpha;  // ^
-    multiply(1 / a0, *this);
+    multiply(1 / set_a_pass(w, a), *this);
 }
 
 void biquad::notch(double s, double q)
 {
-    double w = 2 * pi * s / SAMPLERATE; // same as lowpass
-    double a0, alpha = .5 * sin(w) / q;  // idem
+    double w = omega(s);
+    double a = alpha_pass(w, q);
     b1 = -2 * cos(w);
     b0 = 1;
     b2 = 1;
-    a1 = -2 * cos(w);  // same as lowpass
-    a0 = 1 + alpha;  // ^
-    a2 = 1 - alpha;  // ^
-    multiply(1 / a0, *this);
+    multiply(1 / set_a_pass(w, a), *this);
 }
 
-void biquad::gain(double s, double q/*like a (in functions below) is peak gain*/)
+void biquad::gain(double s, double q)
 {
-    assert(q > 1); // maybe better to get param in in decibel
-    double w = 2 * pi * s / SAMPLERATE; // same as lowpass
-    double a0, alpha = .5 * sin(w) / q;  // idem
+    assert(q > 1);
+    double w = omega(s);
+    double a = alpha_pass(w, q);
     b1 = 0;
-    b0 = .5 * sin(w); // (== q * alpha)
+    b0 = .5 * sin(w);
     b2 = -b0;
-    a1 = -2 * cos(w);  // same as lowpass
-    a0 = 1 + alpha;  // ^
-    a2 = 1 - alpha;  // ^
-    multiply(1 / a0, *this);
+    multiply(1 / set_a_pass(w, a), *this);
 }
 
-void biquad::lowshelf(double s, double a, double z) // b in octaves, a is amplitude, s=1 is steepest is can be and still monotonicaly
+// z in octaves, a is ampl, s=1 is steepest when still monotonical
+void biquad::lowshelf(double s, double a, double z)
 {
-    assert(a > 1); // maybe better to get param in in decibel
+    assert(a > 1);
     double e = sqrt(a);
-    double w = 2 * pi * s / SAMPLERATE; // same as lowpass
-    double a0, alpha = .5 * sin(w) * sqrt((e + 1/e)*(1/z - 1) + 2); //NOT same (but could do q-based)
-    b1 = 2 * e * ((e - 1) - (e + 1) * cos(w));
-    b0 =     e * ((e + 1) - (e - 1) * cos(w) + 2 * sqrt(e) * alpha);
-    b2 =     e * ((e + 1) - (e - 1) * cos(w) - 2 * sqrt(e) * alpha);
-    a1 =    -2 * ((e - 1) + (e + 1) * cos(w));
-    a0 =          (e + 1) + (e - 1) * cos(w) + 2 * sqrt(e) * alpha;
-    a2 =          (e + 1) + (e - 1) * cos(w) - 2 * sqrt(e) * alpha;
+    double d = e - 1;
+    double u = e + 1;
+    double w = omega(s);
+    double c = cos(w);
+    double k = alpha_shelf(w, e, z) * 2 * sqrt(e);
+    b1 = 2 * e * (d - u * c);
+    b0 =     e * (u - d * c + k);
+    b2 =     e * (u - d * c - k);
+    a1 =    -2 * (d + u * c);
+    double a0 =   u + d * c + k;
+    a2 =          u + d * c - k;
     multiply(1 / a0, *this);
 }
 
+// z in octaves, a is ampl, s=1 is steepest when still monotonical
 void biquad::highshelf(double s, double a, double z)
 {
-    assert(a > 1); // maybe better to get param in in decibel
+    assert(a > 1);
     double e = sqrt(a);
-    double w = 2 * pi * s / SAMPLERATE; // same as lowpass
-    double a0, alpha = .5 * sin(w) * sqrt((e + 1/e)*(1/z - 1) + 2); //same as (but could do q-based)
-    b1 =-2 * e * ((e - 1) + (e + 1) * cos(w));
-    b0 =     e * ((e + 1) + (e - 1) * cos(w) + 2 * sqrt(e) * alpha);
-    b2 =     e * ((e + 1) + (e - 1) * cos(w) - 2 * sqrt(e) * alpha);
-    a1 =     2 * ((e - 1) - (e + 1) * cos(w));
-    a0 =          (e + 1) - (e - 1) * cos(w) + 2 * sqrt(e) * alpha;
-    a2 =          (e + 1) - (e - 1) * cos(w) - 2 * sqrt(e) * alpha;
+    double d = e - 1;
+    double u = e + 1;
+    double w = omega(s);
+    double c = cos(w);
+    double k = alpha_shelf(w, e, z) * 2 * sqrt(e);
+    b1 =-2 * e * (d + u * c);
+    b0 =     e * (u + d * c + k);
+    b2 =     e * (u + d * c - k);
+    a1 =     2 * (d - u * c);
+    double a0 =   u - d * c + k;
+    a2 =          u - d * c - k;
     multiply(1 / a0, *this);
 }
 
-void biquad::peaking_eq(double s, double a, double b)// b in octaves, a is amplitude (factor <= 1.0)
+// b in octaves, a is amplitude (factor <= 1.0)
+void biquad::peaking_eq(double s, double a, double b)
 {
     double e = sqrt(a);
-    double w = 2 * pi * s / SAMPLERATE; // same as lowpass
-    double a0, alpha = sin(w) * sinh(.5 * log(2) * b * w / sin(w));  // ! NOT same (but can instead do same q-based if desired)
+    double w = omega(s);
+    double a0, p = alpha_peaking(w, b);
     b1 = -2 * cos(w);
-    b0 = 1 + alpha * e;
-    b2 = 1 - alpha * e;
-    a1 = -2 * cos(w);  // same as lowpass
-    a0 = 1 + alpha / e;  // NOT same
-    a2 = 1 - alpha / e;  // NOT same
+    b0 = 1 + p * e;
+    b2 = 1 - p * e;
+    a1 = b1;
+    a0 = 1 + p / e;
+    a2 = 1 - p / e;
     multiply(1 / a0, *this);
 }
 
 }
-

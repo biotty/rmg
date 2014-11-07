@@ -43,6 +43,8 @@ public:
     void lowshelf(double s, double a = 2, double z = 1/*upto one is monotonic*/);
     void highshelf(double s, double a = 2, double z = 1/*upto one is monotonic*/);
     void peaking_eq(double s, double a = 2, double b = 1/*octave*/);
+private:
+    double set_a_pass(double w, double alpha);
 };
 
 }
