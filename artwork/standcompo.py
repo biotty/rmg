@@ -32,7 +32,7 @@ out = sys.stdout
 
 nc = NoteComposition()
 zz = Pause()
-ts = TenseString(.35)
+ts = TenseString(.85)
 mt = Mouth(.65)
 fm = Fm(.5)
 b0 = []
@@ -43,11 +43,20 @@ for i in range(32):
     if (i&1):
         b0.append(zz.play(8))
     else:
-        for t in [1,2,1,1,1,2]:
+        for (t, j) in [
+                (1, False),
+                (2, False),
+                (1, False),
+                (1, False),
+                (1, False),
+                (2, True)]:
             p = int(rnd(60, 72))
             a = [p + rnd(-6, 6) for _ in range(4)]
-            b = mt.play(t, [p] + a,
-                    rndharmonics(), rndharmonics())
+            if j:
+                b = ts.play(t, [p] + a)
+            else:
+                b = mt.play(t, [p] + a,
+                        rndharmonics(), rndharmonics())
             c = NoteComposition()
             c.add_row([b])
             c.filt = Comb(rndlist(0, .1, 5), rndlist(0, .1, 5))
