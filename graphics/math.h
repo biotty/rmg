@@ -8,6 +8,7 @@
 
 static inline real square(real r) { return r * r; }
 static inline real zoom(const real r, real x) {
+    x *= r;
     x -= rfloor(x);
     return (x == 1) ? 0 : x;
 }
