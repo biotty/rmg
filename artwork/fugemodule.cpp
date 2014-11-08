@@ -111,7 +111,7 @@ parse_params(PyObject * seq)
 
 struct instrument
 {
-    bu_ptr  operator()(double span, PyObject * list)
+    bu_ptr operator()(double span, PyObject * list)
     {
         return play(span, parse_params(list));
     }

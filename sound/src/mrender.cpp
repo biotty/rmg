@@ -2,7 +2,7 @@
 //      All rights reserved
 
 #include "midi.hpp"
-#include "filter.hpp"
+#include "biquad.hpp"
 #include "samplerate.hpp"
 
 #include <cstdio>

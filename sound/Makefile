@@ -13,7 +13,7 @@ VPATH = src
 MRENDER_OBJ=\
 	   $(OBJDIR)/mrender.o \
 	   $(OBJDIR)/midi.o \
-	   $(OBJDIR)/filter.o
+	   $(OBJDIR)/biquad.o
 
 DIGITARP_OBJ=$(OBJDIR)/digitarp.o
 
