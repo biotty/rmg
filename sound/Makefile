@@ -56,7 +56,7 @@ $(FUGE): setup.py $(SYNTH)
 dirs:
 	@mkdir -p $(OBJDIR) $(LIBDIR) $(BINDIR)
 
-$(OBJDIR)/%.o: %.cpp Makefile
+$(OBJDIR)/%.o: %.cpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
 .PHONY:
