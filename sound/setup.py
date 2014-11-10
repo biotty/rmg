@@ -6,9 +6,9 @@
 from distutils.core import setup, Extension
 
 fuge = Extension('fuge',
-        extra_compile_args = ['--std=c++11', '-I../sound/include'],
-        extra_objects = ['../sound/lib/synth.a'],
-        sources = ['fugemodule.cpp'])
+        extra_compile_args = ['--std=c++11', '-Iinclude'],
+        extra_objects = ['lib/synth.a'],
+        sources = ['src/fugemodule.cpp'])
 
 setup(name = 'fuge', version = '1.0',
        description = 'fuge',

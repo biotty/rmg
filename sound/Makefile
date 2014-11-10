@@ -2,7 +2,7 @@ BINDIR=bin
 OBJDIR=obj
 LIBDIR=lib
 
-CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -MMD -MP -fPIC `sdl2-config --cflags` -I ./include
+CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -MMD -MP -fPIC `sdl2-config --cflags` -Iinclude
 LDFLAGS=`sdl2-config --libs` -lncurses -lm
 
 GTEST_I=-I$(HOME)/gtest/include
@@ -44,9 +44,13 @@ MRENDER=$(BINDIR)/mrender
 DIGITARP=$(BINDIR)/digitarp
 AMUSE=$(BINDIR)/amuse
 SYNTH=$(LIBDIR)/synth.a
+FUGE=$(LIBDIR)/python/fuge.so
 
 .PHONY:
-all: $(AMUSE) $(DIGITARP) $(MRENDER)
+all: $(AMUSE) $(DIGITARP) $(MRENDER) $(FUGE)
+
+$(FUGE): setup.py $(SYNTH)
+	./setup.py install --home .
 
 $(OBJDIR) $(LIBDIR) $(BINDIR):
 	@mkdir -p $@
@@ -55,12 +59,12 @@ $(OBJDIR)/%.o: %.cpp Makefile $(OBJDIR)
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
 .PHONY:
-media: out.mp3
+media: out.mp3 compo.mp3
 
-%.mp3: %.wav
+%.mp3: %.raw
 	lame -mm -r -s 44.1 --signed --bitwidth 16 --little-endian $^ $@
 
-out.wav: $(DIGITARP)
+out.raw: $(DIGITARP)
 	./$(DIGITARP) > $@
 
 .PHONY:
@@ -84,7 +88,15 @@ $(SYNTH): $(LIBDIR) $(SYNTH_OBJ)
 	$(AR) cr $@ $(SYNTH_OBJ)
 
 .PHONY:
+real_sound: compo.raw
+	aplay -c 1 -r 44100 -f s16_le < compo.raw
+
+compo.raw: py/fugecompo.py
+	PYTHONPATH=py:lib/python py/fugecompo.py > $@
+
+.PHONY:
 clean:
+	@rm -rf build
 	@rm -rf $(OBJDIR)
 	@rm -f *.gch ringbuf_test
 	@find py -name "*.pyc" -delete
@@ -92,7 +104,7 @@ clean:
 .PHONY:
 sweep: clean
 	@rm -rf $(LIBDIR) $(BINDIR)
-	@rm -f *.wav *.mp3
+	@rm -f *.raw *.mp3
 
 ringbuf_test: $(OBJDIR)/ringbuf_test.o
 	$(CXX) -o $@ $^ $(GTEST_L) $(LDFLAGS)
