@@ -8,7 +8,7 @@ LDFLAGS=`sdl2-config --libs` -lncurses -lm
 GTEST_I=-I$(HOME)/gtest/include
 GTEST_L=$(HOME)/gtest/lib/gtest_main.a -lpthread
 
-VPATH = src
+VPATH=src
 
 MRENDER_OBJ=\
 	   $(OBJDIR)/mrender.o \
@@ -47,15 +47,16 @@ SYNTH=$(LIBDIR)/synth.a
 FUGE=$(LIBDIR)/python/fuge.so
 
 .PHONY:
-all: $(AMUSE) $(DIGITARP) $(MRENDER) $(FUGE)
+all: dirs $(AMUSE) $(DIGITARP) $(MRENDER) $(FUGE)
 
 $(FUGE): setup.py $(SYNTH)
 	./setup.py install --home .
 
-$(OBJDIR) $(LIBDIR) $(BINDIR):
-	@mkdir -p $@
+.PHONY:
+dirs:
+	@mkdir -p $(OBJDIR) $(LIBDIR) $(BINDIR)
 
-$(OBJDIR)/%.o: %.cpp Makefile $(OBJDIR)
+$(OBJDIR)/%.o: %.cpp Makefile
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
 .PHONY:
@@ -75,17 +76,17 @@ interactive: $(AMUSE)
 test: ringbuf_test
 	./ringbuf_test
 
-$(MRENDER): $(BINDIR) $(MRENDER_OBJ)
-	$(CXX) -o $@ $(MRENDER_OBJ) $(LDFLAGS)
+$(MRENDER): $(MRENDER_OBJ)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
-$(DIGITARP): $(BINDIR) $(DIGITARP_OBJ)
-	$(CXX) -o $@ $(DIGITARP_OBJ) $(LDFLAGS)
+$(DIGITARP): $(DIGITARP_OBJ)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
-$(AMUSE): $(BINDIR) $(AMUSE_OBJ) $(SYNTH)
-	$(CXX) -o $@ $(AMUSE_OBJ) $(SYNTH) $(LDFLAGS)
+$(AMUSE): $(AMUSE_OBJ) $(SYNTH)
+	$(CXX) -o $@ $^ $(SYNTH) $(LDFLAGS)
 
-$(SYNTH): $(LIBDIR) $(SYNTH_OBJ)
-	$(AR) cr $@ $(SYNTH_OBJ)
+$(SYNTH): $(SYNTH_OBJ)
+	$(AR) cr $@ $^
 
 .PHONY:
 real_sound: compo.raw
