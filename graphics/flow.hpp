@@ -75,7 +75,7 @@ template<class T>
 struct EdgeFunction : FlowFunction<T>
 {
     EdgeFunction() {}
-    bool operator()(Grid<T> * field_swap, Grid<T> * field, double step_t)
+    bool operator()(Grid<T> * /*field_swap*/, Grid<T> * field, double /*step_t*/)
     {
         size_t h = field->h;
         size_t w = field->w;

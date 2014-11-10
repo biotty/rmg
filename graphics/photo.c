@@ -124,7 +124,7 @@ photo_create(const char * path)
     ph->width = width;
     ph->height = height;
     ph->grey = (tup == 1);
-    const unsigned r = fread(ph->data, tup, width * height, file);
+    const int r = fread(ph->data, tup, width * height, file);
     if (r != width * height) {
         fprintf(stderr, "'%s' gave %s after %u of %d values\n", name,
                 feof(file) ? "EOF" : "error",

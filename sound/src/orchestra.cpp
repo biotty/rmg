@@ -102,7 +102,7 @@ bu_ptr echo(bu_ptr b, mv_ptr m, double u, double x)
     return P<timed_filter>(b, lf, m->s);
 }
 
-bu_ptr comb(bu_ptr b, mv_ptr m, double u, double x)
+bu_ptr comb(bu_ptr b, mv_ptr m, double u, double /*x*/)
 {
     fl_ptr lf = P<feed>(P<as_is>(), P<still>((u+1)/20, m->s),
             P<inverted>(m->e));

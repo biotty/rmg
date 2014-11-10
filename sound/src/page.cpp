@@ -104,7 +104,7 @@ void page::draw()
     cursor();
 }
 
-const char * page::decoration(unsigned k, unsigned i)
+const char * page::decoration(unsigned i)
 {
     if (i % 8 == 0) return "| ";
     else if (i % 4 == 0) return ": ";
@@ -116,7 +116,7 @@ void page::print_cell(unsigned k, unsigned i)
 {
     ruler::cell * e = cell(k, i);
     mvprintw(k, x_of(i), "%s",
-            e ? pitchname(e->p) : decoration(k, i));
+            e ? pitchname(e->p) : decoration(i));
 }
 
 void page::write_p(unsigned p)

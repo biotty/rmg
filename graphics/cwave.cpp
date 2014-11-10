@@ -67,7 +67,7 @@ struct SqueezeIndicator : WaveIndicator
     std::string prefix;
 
     SqueezeIndicator(Picture & p, size_t h, size_t w) : picture(p), h(h), w(w), prefix("") {}
-    void lapse(double delta_t, Grid<WaveCell> * grid, size_t i) {
+    void lapse(double /*delta_t*/, Grid<WaveCell> * grid, size_t i) {
         Grid<double> squeezes(grid->h, grid->w);
         for (PositionIterator it = grid->positions(); it.more(); ++it) {
             SideNeighborhood<WaveCell> q = grid->side_neighborhood(it);
@@ -129,7 +129,7 @@ struct SimpleFunction : WaveFlowFunction
             , tilt_zero(tz)
             , tilt_speed(ts), t(0)
     {}
-    bool operator()(Grid<WaveCell> * field_swap, Grid<WaveCell> * field, double step_t)
+    bool operator()(Grid<WaveCell> * /*field_swap*/, Grid<WaveCell> * field, double step_t)
     {
         double r = amplitude * cos(t * frequency);
         double w = tilt_zero + t * tilt_speed;
@@ -156,7 +156,7 @@ struct PictureParameters : WaveFlowParameters
     size_t w;
 
     PictureParameters(Picture & p, size_t h, size_t w) : picture(p), h(h), w(w) {}
-    void setup(double t, double u)
+    void setup(double /*t*/, double /*u*/)
     {
         picture.flip();
     }

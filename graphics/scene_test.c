@@ -13,6 +13,7 @@ t_intersection(const ray * r, void * object_arg)
 {
     static bool already = false;
     const int * arg = object_arg;
+    (void)r;
     assert(123 == *arg);
     if (already)
         return (pair){-1, HUGE_REAL};
@@ -25,6 +26,7 @@ t_intersection(const ray * r, void * object_arg)
     direction
 t_normal(point p, void * object_arg, bool at_second)
 {
+    (void)object_arg;
     (void)at_second;
     return (direction){-p.x, -p.y, -p.z};
 }
@@ -35,10 +37,14 @@ main(void)
     int i = 123;
     void * arg = &i;
     const int count = 2;
-    scene * sc = malloc(scene_size(count));
+    scene * sc = calloc(scene_size(count), 1);
     sc->object_count = count;
-    sc->objects[0] = (scene_object){ t_intersection, t_normal, arg };
-    sc->objects[1] = (scene_object){ t_intersection, t_normal, arg };
+    sc->objects[0].intersection = t_intersection;
+    sc->objects[0].normal = t_normal;
+    sc->objects[0].object_arg = arg;
+    sc->objects[1].intersection = t_intersection;
+    sc->objects[1].normal = t_normal;
+    sc->objects[1].object_arg = arg;
     ray ray_ = { .endpoint = {0.1, 0.2, -0.7}, .head = {0, 0, 1} };
     bitarray * inside = calloc(1, ba_size(count));
     inside->bit_count = count;

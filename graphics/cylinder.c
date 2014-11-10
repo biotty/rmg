@@ -70,6 +70,7 @@ minucylinder_intersection(
     direction
 cylinder_normal(point p, void * cylinder__, bool at_second)
 {
+    (void)at_second;
     const cylinder * cylinder_ = cylinder__;
     direction n = transform_(p, cylinder_);
     

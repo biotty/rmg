@@ -8,7 +8,7 @@
 #include <assert.h>
 
 
-stack empty_stack = { NULL, 0 };
+stack empty_stack = { NULL, 0, 0 };
 stack_value stack_void = -1;
 
 

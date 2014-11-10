@@ -75,7 +75,7 @@ struct FeedbackParameters : FluidParameters
     double viscosity(const Position & p) { return viscosities.at(quantized->cell(p.i, p.j)); } 
     ~FeedbackParameters() { delete quantized; }
     FeedbackParameters(size_t h, size_t w) : h(h), w(w), tracer(NULL), quantized(NULL) {}
-    void setup(double t, double u)
+    void setup(double /*t*/, double /*u*/)
     {
         if ( ! quantized) {
             quantized = new Grid<color_type>(h, w);
@@ -97,7 +97,7 @@ struct SimpleFunction : FluidFunction
     XY force;
 
     SimpleFunction(XY p, XY f, FluidParameters & fp) : placement(p), force(f), params(fp) {}
-    bool operator()(Grid<FluidCell> * field_swap, Grid<FluidCell> * field, double step_t)
+    bool operator()(Grid<FluidCell> * /*field_swap*/, Grid<FluidCell> * field, double step_t)
     {
         size_t i = field->h * placement.y;
         size_t j = field->w * placement.x;

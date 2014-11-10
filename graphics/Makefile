@@ -1,5 +1,5 @@
-CFLAGS = -Wall -Wextra -std=c11
-CXXFLAGS = -Wall -Wextra -std=c++11
+CFLAGS = -Wall -Wextra -Werror -std=c11
+CXXFLAGS = -Wall -Wextra -Werror -std=c++11
 LDFLAGS = -lm
 
 .PHONY: sw

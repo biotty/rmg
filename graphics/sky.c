@@ -11,6 +11,7 @@ photo * sky_photo = 0;
     color
 white_sky(direction d)
 {
+    (void)d;
     return (color){1, 1, 1};
 }
 

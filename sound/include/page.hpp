@@ -43,7 +43,7 @@ struct page
     void print_l(int k);
     void print_w();
     void draw();
-    const char * decoration(unsigned k, unsigned i);
+    const char * decoration(unsigned i);
     void print_cell(unsigned k, unsigned i);
     void write_p(unsigned p);
     void cursor();

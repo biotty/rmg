@@ -2,7 +2,7 @@ BINDIR=bin
 OBJDIR=obj
 LIBDIR=lib
 
-CXXFLAGS=-Wall -Wextra -std=c++11 -MMD -MP -fPIC `sdl2-config --cflags` -I ./include
+CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -MMD -MP -fPIC `sdl2-config --cflags` -I ./include
 LDFLAGS=`sdl2-config --libs` -lncurses -lm
 
 GTEST_I=-I$(HOME)/gtest/include

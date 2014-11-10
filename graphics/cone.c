@@ -73,6 +73,7 @@ minucone_intersection(
     direction
 cone_normal(point p, void * cone__, bool at_second)
 {
+    (void)at_second;
     const cone * cone_ = cone__;
     direction n = transform_(p, cone_);
     
