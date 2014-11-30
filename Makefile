@@ -1,7 +1,7 @@
-PRODUCTS=sound graphics artwork
-.PHONY: all sound graphics artwork
+PRODUCTS=sound graphics
+.PHONY: all sound graphics
 
-all: sound graphics artwork
+all: sound graphics
 
 .PHONY:
 clean sweep:

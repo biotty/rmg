@@ -1,12 +1,10 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
-import pygame
-import avrepr
-import music
-import fuge
-import os
+import pygame, os
+from rmg import avrepr
 from exceptions import Exception, EOFError, SystemExit
 from random import randrange
 
@@ -15,35 +13,21 @@ PS1 = ">>>"
 PS2 = "..."
 
 
-silent = lambda: "\x00\x00"
-
-
 class Recorder:
 
     frames_per_second = 10
-    samples_per_second = 44100
 
     def __init__(self, screen):
         self.screen = screen
         self.frames_saved = 0
-        self.samples_produced = 0
-        self.samples_per_frame = Recorder.samples_per_second \
-                / Recorder.frames_per_second
         self.tmp = "/tmp/R%d" % (randrange(0, 10**9),)
         os.mkdir(self.tmp)
-        self.audio = open("%s/audio.s16" % (self.tmp,), "wb")
-        self.ugen = silent
         print self.tmp  #hack: practical data to user
 
     def savename(self):
         n = "%s/%d.jpeg" % (self.tmp, self.frames_saved)
         self.frames_saved += 1
         return n
-
-    def got_sound(self, ugen):
-        while self.ugen is not silent:
-            self.advance(1)
-        self.ugen = ugen
 
     def pressed_key(self):
         self.advance(randrange(1, 4))
@@ -55,18 +39,7 @@ class Recorder:
         self.advance(randrange(4, 9))
 
     def advance(self, instants):
-        samples = instants * 250  #code: tuner
-        self.stream(samples)
-        frames = self.samples_produced / self.samples_per_frame
-        frames -= self.frames_saved
-        self.dump(frames)
-
-    def roundoff(self):
-        self.got_sound(silent)
-        self.dump(1)
-        missing = (self.frames_saved + 1
-                ) * self.samples_per_frame - self.samples_produced
-        self.stream(missing)
+        self.dump(instants)
 
     def dump(self, copies):
         if not copies: return
@@ -74,17 +47,6 @@ class Recorder:
         pygame.image.save(self.screen, name)
         for _ in range(1, copies):
             os.link(name, self.savename())
-
-    def stream(self, samples):
-        produced = 0
-        while produced < samples:
-            buf = self.ugen()
-            if not buf:
-                self.ugen = silent
-                continue
-            self.audio.write(buf)
-            produced += len(buf) / 2  #assumes: 16-bit encoded
-        self.samples_produced += produced
 
 
 class EditorError(Exception): pass
@@ -105,19 +67,6 @@ class Console(avrepr.Writer):
 
     position = property(lambda s: (
         s.row.width, s.row.y - s.vertical_scroll))
-
-    def put_note(self, note):
-        sc = note.compile()
-        if self.recorder:
-            self.recorder.got_sound(fuge.render(sc))
-        ug = fuge.render(sc)
-        a = []
-        while True:
-            b = ug()
-            if not b: break
-            a.append(b)
-        pygame.mixer.Channel(0).queue(
-                pygame.mixer.Sound(buffer("".join(a))))
 
     def invite(self, prompt):
         self.set_color(*avrepr.settings.prompt_pen)
@@ -234,11 +183,7 @@ class Console(avrepr.Writer):
                 self.execute(e)
 
 
-music.init()
 pygame.init()
 pygame.display.set_caption("Workspace")
 screen = pygame.display.set_mode((1024, 600))
-recorder = Recorder(screen)
-console = Console(screen, recorder)
-console.interact()
-recorder.roundoff()
+Console(screen, Recorder(screen)).interact()

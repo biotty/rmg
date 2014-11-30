@@ -113,6 +113,9 @@ fl.mp4: py/globe.py cfluid cmd.sh
 	mv *.jpeg /tmp/
 	./cmd.sh /tmp/ $@
 
+interactive:
+	PYTHONPATH=py py/workspace.py
+
 .PHONY:
 clean:
 	@rm -rf movie.d fract.d
