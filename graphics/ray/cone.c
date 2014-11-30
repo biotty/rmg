@@ -2,8 +2,7 @@
 //      All rights reserved
 
 #include "cone.h"
-#include "math.h"
-#include <math.h>
+#include "xmath.h"
 #include <assert.h>
 
 

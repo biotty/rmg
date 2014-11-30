@@ -2,7 +2,7 @@
 //      All rights reserved
 
 #include "sphere.h"
-#include "math.h"
+#include "xmath.h"
 #include <math.h>
 #include <assert.h>
 

@@ -6,7 +6,7 @@
 #include "observer.h"
 #include "trace.h"
 #include "image.h"
-#include "math.h"
+#include "xmath.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>

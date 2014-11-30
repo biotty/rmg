@@ -1,7 +1,7 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
-#ifndef MATH_H
-#define MATH_H
+#ifndef XMATH_H
+#define XMATH_H
 
 #include "real.h"
 #include <stdbool.h>

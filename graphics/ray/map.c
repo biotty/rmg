@@ -2,7 +2,7 @@
 //      All rights reserved
 
 #include "map.h"
-#include "math.h"
+#include "xmath.h"
 #include "photo.h"
 #include <stdlib.h>
 #include <string.h>

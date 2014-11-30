@@ -2,7 +2,7 @@
 //      All rights reserved
 
 #include "point.h"
-#include "math.h"
+#include "xmath.h"
 
 real
 distance(

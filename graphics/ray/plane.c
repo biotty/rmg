@@ -2,7 +2,7 @@
 //      All rights reserved
 
 #include "plane.h"
-#include "math.h"
+#include "xmath.h"
 
 pair
 plane_intersection(

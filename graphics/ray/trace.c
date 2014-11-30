@@ -2,7 +2,7 @@
 //      All rights reserved
 
 #include "trace.h"
-#include "math.h"
+#include "xmath.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

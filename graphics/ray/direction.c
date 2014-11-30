@@ -3,7 +3,7 @@
 
 #include "direction.h"
 #include "matrix.h"
-#include "math.h"
+#include "xmath.h"
 
 #ifndef point_from_origo
     point

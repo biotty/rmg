@@ -2,8 +2,7 @@
 //      All rights reserved
 
 #include "cylinder.h"
-#include "math.h"
-#include <math.h>
+#include "xmath.h"
 #include <stdio.h>
 #include <assert.h>
 
