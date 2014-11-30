@@ -92,8 +92,8 @@ $(SYNTH): $(SYNTH_OBJ)
 real_sound: compo.raw
 	aplay -c 1 -r 44100 -f s16_le < compo.raw
 
-compo.raw: py/fugecompo.py
-	PYTHONPATH=py:lib/python py/fugecompo.py > $@
+%.raw: py/%.py
+	PYTHONPATH=py:lib/python py/$*.py > $@
 
 .PHONY:
 clean:
