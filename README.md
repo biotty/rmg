@@ -2,14 +2,19 @@
 
 ## Pre-requisites
 
-Needs the following packages installed in order to build the dependent object.
+### To Compile
 
-* python-dev -- for **fuge**
-* python-pygame -- for **workspace**
-* libsdl2-dev -- **amuse**
-* libncurses-dev -- **amuse**
+* python-dev --- for **fuge**
+* python-pygame --- for **icons**
+* libsdl2-dev --- for **amuse**
+* libncurses-dev --- for **amuse**
 
-## Content
+### To Generate Media
+
+* lame
+* avconv
+
+## Tools Provided
 
 ### Sound
 
@@ -25,9 +30,9 @@ Needs the following packages installed in order to build the dependent object.
 
 * **cray** optics of overlapping and intersecting basic shapes
 * **cfluid** traces a heterogenous viscous fluid in a plane
-* **fz.py** mandelbrot and juliaset combined zoomer
+* **fz.py** border-hunting mandelbrot and juliaset combined zoomer
 * **ls.py** context-sensitive parametric bracketed L-system
 * **karaoke.py** assembles lyrics extracted from mrender onto video
-* **workspace.py** python console using avrepr for lists
+* **icons.py** a python console using avrepr for lists, can record
 * **avrepr.py** a **pygame** module allowing non-text ``__repr__``
 
