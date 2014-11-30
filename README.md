@@ -24,14 +24,14 @@
 * **compo.py** --- an example script generating music with fuge
 * **stand_noise.py** --- a stand-alone script generating noise
 * **mrender** --- a stereo renderer of MIDI, with its own synth
-* **digitarp** --- stand-alone wah and karpluss-strong guitar sounds
+* **digitarp** --- stand-alone wah and Karpluss-Strong guitar sounds
 
 ### Graphics
 
 * **cray** --- optics of overlapping and intersecting basic shapes
 * **cfluid** --- traces a heterogenous viscous fluid in a plane
-* **fz.py** --- border-hunting zoomer for mandelbrot and its juliaset
+* **fz.py** --- border-hunting zoomer for Mandelbrot and its Julia-set
 * **ls.py** --- context-sensitive parametric bracketed L-system
 * **avrepr** --- a **pygame** module allowing non-text ``__repr__``
 * **icons** --- a python console using avrepr for lists, can record
-* **karaoke.py** --- assembles lyrics extracted from mrender onto video
+* **karaoke.py** --- assembles lyrics extracted from **mrender** onto video
