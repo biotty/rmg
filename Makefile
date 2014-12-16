@@ -1,11 +1,10 @@
-PRODUCTS=sound graphics
-.PHONY: all sound graphics
-
-all: sound graphics
+SUBDIRS=sound graphics
+.PHONY: all $(SUBDIRS)
+all: $(SUBDIRS)
 
 .PHONY:
 clean sweep:
-	@$(foreach product,$(PRODUCTS),make -C $(product) $@;)
+	@$(foreach product,$(SUBDIRS),make -C $(product) $@;)
 
-$(PRODUCTS):
+$(SUBDIRS):
 	@$(MAKE) -C $@
