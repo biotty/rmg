@@ -13,8 +13,8 @@
 #error "Both CRAY_FLT and CRAY_LDBL defined"
 #endif
 
-#define CRAY_REAL float
-typedef CRAY_REAL real;
+#define RMG_REAL float
+typedef RMG_REAL real;
 #define REAL_FMT "%f"
 #define REAL_EPSILON FLT_EPSILON
 #define HUGE_REAL HUGE_VALF
@@ -33,8 +33,8 @@ static inline real sqroot(real r) { return sqrtf(r); }
 
 #ifdef CRAY_LDBL
 
-#define CRAY_REAL long double
-typedef CRAY_REAL real;
+#define RMG_REAL long double
+typedef RMG_REAL real;
 #define REAL_FMT "%Lf"
 #define REAL_EPSILON LDBL_EPSILON
 #define HUGE_REAL HUGE_VALL
@@ -51,10 +51,10 @@ static inline real sqroot(real r) { return sqrtl(r); }
 #endif
 
 
-#ifndef CRAY_REAL
+#ifndef RMG_REAL
 
-#define CRAY_REAL double
-typedef CRAY_REAL real;
+#define RMG_REAL double
+typedef RMG_REAL real;
 #define REAL_FMT "%lf"
 #define REAL_EPSILON DBL_EPSILON
 #define HUGE_REAL HUGE_VAL

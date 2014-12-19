@@ -1,5 +1,5 @@
-CFLAGS = -Wall -Wextra -Werror -std=c11 -Iray -I.
-CXXFLAGS = -Wall -Wextra -Werror -std=c++11 -I.
+CFLAGS = -Wall -Wextra -Werror -std=c11 -Iray -Iformat
+CXXFLAGS = -Wall -Wextra -Werror -std=c++11 -Iformat
 LDFLAGS = -lm
 
 .PHONY: sw media interactive
@@ -11,18 +11,21 @@ media: image1.jpeg video1.mp4 fluid.mp4 zoom.mp4
 interactive:
 	PYTHONPATH=py py/inter.py
 
-cray: ray/main.o ray/tracer.a
+cray: ray/main.o ray/tracer.a libformat.a
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-cwave: flow/main_wave.o color.o image.o photo.o
+cwave: flow/main_wave.o libformat.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-cfluid: flow/main_fluid.o color.o image.o photo.o
+cfluid: flow/main_fluid.o libformat.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 ray/tracer.a: ray/map.o ray/inter.o ray/sphere.o ray/plane.o ray/cylinder.o ray/cone.o \
-        ray/direction.o ray/point.o ray/ray.o ray/observer.o color.o image.o photo.o \
+        ray/direction.o ray/point.o ray/ray.o ray/observer.o \
         ray/matrix.o ray/bitarray.o ray/stack.o ray/scene.o ray/sky.o ray/trace.o
+	ar rc $@ $^
+
+libformat.a: format/color.o format/photo.o format/image.o
 	ar rc $@ $^
 
 %.world: py/%.py py/rmg/scene.py
@@ -55,4 +58,4 @@ clean:
 
 .PHONY:
 sweep: clean
-	@rm -f ray/tracer.a cray cwave cfluid core* *.png *.jpeg *.mp4 *.pnm
+	@rm -f ray/tracer.a cray cwave cfluid *.png *.jpeg *.mp4 *.pnm
