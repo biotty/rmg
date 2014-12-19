@@ -4,9 +4,11 @@ impd=${1:-/tmp}  # provision
 tmp3=$impd/a.mp3 # compiled audio
 omp4=${2:-o.mp4} # combined movie out
 
-type lame || exit
-type avconv || exit
 ls $impd/0.jpeg || exit
+type avconv || exit
+type lame
+TYPE_LAME=$?
+
 if [ -f "$impd/video" ]
 then p=$(cat $impd/video)
 else p=
@@ -17,9 +19,9 @@ a=" -i $tmp3 -c:a aac -strict experimental"
 w=/tmp/soundtrack.wav
 if [ -f $tmp3 ]
 then echo will use existing $tmp3
-elif [ -f $w ]
+elif [ -f $w -a $TYPE_LAME -eq 0 ]
 then lame -r -s 44.1 --signed --bitwidth 16 --big-endian $w $tmp3
-else g=;a=;echo no $w
+else g=;a=;echo silent
 fi
 c="avconv -y$g $p -f image2 -i $impd/%d.jpeg$a -b 128k -qscale 1 $omp4"
 echo $c
