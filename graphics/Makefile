@@ -46,8 +46,7 @@ zoom.mp4: fract.sh
 fluid.mp4: py/globe.py cfluid cmd.sh
 	py/globe.py 512x512
 	pnmtopng globe.pnm > img.png
-	./cfluid
-	mv *.jpeg /tmp/
+	./cfluid -p /tmp/ -i img.png
 	./cmd.sh /tmp/ $@
 
 .PHONY:

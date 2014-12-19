@@ -5,6 +5,7 @@
 #include "tracer.hpp"
 #include "palette.hpp"
 #include <ctime>
+#include <getopt.h>
 #include <iostream>
 
 
@@ -110,13 +111,115 @@ private:
 };
 
 
-int main()
+void help()
 {
-    std::srand(std::time(0));
+    std::cerr <<
+"-c R,G,B/d add color to set for exceptional density or\n"
+"   R,G,B/v viscosity.  R, G and B are 0 <= N < 256\n"
+"-C REAL    color-closeness at following -c options\n"
+"-d REAL    normal and exceptional density, respectively\n"
+"-D REAL\n"
+"-h         output this help to stdandard err\n"
+"-i PATH    filename of PNG image to start with\n"
+"-m N>0     output-image pixel-widths per fluid-cell\n"
+"-n N>0     count of output-images to produce\n"
+"-p PATH    prefix for path to JPEG output-files\n"
+"-q N>0     number of force-spots applied to fluid\n"
+"-s N>0     seed for random-number-generator\n"
+"-v REAL    normal and exceptional viscosity, respectively\n"
+"-V REAL\n"
+"-x W,H     dimentions of the fluid grid\n";
+}
 
-    size_t q = 3;
-    size_t h = 256;
-    size_t w = 256;
+
+int main(int argc, char **argv)
+{
+    time_t seed = 0;
+    unsigned q = 3, w = 256, h = 256, m = 3;
+    std::vector<ColorMatch> d_exc, v_exc;
+    double z = 0.1, d = 0.08, D = 0.2, v = 0.4, V = 1.0;
+    const char *image_prefix = "", *photo_filename = "img.png";
+    int n = 512;
+
+    int opt;
+    while ((opt = getopt(argc, argv, "c:C:d:D:hi:m:n:p:q:s:v:V:x:")) != EOF)
+    switch (opt) {
+        default:
+            return 1;
+        case 'c':
+            {
+                char e;
+                unsigned r, g, b;
+                if (std::sscanf(optarg, "%u,%u,%u/%c", &r, &g, &b, &e) != 4
+                        || (e != 'd' && e != 'v')
+                        || r > 255 || g > 255 || b > 255) {
+                    std::cerr << "illegal format of exception-color\n"
+                        "please give three X<256 folowed by '/d' or '/v'\n";
+                    return 1;
+                }
+                std::vector<ColorMatch> & exc = (e == 'd') ? d_exc : v_exc;
+                exc.push_back(ColorMatch(z,
+                            {r /(real) 255, g /(real) 255, b /(real) 255}));
+            }
+            break;
+        case 'C': std::sscanf(optarg, "%lf", &z); break;
+        case 'd': std::sscanf(optarg, "%lf", &d); break;
+        case 'D': std::sscanf(optarg, "%lf", &D); break;
+        case 'h':
+            help();
+            return 0;
+        case 'i':
+            photo_filename = optarg;
+            break;
+        case 'm':
+            if ((m = std::atoi(optarg)) <= 0) {
+                std::cerr << "illegal optarg of -m\n"
+                    "please give a positive number\n";
+                return 1;
+            }
+            break;
+        case 'n':
+            if ((n = atoi(optarg)) <= 0) {
+                std::cerr << "nothing to produce, as N is zero\n";
+                return 1;
+            }
+            break;
+        case 'p':
+            image_prefix = optarg; break;
+        case 'q':
+            if ((q = std::atoi(optarg)) <= 0) {
+                std::cerr << "q zero means to apply no forces to flow\n"
+                    "the images would all be alike\n";
+                return 1;
+            }
+            break;
+        case 's':
+            if ((seed = std::atoi(optarg)) <= 0) {
+                std::cerr << "will use time as random-seed\n";
+            }
+            break;
+        case 'v': std::sscanf(optarg, "%lf", &v); break;
+        case 'V': std::sscanf(optarg, "%lf", &V); break;
+        case 'x':
+            if (std::sscanf(optarg, "%u,%u", &w, &h) != 2) {
+                std::cerr << "illegal optarg of -x\n"
+                    "please use two numbers separated by a ','\n";
+                return 1;
+            }
+            break;
+    }
+
+    if (seed == 0)
+        std::time(&seed);
+    if (d_exc.empty()) {
+        d_exc.push_back(ColorMatch(0.3, {0, 0, 0}));
+        std::cerr << "using dark colors as exceptional density\n";
+    }
+    if (v_exc.empty()) {
+        v_exc.push_back(ColorMatch(0.2, {0, 1, 1}));
+        std::cerr << "using cyan colors as exceptional viscosity\n";
+    }
+    std::srand(seed);
     FeedbackParameters p(h, w);
     std::vector<FluidFunction *> functions;
     for (size_t k = 0; k < q; ++k) {
@@ -128,17 +231,12 @@ int main()
     CompositeFunction<FluidCell> f(functions);
     FluidAnimation a(h, w, p, f);
 
-    PhotoColorizer c("img.png", "");
-    Tracer<color_type> tracer(h * 3, w * 3);
+    PhotoColorizer c(photo_filename, image_prefix);
+    Tracer<color_type> tracer(h * m, w * m);
     ColorTracer color_tracer(&tracer, &c);
 
-    Color blue = {0, 0, 1};
-    Color white = {1, 1, 1};
-    p.configure(color_tracer,
-        0.08, 0.4,
-        { ColorMatch(0.1, blue) }, 1.0,
-        { ColorMatch(0.1, white) }, 0.2);
-    a.run(512, color_tracer);
+    p.configure(color_tracer, d, v, d_exc, D, v_exc, V);
+    a.run(n, color_tracer);
     for (size_t k = 0; k <=/*counting edge-function*/ q; ++k) delete functions[k];
 }
 
