@@ -11,8 +11,9 @@
 
 ### To Generate Media
 
-* lame
-* avconv
+* pngquant --- for **cfluid** which operates on a limited palette
+* lame --- for adding sound to videos like done with **karaoke.py**
+* avconv --- for generating video by means of images from f.ex **fz.py**
 
 ## Provided Tools
 
