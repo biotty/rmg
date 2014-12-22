@@ -97,6 +97,8 @@ real_sound: compo.raw
 %.raw: py/%.py
 	PYTHONPATH=py:lib/python py/$*.py > $@
 
+compo.raw: $(FUGE)
+
 .PHONY:
 clean:
 	@rm -rf build
