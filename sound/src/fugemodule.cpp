@@ -7,6 +7,9 @@
 #include "musicm.hpp"
 #include <stdexcept>
 #include <iostream>
+#include <vector>
+#include <map>
+#include <string>
 #include <cstdint>
 #include <cassert>
 #include <cmath>
@@ -178,35 +181,51 @@ struct fqm : instrument
     }
 };
 
-std::vector<std::unique_ptr<instrument>> orchestra;
+std::map<std::string, std::unique_ptr<instrument>> orchestra;
+
+std::string
+parse_string(PyObject * s)
+{
+    if (char * p = PyString_AsString(s))
+        return p;
+    else
+        return "";
+}
 
 void
 init_orchestra()
 {
-    instrument * a[] = {
-        new tense_string(),
-        new mouth(),
-        new fqm(),
+    struct mapping {
+        instrument * p;
+        const char * label;
+    } a[] = {
+        { new tense_string(), "tense_string" },
+        { new mouth(), "mouth" },
+        { new fqm(), "fqm" },
     };
-    for (instrument * i : a)
+    for (mapping & m : a)
     {
-        std::unique_ptr<instrument> p(i);
-        orchestra.push_back(std::move(p));
+        std::unique_ptr<instrument> u(m.p);
+        orchestra[m.label] = std::move(u);
     }
 }
 
-struct effect
+namespace fuge { // because ::filter exists
+
+struct filter
 {
     bu_ptr  operator()(double span, bu_ptr input, PyObject * list)
     {
-        return filter(span, input, parse_params(list));
+        return apply(span, input, parse_params(list));
     }
-    virtual bu_ptr filter(double span, bu_ptr input, params const &) = 0;
+    virtual bu_ptr apply(double span, bu_ptr input, params const &) = 0;
 };
 
-struct echo : effect
+}
+
+struct echo : fuge::filter
 {
-    bu_ptr filter(double span, bu_ptr input, params const & p)
+    bu_ptr apply(double span, bu_ptr input, params const & p)
     {
         if (p.size() != 2) throw std::runtime_error(
                 "echo requires 2 params");
@@ -218,9 +237,9 @@ struct echo : effect
     }
 };
 
-struct comb : effect
+struct comb : fuge::filter
 {
-    bu_ptr filter(double span, bu_ptr input, params const & p)
+    bu_ptr apply(double span, bu_ptr input, params const & p)
     {
         if (p.size() != 2) throw std::runtime_error(
                 "comb requires 2 params");
@@ -232,19 +251,22 @@ struct comb : effect
     }
 };
 
-std::vector<std::unique_ptr<effect>> effects;
+std::map<std::string, std::unique_ptr<fuge::filter>> effects;
 
 void
 init_effects()
 {
-    effect * a[] = {
-        new comb(),
-        new echo(),
+    struct mapping {
+        fuge::filter * p;
+        const char * label;
+    } a[] = {
+        { new comb(), "comb" },
+        { new echo(), "echo" },
     };
-    for (effect * i : a)
+    for (mapping & m : a)
     {
-        std::unique_ptr<effect> p(i);
-        effects.push_back(std::move(p));
+        std::unique_ptr<fuge::filter> u(m.p);
+        effects[m.label] = std::move(u);
     }
 }
 
@@ -255,8 +277,8 @@ parse_note(PyObject * seq)
     const int n = PyTuple_Size(seq);
     if (n != 3) throw std::runtime_error("note Tuple isn't size 3");
     const double span = parse_float(PyTuple_GetItem(seq, 0));
-    const unsigned i = parse_int(PyTuple_GetItem(seq, 1));
-    return (*orchestra.at(i))(span, PyTuple_GetItem(seq, 2));
+    std::string label = parse_string(PyTuple_GetItem(seq, 1));
+    return (*orchestra.at(label))(span, PyTuple_GetItem(seq, 2));
 }
 
 bu_ptr
@@ -292,8 +314,8 @@ parse_filter(bu_ptr input, PyObject * seq)
     const int n = PyList_Size(seq);
     if (n != 3) throw std::runtime_error("effect List isn't size 3");
     const double span = parse_float(PyList_GetItem(seq, 0));
-    const unsigned i = parse_int(PyList_GetItem(seq, 1));
-    return (*effects.at(i))(span, input, PyList_GetItem(seq, 2));
+    std::string label = parse_string(PyList_GetItem(seq, 1));
+    return (*effects.at(label))(span, input, PyList_GetItem(seq, 2));
 }
 
 bu_ptr

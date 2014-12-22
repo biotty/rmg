@@ -3,7 +3,7 @@
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
-from orchestra import Pause, Harmonics, Mouth, TenseString, Fm
+from orchestra import Pause, Harmonics, Mouth, TenseString, Fqm
 from effects import Comb, Echo
 from music import NoteComposition
 import fuge
@@ -34,7 +34,7 @@ nc = NoteComposition()
 zz = Pause()
 ts = TenseString(.85)
 mt = Mouth(.65)
-fm = Fm(.5)
+fm = Fqm(.5)
 b0 = []
 c0 = []
 nc.filt = Echo(rndlist(.01, .1, 9), rndlist(.1, .4, 9))

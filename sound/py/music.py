@@ -28,12 +28,12 @@ class Pause(Note):
 
 class Stroke:
     
-    def __init__(self, i, v):
-        self.instrument = i
+    def __init__(self, label, v):
+        self.label = label
         self.params = v
 
     def __call__(self, span):
-        return (span, self.instrument, self.params)
+        return (span, self.label, self.params)
 
 
 class StrokeNote(Pause):
@@ -48,12 +48,12 @@ class StrokeNote(Pause):
 
 class Filter:
 
-    def __init__(self, i, v):
-        self.filtering = i
+    def __init__(self, label, v):
+        self.label = label
         self.params = v
 
     def __call__(self, span):
-        return [span, self.filtering, self.params]
+        return [span, self.label, self.params]
 
 
 class NoteComposition(Note):

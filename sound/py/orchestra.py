@@ -34,7 +34,7 @@ class TenseString:
 
     def play(self, duration, pitch):
         return music.StrokeNote(duration * tempo,
-            music.Stroke(0, [1.5, self.vel, 3,
+            music.Stroke("tense_string", [1.5, self.vel, 3,
                 just_glide(pitch), .5, 0]))
 
 
@@ -45,20 +45,20 @@ class Mouth:
 
     def play(self, duration, pitch, a, b):
         return music.StrokeNote(duration * tempo,
-            music.Stroke(1, [1, self.vel, 10,
+            music.Stroke("mouth", [1, self.vel, 10,
                 just_glide(pitch),
                 a.till9th, a.oddness,
                 b.till9th, b.oddness]))
 
 
-class Fm:
+class Fqm:
 
     def __init__(self, vel):
         self.vel = vel
 
     def play(self, duration, modulator, index, carrier):
         return music.StrokeNote(duration * tempo,
-            music.Stroke(2, [1, self.vel, 1,
+            music.Stroke("fqm", [1, self.vel, 1,
                 just_glide(modulator),
                 index,
                 just_glide(carrier)]))
