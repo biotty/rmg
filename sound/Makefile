@@ -47,7 +47,9 @@ SYNTH=$(LIBDIR)/synth.a
 FUGE=$(LIBDIR)/python/fuge.so
 
 .PHONY:
-all: dirs $(AMUSE) $(DIGITARP) $(MRENDER) $(FUGE)
+all: $(AMUSE) $(DIGITARP) $(MRENDER) $(FUGE)
+
+$(ALL_OBJECTS): dirs
 
 $(FUGE): setup.py $(SYNTH)
 	./setup.py install --home .
