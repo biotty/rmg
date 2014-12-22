@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #       © Christian Sommerfeldt Øien
@@ -20,7 +21,9 @@ def output(v):
     if v > 1: v = 1
     elif v < -1: v = -1
     i = int(round(v * 32767))
-    sys.stdout.write(chr((i >> 8) & 255) + chr(i & 255))
+    hi = chr((i >> 8) & 255)
+    lo = chr(i & 255)
+    sys.stdout.write(lo + hi)
 
 class NoiseWave:
     def __init__(self, a, b):
