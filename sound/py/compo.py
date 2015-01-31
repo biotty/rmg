@@ -37,7 +37,7 @@ mt = Mouth(.65)
 fm = Fqm(.5)
 b0 = []
 c0 = []
-nc.filt = Echo(rndlist(.01, .1, 9), rndlist(.1, .4, 9))
+nc.add_filter(Echo(rndlist(.01, .1, 9), rndlist(.1, .4, 9)), 1)
 
 for i in range(32):
     if (i&1):
@@ -59,7 +59,7 @@ for i in range(32):
                         rndharmonics(), rndharmonics())
             c = NoteComposition()
             c.add_row([b])
-            c.filt = Comb(rndlist(0, .1, 5), rndlist(0, .1, 5))
+            c.add_filter(Comb(rndlist(0, .1, 5), rndlist(0, .1, 5)), .1)
             b0.append(c)
     for t in [2, 2, 4]:
         fm_m = rndlist(48, 72, 3)
@@ -68,7 +68,7 @@ for i in range(32):
         b = fm.play(t, fm_m, fm_i, fm_c)
         c = NoteComposition()
         c.add_row([b])
-        c.filt = Comb(rndlist(0, .1, 5), rndlist(0, .1, 5))
+        c.add_filter(Comb(rndlist(0, .1, 5), rndlist(0, .1, 5)), .1)
         c0.append(c)
 nc.add_row(b0)
 nc.add_row(c0)

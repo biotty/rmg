@@ -311,25 +311,28 @@ parse_entry(PyObject * seq)
 bu_ptr
 parse_filter(bu_ptr input, PyObject * seq)
 {
-    const int n = PyList_Size(seq);
-    if (n != 3) throw std::runtime_error("effect List isn't size 3");
-    const double span = parse_float(PyList_GetItem(seq, 0));
-    std::string label = parse_string(PyList_GetItem(seq, 1));
-    return (*effects.at(label))(span, input, PyList_GetItem(seq, 2));
+    const int n = PyTuple_Size(seq);
+    if (n != 3) throw std::runtime_error("effect isn't tripple");
+    const double span = parse_float(PyTuple_GetItem(seq, 0));
+    std::string label = parse_string(PyTuple_GetItem(seq, 1));
+    return (*effects.at(label))(span, input, PyTuple_GetItem(seq, 2));
 }
 
 bu_ptr
 parse_score(PyObject * seq)
 {
-    int i = 0;
-    int n = PyList_Size(seq);
+    const int n = PyList_Size(seq);
+    if (n == 0) throw std::runtime_error("empty score-list");
+    PyObject * fl = PyList_GetItem(seq, 0);
+    if ( ! PyList_Check(fl))
+        throw std::runtime_error("first score-entry must be filter-list");
     sc_ptr sc = P<score>();
     bu_ptr rt = sc;
-    if (PyList_Check(PyList_GetItem(seq, 0))) {
-        rt = parse_filter(sc, PyList_GetItem(seq, 0));
-        ++i;
+    const int k = PyList_Size(fl);
+    for (int j=0; j<k; j++) {
+        rt = parse_filter(rt, PyList_GetItem(fl, j));
     }
-    for (; i<n; i++) {
+    for (int i=1; i<n; i++) {
         score_entry se = parse_entry(PyList_GetItem(seq, i));
         sc->add(se.t, se.b);
     }

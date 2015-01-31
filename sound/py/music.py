@@ -53,7 +53,7 @@ class Filter:
         self.params = v
 
     def __call__(self, span):
-        return [span, self.label, self.params]
+        return (span, self.label, self.params)
 
 
 class NoteComposition(Note):
@@ -61,7 +61,7 @@ class NoteComposition(Note):
     def __init__(self):
         self.span = 0
         self.rows = []
-        self.filt = None
+        self.filt = []
 
     def add_row(self, notes):
         t = 0
@@ -75,13 +75,19 @@ class NoteComposition(Note):
             self.span = t
         self.rows.append(r)
 
+    def add_filter(self, f, linger):
+        self.filt.append((f, linger))
+
     def compile(self):
-        a = []
-        if self.filt:
-            a.append(self.filt(self.span))
+        l = []
+        x = self.span
+        for (f, s) in self.filt:
+            x += s
+            l.append(f(x))
+        r = [l]
         for row in self.rows:
-            a.extend([(note.time, note.compile()) for note in row])
-        return a
+            r.extend([(note.time, note.compile()) for note in row])
+        return r
 
 
 def init():
