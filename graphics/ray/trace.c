@@ -274,8 +274,10 @@ trace__(const detector * detector_, world__ * w)
                     w, detector_->inside);
             detected = optical_sum(detected, absorbed);
         }
-        const color refraction_color = refraction_trace(surface, closest_object, detector_, w);
-        detected = optical_sum(detected, refraction_color);
+        if (closest_object->refraction_index > 0) {
+            const color refraction_color = refraction_trace(surface, closest_object, detector_, w);
+            detected = optical_sum(detected, refraction_color);
+        }
         if (detector_inside_i >= 0) {
             traversion_filter(&detected,
                     &w->scene->objects[detector_inside_i],
