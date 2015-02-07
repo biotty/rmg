@@ -141,7 +141,7 @@ ls.axiom.visit_by(operating_visitor(t))
 if not options.ray_trace_mode:
     status("\nRendering Drawing to Board")
     width, height = [int(s) for s in options.resolution.split("x")]
-    board = Board.mono(width, height, black)
+    board = Board.mono(width, height, white)
     drawing.rescale()
     drawing.render(Pencil(board))
     status("Writing Baord")
