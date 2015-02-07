@@ -18,7 +18,7 @@ def rnd(a, b = None):
     if b is None: a, b = 0, a
     return spn((a, b), random_())
 
-def rnd_select(entities, weights = None):
+def rnd_weighted(entities, weights = None):
     if weights is None:
         s = len(entities)
         weights = [1] * s

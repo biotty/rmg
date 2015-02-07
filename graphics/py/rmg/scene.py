@@ -38,7 +38,7 @@ class Observer:
                 r = kwargs["view_opening"]
             elif kwargs.has_key("opening"):
                 r *= kwargs["opening"]
-            s = XYCircle(XY(0, 0), r).xy(column_dir)
+            s = XYCircle(XY(0, 0), r)(column_dir)
             column_dir = Direction(s.x, s.y, 0).rotation(theta, phi)
         else:
             assert len(kwargs) == 0

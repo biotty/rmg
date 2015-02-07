@@ -105,7 +105,7 @@ class XYEllipse:
         self.r = r
         self.u = u
     
-    def xy(self, t):
+    def __call__(self, t):
         a = unit_angle(t - self.u)
         x = self.w * cos(a)
         y = self.h * sin(a)

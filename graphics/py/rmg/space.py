@@ -4,7 +4,8 @@
 #       All rights reserved
 
 from math import pi, acos, asin
-from math_ import matrix_multiply, Rx, Ry, Rz, rnd
+from rmg.plane import XY, XYEllipse
+from math_ import matrix_multiply, Rx, Ry, Rz, rnd, unit_angle
 
 
 def sphere_uniform(u, v):
@@ -126,3 +127,26 @@ def mean(points):
         x += p
     return x * (1.0/len(points))
 
+
+class Orbit:
+
+    def __init__(self, xyellipse, z, phi, theta):
+        self.xyellipse = xyellipse
+        self.z = z
+        self.phi = phi
+        self.theta = theta
+
+    def __call__(self, t):
+        xy = self.xyellipse(t)
+        d = Direction(xy.x, xy.y, self.z)
+        return Point(*d.rotation(self.phi, self.theta).xyz())
+
+
+def random_orbit():
+
+    e = XYEllipse(XY(rnd(-0.2, 0.2), rnd(-0.2, 0.2)),
+            rnd(0.5, 1.5), rnd(0.5, 1.5), rnd(0, 1), rnd(0, 1))
+    z = rnd(-0.2, 0.2)
+    phi = unit_angle(rnd(0, 1))
+    theta = unit_angle(rnd(0, 1))
+    return Orbit(e, z, phi, theta)

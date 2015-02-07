@@ -4,103 +4,82 @@
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
 
+from rmg.math_ import rnd, unit_angle, rnd_weighted
 from rmg.color import Color, white, black, Optics
-from rmg.map import OpticsFactor, Map, OrientMap, PlanarMap, AxisMap
+from rmg.space import Point, Direction, origo
 from rmg.plane import XY, XYCircle
-from rmg.space import Point, Direction, mean, origo
-from rmg.bodies import Manipulation, Inter, Plane, Sphere, Sphere_, Cylinder, Cylinder_, Cone, Cone_
-from rmg.solids import intersection, tetrahedron, cube, octahedron, dodecahedron, icosahedron
+from rmg.bodies import (Plane, Sphere,
+        Sphere_, Cylinder, Cylinder_, Cone, Cone_,
+        Inter, Manipulation)
+from rmg.solids import (intersection,
+        tetrahedron, cube, octahedron, dodecahedron, icosahedron)
 from rmg.scene import SceneObject, World, LightSpot, Observer
-from rmg.math_ import rnd, unit_angle
 from sys import argv
-from copy import copy
+
 
 def optics_a():
-    color = Color.random().mix(white, 0.7)
-    refraction = color * 0.9
-    reflection = color * 0.3
-    absorption = color * 0.05
-    index = 2.419
-    traversion = color * 0.6
-    return Optics(reflection, absorption, index, refraction, traversion)
+    color = Color.random()
+    reflection = color * .2
+    absorption = color * .06
+    diamond_index = 2.6
+    refraction = color * .9
+    traversion = color * .8
+    return Optics(reflection, absorption,
+            diamond_index, refraction, traversion)
 
 def optics_b():
-    #absorption = Color(0.1, 0.1, 0.11)
-    #reflection = black
-    #index = 1.2
-    #refraction = Color(0.8, 0.8, 0.98)
-    #traversion = white
-    #return Optics(reflection, absorption, index, refraction, traversion)
-    return AxisMap(Direction.random(), origo, "sky.pnm", XY(0, 0),
-            OpticsFactor(white * 0.2, white * 0.8, black, black),
-            Optics(black, black, -1, black, black))
+    water = Color(.9, .92, 1)
+    color = Color.random() * water
+    reflection = color.mix(water) * .5
+    absorption = black
+    refraction = white * .65
+    traversion = water * .65
+    return Optics(reflection, absorption, 1.3, refraction, traversion)
 
-def optics_c():
-    reflection = Color(0.56, 0.62, 0.65)
-    absorption = Color(0.1, 0.2, 0.1)
-    index = -1
-    refraction = black
-    traversion = black
-    return Optics(reflection, absorption, index, refraction, traversion)
+def rnd_optics(p):
+    return rnd_weighted([optics_a, optics_b], [2, 1])()
 
-def optics_d():
-    reflection = white * 0.3
-    absorption = white * 0.7
-    index = -1
-    refraction = black
-    traversion = black
-    return Optics(reflection, absorption, index, refraction, traversion)
-
-def optics_e():
-    color = Color.from_hsv(unit_angle(rnd(1)))
-    refraction = color.mix(white)
-    reflection = color.mix(white) * 0.1
-    absorption = white * 0.1
-    index = 1.2
-    traversion = color * 0.6
-    return Optics(reflection, absorption, index, refraction, traversion)
-
-def group_a(p, r):
+def scene_disc(p, r):
     a = Direction.random()
     _, theta, phi = a.spherical()
-    c = XYCircle(XY(0, 0), r * rnd(0, 0.8))
+    c = XYCircle(XY(0, 0), r * rnd(0, .8))
     t = rnd(0, 1)
-    s = c.xy(t)
+    s = c(t)
     qo = Point(s.x, s.y, 0).rotation(theta, phi)
-    po = Point(0, 0, r * 0.024).rotation(theta, phi)
+    po = Point(0, 0, r * .024).rotation(theta, phi)
     dp = Direction(0, 0, 1).rotation(theta, phi)
     i = Inter([
         Cylinder(p, dp * r),
-        Cylinder_(p, dp * r * 0.5),
+        Cylinder_(p, dp * r * .5),
         Plane(p + po, dp),
         Plane(p - po, dp * (-1))
     ])
-    b = Sphere(p + qo, r * 0.2)
+    b = Sphere(p + qo, r * .6)
     o1 = optics_a()
-    o2 = optics_c()
+    o2 = optics_b()
     return [
             SceneObject(o1, b),
             SceneObject(o2, i)
     ]
 
-def group_b(p, r):
+def scene_fruit(p, r):
     a = Direction.random()
     _, theta, phi = a.spherical()
-    c = XYCircle(XY(0, 0), r * 0.6)
+    c = XYCircle(XY(0, 0), r * .6)
     t = rnd(0, 1)
-    s1 = c.xy(t)
-    s2 = c.xy(t + 0.24)
-    s3 = c.xy(t + 0.65)
+    s1 = c(t)
+    s2 = c(t + .24)
+    s3 = c(t + .65)
     q1 = Point(s1.x, s1.y, 0).rotation(theta, phi)
     q2 = Point(s2.x, s2.y, 0).rotation(theta, phi)
     q3 = Point(s3.x, s3.y, 0).rotation(theta, phi)
     i = Inter([
         Sphere(p, r),
         Plane(p, a),
-        Sphere_(p + q1, r * 0.36),
-        Sphere_(p + q2, r * 0.18)
+        Sphere_(p + q1, r * .36),
+        Sphere_(p + q2, r * .18)
     ])
-    b = Sphere(p + q3, r * 0.32)
+    b = Sphere(p + q3, r * .32)
     o1 = optics_a()
     o2 = optics_b()
     return [
@@ -108,50 +87,27 @@ def group_b(p, r):
             SceneObject(o1, i)
     ]
 
-def group_c(p, r):
+def scene_wheel(p, r):
     apex = p
     axis = Direction.random() * rnd(1.4, 2.1)
     cone = Cone(apex, axis)
-    thickness = r * 0.17
-    sphere = Sphere(apex, r * rnd(0.21, 0.42))
+    thickness = r * .19
+    sphere = Sphere(apex, r)
     sphere_ = Sphere_(apex, sphere.radius - thickness)
-    o = optics_d()
+    o = optics_a()
     i = Inter([cone, sphere, sphere_])
-    return [
-            SceneObject(o, i)
-    ]
+    return [SceneObject(o, i)]
 
-def group_d(p, r):
+def scene_ring(p, r):
     apex = p
-    axis = Direction.random() * rnd(0.1, 0.6)
+    axis = Direction.random() * rnd(.1, .65)
     cone = Cone_(apex, axis)
-    thickness = r * 0.07
-    sphere = Sphere(apex, r * rnd(0.21, 0.42))
+    thickness = r * .065
+    sphere = Sphere(apex, r)
     sphere_ = Sphere_(apex, sphere.radius - thickness)
-    o = optics_d()
+    o = optics_b()
     i = Inter([cone, sphere, sphere_])
-    return [
-            SceneObject(o, i)
-    ]
-
-def group_e(p, r):
-    b = Sphere(p, r)
-    o = optics_e()
-    return [
-            SceneObject(o, b)
-    ]
-
-def rnd_select(entities, weights):
-    s = sum(weights)
-    r = rnd(0, s)
-    i = 0
-    n = len(entities)
-    t = 0
-    while i < n:
-        t += weights[i]
-        if t >= r: break
-        i += 1
-    return entities[i]
+    return [SceneObject(o, i)]
 
 def rnd_tilted(cls, p, r):
     _, theta, phi = Direction.random().spherical()
@@ -159,59 +115,35 @@ def rnd_tilted(cls, p, r):
     i.manipulate(Manipulation(r, theta, phi, p))
     return i
 
-def rnd_optics(p):
-    return OrientMap(Direction.random(), p, "sky.pnm", XY(0, 0),
-            OpticsFactor(white * 0.6, black, black, black),
-            Optics(white * 0.4, black, -1, white, white))
-    #return optics_b()
-
-def rnd_tetrahedron(p, r):
-    return [SceneObject(rnd_optics(p), rnd_tilted(tetrahedron, p, r))]
-
-def rnd_cube(p, r):
-    return [SceneObject(rnd_optics(p), rnd_tilted(cube, p, r))]
-
-def rnd_octahedron(p, r):
-    return [SceneObject(rnd_optics(p), rnd_tilted(octahedron, p, r))]
-
-def rnd_dodecahedron(p, r):
-    return [SceneObject(rnd_optics(p), rnd_tilted(dodecahedron, p, r))]
-
-def rnd_icosahedron(p, r):
-    return [SceneObject(rnd_optics(p), rnd_tilted(icosahedron, p, r))]
-
 def rnd_intersection_of_two(p, r):
-    one = rnd_select([tetrahedron, cube, octahedron, dodecahedron, icosahedron],
-                     [1, 1, 1, 1, 1])
-    two = rnd_select([tetrahedron, cube, octahedron, dodecahedron, icosahedron],
-                     [1, 1, 1, 1, 1])
-    return [SceneObject(rnd_optics(p), intersection([
-        rnd_tilted(one, p, r), rnd_tilted(two, p, r)]))]
+    fig = lambda: rnd_weighted([tetrahedron, cube,
+            octahedron, dodecahedron, icosahedron])
+    return [SceneObject(rnd_optics(p),
+            intersection([
+                rnd_tilted(fig(), p, r),
+                rnd_tilted(fig(), p, r)]))]
 
-def random_group():
-    p = Point(*(Direction.random(rnd(0.22, 1.65)).xyz()))
-    f = rnd_select([rnd_tetrahedron, rnd_cube, rnd_octahedron, rnd_dodecahedron, rnd_icosahedron],
-                   [1,           4,    2,          7,            5])
-    return f(p, 0.1)
-    return rnd_intersection_of_two(p, 0.1)
+def rnd_scene_object():
+    p = Point(*(Direction.random(rnd(.3, 1.8)).xyz()))
+    dice = rnd(1)
+    if dice < .65:
+        return rnd_intersection_of_two(p, .1)
+    else:
+        return rnd_weighted(
+                [scene_disc, scene_fruit, scene_wheel, scene_ring],
+                [1, 3, 1, 2])(p, 1)
+
 
 scene_objects = []
 for c in range(int(argv[1])):
-    scene_objects.extend(random_group())
+    scene_objects.extend(rnd_scene_object())
 
-e = Point(-1.2, 0.1, 0.3) #Direction.random(2)
-z = Point(0, 0, 0)
-
-world = World(scene_objects,
+print World(scene_objects,
     [
-    #    LightSpot(Point(-9, 10, -9), white * 0.5),
-    #    LightSpot(Point(-9, 20, -3), white * 0.5),
+        LightSpot(Point(7, 0, 0), Color(1, .65, .65)),
+        LightSpot(Point(0, 7, 0), Color(.65, .65, 1)),
+        LightSpot(Point(-3, -3, 9), Color(1, 1, .65)),
     ],
-    #Observer(e, z, rnd(1)),
-    Observer(e, z),
-    #"photo"
-    #"funky"
-    "photo"
+    Observer(Direction.random(2), origo),
+    "funky"
 )
-print world
-
