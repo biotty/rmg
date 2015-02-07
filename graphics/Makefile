@@ -25,6 +25,8 @@ ray/tracer.a: ray/map.o ray/inter.o ray/sphere.o ray/plane.o ray/cylinder.o ray/
         ray/matrix.o ray/bitarray.o ray/stack.o ray/scene.o ray/sky.o ray/trace.o
 	ar rc $@ $^
 
+ray/trace.o: ray/trace.h
+
 libformat.a: format/color.o format/photo.o format/image.o
 	ar rc $@ $^
 
