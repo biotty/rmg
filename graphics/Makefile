@@ -37,7 +37,7 @@ libformat.a: format/color.o format/photo.o format/image.o
 	./cray 1920x1080 $@ < $*.world
 
 sky.pnm: py/lsr.py
-	echo "f x()x()x+y f()y()f x-y" | py/lsr.py -b128 -c12 512x512 >$@
+	echo "f x()x()x+y f()y()f x-y" | py/lsr.py -b128 -c12 512x512 > $@
 
 %.mp4: cray movie.sh py/%.py sky.pnm
 	./movie.sh $@ 'py/$*.py 512 "cray 1280x720"'
@@ -45,11 +45,13 @@ sky.pnm: py/lsr.py
 zoom.mp4: fract.sh
 	py/fz.py | ./fract.sh $@
 
-fluid.mp4: py/globe.py cfluid cmd.sh
-	py/globe.py 512x512
-	pnmtopng globe.pnm > img.png
+fluid.mp4: img.png cfluid cmd.sh
 	./cfluid -p /tmp/ -i img.png
 	./cmd.sh /tmp/ $@
+
+img.png: py/globe.py
+	py/globe.py 512x512
+	pnmtopng globe.pnm > $@
 
 .PHONY:
 clean:
