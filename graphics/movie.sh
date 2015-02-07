@@ -11,7 +11,7 @@ rm -f movie.d
 ln -s $p movie.d
 cd movie.d
 PATH=$h:$PATH
-ln -sf $h/sky.pnm $p
+ls $h/*.pnm |xargs -n1 -i ln -sf {} $p
 eval $h/$c
 cd $h
 ./cmd.sh $p $o && test ! -f $p/k && rm -rf $p
