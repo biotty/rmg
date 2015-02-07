@@ -135,7 +135,7 @@ void help()
 int main(int argc, char **argv)
 {
     time_t seed = 0;
-    unsigned q = 3, w = 256, h = 256, m = 3;
+    unsigned q = 9, w = 256, h = 256, m = 3;
     std::vector<ColorMatch> d_exc, v_exc;
     double z = 0.1, d = 0.08, D = 0.2, v = 0.4, V = 1.0;
     const char *image_prefix = "", *photo_filename = "img.png";
