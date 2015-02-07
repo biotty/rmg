@@ -6,7 +6,7 @@ LDFLAGS = -lm
 
 sw: cray cwave cfluid
 
-media: image1.jpeg video1.mp4 fluid.mp4 zoom.mp4
+media: image1.jpeg video1.mp4 video2.mp4 fluid.mp4 zoom.mp4
 
 interactive:
 	PYTHONPATH=py py/inter.py
