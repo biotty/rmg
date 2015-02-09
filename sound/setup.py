@@ -6,7 +6,7 @@
 from distutils.core import setup, Extension
 
 fuge = Extension('fuge',
-        extra_compile_args = ['--std=c++11', '-Iinclude'],
+        extra_compile_args = ['-std=c++11', '-Iinclude'],
         extra_objects = ['lib/synth.a'],
         sources = ['src/fugemodule.cpp'])
 
