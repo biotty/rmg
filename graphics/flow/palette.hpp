@@ -15,13 +15,6 @@
 typedef unsigned char color_type;
 
 
-static inline bool similar(double e, const Color & a, const Color & b)
-{
-    Color d = { fabs(a.r - b.r), fabs(a.g - b.g), fabs(a.b - b.b) };
-    return e * e > d.r * d.r + d.g * d.g + d.b * d.b;
-}
-
-
 struct Colorizer
 {
     std::string filename_prefix;

@@ -35,7 +35,7 @@ struct ColorMatch
     ColorMatch(double e, Color c) : e(e), c(c) {}
 
     bool operator()(Color m) {
-        return similar(e, c, m);
+        return similar(e, &c, &m);
     }
 };
 

@@ -6,7 +6,7 @@ LDFLAGS = -lm
 
 sw: cray cwave cfluid
 
-media: image1.jpeg video1.mp4 video2.mp4 fluid.mp4 zoom.mp4
+media: image1.jpeg video1.mp4 video2.mp4 fluid.mp4 fractzoom.mp4
 
 interactive:
 	PYTHONPATH=py py/inter.py
@@ -30,6 +30,9 @@ ray/trace.o: ray/trace.h
 libformat.a: format/color.o format/photo.o format/image.o
 	ar rc $@ $^
 
+blumix: format/blumix.o libformat.a
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 %.world: py/%.py py/rmg/scene.py
 	py/$*.py 16 > $@
 
@@ -40,9 +43,9 @@ sky.pnm: py/lsr.py
 	echo "f x()x()x+y f()y()f x-y" | py/lsr.py -b128 -c12 512x512 > $@
 
 %.mp4: cray movie.sh py/%.py sky.pnm
-	./movie.sh $@ 'py/$*.py 512 "cray 1280x720"'
+	./movie.sh $@ 'py/$*.py 736 "cray 1280x720"'
 
-zoom.mp4: fract.sh
+fractzoom.mp4: fract.sh
 	py/fz.py | ./fract.sh $@
 
 fluid.mp4: img.png cfluid cmd.sh

@@ -18,7 +18,8 @@ from globe import GlobeMapRenderer
 import os
 
 
-names = ["%s.pnm" % (name,) for name in "c"]
+names = ["%s.pnm" % (name,) for name in "abcde"]
+count = 5
 
 
 def roundrobin(a, i):
@@ -29,16 +30,19 @@ def roundrobin(a, i):
 class RandomOptics:
 
     def __init__(self, i):
-        water = Color(.9, .92, 1)
-        self.spin = rnd(1)
+        water = Color(.9, .92, .98)
         self.pole = Direction.random()
+        self.spin = 3 * (i % 9 + 1)
+        self.spin_offset = rnd(1)
         self.text = roundrobin(names, i)
-        self.factor = OpticsFactor(white * .6, white * .2, water, black)
-        self.adjust = Optics(white * .2, white * .1, 1.3, black, water)
+        self.factor = OpticsFactor(white * .5, white * .1,
+                water * .7, black)
+        self.adjust = Optics(black, white * .2, 1.3,
+                black, water * water)
 
     def __call__(self, t):
         return Map(self.pole, self.text,
-                XY((self.spin + t) % 1, 0),
+                XY((self.spin*t + self.spin_offset)%1, 0),
                 self.factor, self.adjust)
 
 
@@ -53,7 +57,7 @@ class RandomSceneObject:
                 Sphere(self.orbit(t), .65))
 
 
-param_scene_objects = [RandomSceneObject(i) for i in range(3)]
+param_scene_objects = [RandomSceneObject(i) for i in range(count)]
 
 
 @UnitT(1)
