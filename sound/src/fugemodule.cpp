@@ -119,6 +119,7 @@ struct instrument
         return play(span, parse_params(list));
     }
     virtual bu_ptr play(double span, params const &) = 0;
+    virtual ~instrument() {}
 };
 
 en_ptr
@@ -219,6 +220,7 @@ struct filter
         return apply(span, input, parse_params(list));
     }
     virtual bu_ptr apply(double span, bu_ptr input, params const &) = 0;
+    virtual ~filter() {}
 };
 
 }
