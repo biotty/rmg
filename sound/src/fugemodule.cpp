@@ -196,19 +196,9 @@ parse_string(PyObject * s)
 void
 init_orchestra()
 {
-    struct mapping {
-        instrument * p;
-        const char * label;
-    } a[] = {
-        { new tense_string(), "tense_string" },
-        { new mouth(), "mouth" },
-        { new fqm(), "fqm" },
-    };
-    for (mapping & m : a)
-    {
-        std::unique_ptr<instrument> u(m.p);
-        orchestra[m.label] = std::move(u);
-    }
+    orchestra.emplace("tense_string", std::unique_ptr<instrument>(new tense_string));
+    orchestra.emplace("mouth", std::unique_ptr<instrument>(new mouth));
+    orchestra.emplace("fqm", std::unique_ptr<instrument>(new fqm));
 }
 
 namespace fuge { // because ::filter exists
@@ -258,18 +248,8 @@ std::map<std::string, std::unique_ptr<fuge::filter>> effects;
 void
 init_effects()
 {
-    struct mapping {
-        fuge::filter * p;
-        const char * label;
-    } a[] = {
-        { new comb(), "comb" },
-        { new echo(), "echo" },
-    };
-    for (mapping & m : a)
-    {
-        std::unique_ptr<fuge::filter> u(m.p);
-        effects[m.label] = std::move(u);
-    }
+    effects.emplace("comb", std::unique_ptr<fuge::filter>(new comb));
+    effects.emplace("echo", std::unique_ptr<fuge::filter>(new echo));
 }
 
 bu_ptr
