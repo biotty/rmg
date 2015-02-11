@@ -5,7 +5,7 @@ c=$2
 
 h=$PWD
 p=/tmp/$$.d
-echo touch $p/k \#to keep images
+echo touch $p/k "# <--" if you want to keep images
 mkdir $p
 rm -f movie.d
 ln -s $p movie.d

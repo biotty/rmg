@@ -4,7 +4,7 @@ o=$1
 
 h=$PWD
 p=/tmp/$$.d
-echo $p
+echo touch $p/k "# <--" if you want to keep images
 mkdir $p
 rm -f fract.d
 ln -s $p fract.d

@@ -126,12 +126,12 @@ photo_create(const char * path)
     ph->grey = (tup == 1);
     const int r = fread(ph->data, tup, width * height, file);
     if (r != width * height) {
-        fprintf(stderr, "'%s' gave %s after %u of %d values\n", name,
-                feof(file) ? "EOF" : "error",
-                r, width * height);
-        free(ph);
-        ph = NULL;
-        goto e;
+        fprintf(stderr, "'%s' gave %s after %u of %d values. "
+                "filling with last value till expected size\n", name,
+                feof(file) ? "EOF" : "error", r, width * height);
+        const int s = width * height;
+        const char * const q = ph->data + (r - 1) * tup;
+        for (int i=r; i<s; i++) memcpy(ph->data + i * tup, q, tup);
     }
     insert_entry(path, ph);
 e:  _close(file);

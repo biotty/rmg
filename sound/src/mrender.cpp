@@ -20,6 +20,8 @@
 #include <iostream>
 #include <iomanip>
 
+#include <unistd.h>
+
 double const lim_amp = .8;
 double const amp_per_sec = 1;
 double const ear_secs = .0007;
@@ -514,7 +516,7 @@ public:
         harmonicwave * x = new harmonicwave(f, true);
         harmonicwave * y = new harmonicwave(f, true);
         p.insert(sound(n.t, n.p, n.l, n.o, waveptr(x), v, r, ex));
-        p.insert(sound(n.t + rnd(0.04, 0.1), n.p - 12, n.l, n.o, waveptr(y), v, r, ey));
+        p.insert(sound(n.t + rnd(0.04, 0.1), n.p, n.l, n.o, waveptr(y), v, r, ey));
     }
 };
 
@@ -557,7 +559,7 @@ struct orchestra
     hihat h;
     drum d;
     wind w;
-    string k;
+    string g;
     instr * get_program(midi::instrument i) {
         if (i.p)
             switch (i.n) {    
@@ -565,8 +567,9 @@ struct orchestra
             case 39: case 44: return &w;
             default: return &h;
             }
-        if ((i.n & 1) == 0) return &v;
-        else return &k;
+        if ((i.n % 3) == 0) return &g;
+        else if ((i.n % 3) == 1) return &s;
+        else return &v;
     }
 };
 
@@ -646,11 +649,19 @@ struct lyricfile
 
 int main(int argc, char **argv)
 {
-    srand(time(nullptr));
     if (argc <= 1) {
-        std::cerr << ": midifile [lyricfile]" << std::endl;
-        return 0;
+        std::cerr << "Give a MIDI file [and for lyrics a path to save at]" << std::endl;
+        return 1;
     }
+    if (isatty(1)) {
+        std::cerr << "Redirect stdout.  Listen or to save respectively:\n"
+            " | aplay -c 2 -f s16_be -r 44100 #or >tmp.raw #if slow\n"
+            " | lame -r -s 44.1"
+            " --signed --bitwidth 16 --big-endian"
+            " - saved.mp3\n";
+        return 1;
+    }
+    srand(time(nullptr));
     midi::file m(argv[1]);
     if (argc > 2) {
         std::vector<midi::event> y;

@@ -11,14 +11,14 @@ namespace midi {
 
 struct instrument // codepoint
 {
-    bool p;
+    bool p; // is percussion
     int n;
     instrument();
 };
 
 struct note // api users desire is to get these
 {
-    double t, p, d, l, o;
+    double t, p, d, l, o; // time pitch duration loudness orientation
     instrument i;
     note();
 };
@@ -26,14 +26,15 @@ struct note // api users desire is to get these
 struct event
 {
     double t;
-    unsigned c, h, o;
+    unsigned c, h, o; // MIDI
     std::string d;
     event(double t, unsigned s);
     unsigned p();
     void parse(const unsigned char * s, unsigned & i);
 };
 
-struct channel {
+struct channel
+{
     unsigned i;
     std::vector<event> e;
     channel(unsigned i);

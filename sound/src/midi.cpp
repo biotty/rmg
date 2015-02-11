@@ -11,7 +11,7 @@
 
 namespace {
 
-double const micro = 0.000001;
+const double micro = 0.000001;
 
 unsigned bdword(const unsigned char * s)
 {
@@ -68,6 +68,7 @@ void event::parse(const unsigned char * s, unsigned & i)
 channel::channel(unsigned i) : i(i) {}
 void channel::compile(std::vector<note> & s)
 {
+    const double hrtf_rpm = 3;
     unsigned r = 0;
     double o = pan_o(63);
     double l = 0;
@@ -83,11 +84,11 @@ void channel::compile(std::vector<note> & s)
                 else if (ek.o == 7) l = volume_l(ek.p());
                 break;
             case 9:
-                if (ek.p() == 0) break; //zero-velocity is note-off
+                if (ek.p() == 0) break; //zero_velocity eq note_off, midi says
                 note n;
                 n.t = ek.t;
                 n.l = l + velocity_l(ek.p());
-                n.o = o + 6.283 * (r / 256.0 + ek.t / 60);
+                n.o = o + 6.283 * (r / 256.0 + ek.t / 60) * hrtf_rpm;
                 if (i == 9) {
                     n.i.n = ek.o;
                     n.i.p = true;
@@ -95,7 +96,7 @@ void channel::compile(std::vector<note> & s)
                 } else {
                     n.i.n = r;
                     n.p = ek.o;
-                    double d = 16; //some max-duration
+                    double d = 16; //*some* max-duration
                     for (unsigned z=k+1; z<e.size(); z++) {
                         if (e[z].c == 8 || e[z].c == 9) {
                             if (e[z].t - ek.t > d)
