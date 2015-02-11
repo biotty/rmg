@@ -30,7 +30,7 @@ ray/trace.o: ray/trace.h
 libformat.a: format/color.o format/photo.o format/image.o
 	ar rc $@ $^
 
-blumix: format/blumix.o libformat.a
+bluf: format/bluf.o libformat.a
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.world: py/%.py py/rmg/scene.py
@@ -64,4 +64,5 @@ clean:
 
 .PHONY:
 sweep: clean
-	@rm -f ray/tracer.a cray cwave cfluid *.png *.jpeg *.mp4 *.pnm
+	@rm -f ray/tracer.a *.world cray cwave cfluid bluf
+	@rm -f *.png *.jpeg *.avi *.mp4 *.pnm

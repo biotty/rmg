@@ -51,7 +51,7 @@ all: $(AMUSE) $(DIGITARP) $(MRENDER) $(FUGE)
 
 $(ALL_OBJECTS): dirs
 
-$(FUGE): setup.py $(SYNTH)
+$(FUGE): $(SYNTH)
 	./setup.py install --home .
 
 .PHONY:
