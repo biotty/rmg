@@ -35,10 +35,8 @@ class RandomOptics:
         self.spin = 3 * (i % 9 + 1)
         self.spin_offset = rnd(1)
         self.text = roundrobin(names, i)
-        self.factor = OpticsFactor(white * .5, white * .1,
-                water * .7, black)
-        self.adjust = Optics(black, white * .2, 1.3,
-                black, water * water)
+        self.factor = OpticsFactor(white * .5, white * .1, water * .7)
+        self.adjust = Optics(black, white * .2, 1.3, black, water * water)
 
     def __call__(self, t):
         return Map(self.pole, self.text,

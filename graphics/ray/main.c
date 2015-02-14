@@ -115,7 +115,6 @@ get_map_application(void)
     r.adjust.refraction_index = gr();
     r.refraction_factor = (color){gr(), gr(), gr()};
     r.adjust.refraction_filter = (color){gr(), gr(), gr()};
-    r.traversion_factor = (color){gr(), gr(), gr()};
     r.adjust.traversion_filter = (color){gr(), gr(), gr()};
     return r;
 }

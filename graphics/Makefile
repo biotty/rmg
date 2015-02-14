@@ -25,7 +25,22 @@ ray/tracer.a: ray/map.o ray/inter.o ray/sphere.o ray/plane.o ray/cylinder.o ray/
         ray/matrix.o ray/bitarray.o ray/stack.o ray/scene.o ray/sky.o ray/trace.o
 	ar rc $@ $^
 
-ray/trace.o: ray/trace.h
+ray/map.o:      ray/map.h
+ray/inter.o:    ray/inter.h
+ray/sphere.o:   ray/sphere.h
+ray/plane.o:    ray/plane.h
+ray/cylinder.o: ray/cylinder.h
+ray/cone.o:     ray/cone.h
+ray/direction.o:ray/direction.h
+ray/point.o:    ray/point.h
+ray/ray.o:      ray/ray.h
+ray/observer.o: ray/observer.h
+ray/matrix.o:   ray/matrix.h
+ray/bitarray.o: ray/bitarray.h
+ray/stack.o:    ray/stack.h
+ray/scene.o:    ray/scene.h
+ray/sky.o:      ray/sky.h
+ray/trace.o:    ray/trace.h
 
 libformat.a: format/color.o format/photo.o format/image.o
 	ar rc $@ $^

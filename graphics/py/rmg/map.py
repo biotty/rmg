@@ -6,11 +6,10 @@
 from rmg.color import Optics
 
 class OpticsFactor:
-    def __init__(self, reflection, absorption, refraction, traversion):
+    def __init__(self, reflection, absorption, refraction):
         self.reflection = reflection
         self.absorption = absorption
         self.refraction = refraction
-        self.traversion = traversion
 
 class MapApplication:
     def __init__(self, wrap, factor, adjust):
@@ -20,12 +19,12 @@ class MapApplication:
         self.factor = factor
         self.adjust = adjust
     def __str__(self):
-        return "%s\n %s %s %s %s\n %LG %s %s %s %s" % (self.wrap,
+        return "%s\n %s %s %s %s\n %LG %s %s %s" % (self.wrap,
                 self.factor.reflection, self.adjust.reflection_filter,
                 self.factor.absorption, self.adjust.absorption_filter,
                                         self.adjust.refraction_index,
                 self.factor.refraction, self.adjust.refraction_filter,
-                self.factor.traversion, self.adjust.traversion_filter)
+                                        self.adjust.traversion_filter)
 
 class Map:
     def __init__(self, north, path, wrap, factor, adjust):

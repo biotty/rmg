@@ -12,7 +12,6 @@ typedef struct {
     color reflection_factor;
     color absorption_factor;
     color refraction_factor;
-    color traversion_factor;
 } map_application;
 
 typedef struct {

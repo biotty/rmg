@@ -61,12 +61,12 @@ linear(color x, color a, color b)
 map_apply__(const map_application * a, const photo * ph, real x, real y,
         object_optics * so)
 {
+    so->refraction_index = a->adjust.refraction_index;
+    so->traversion_filter = a->adjust.traversion_filter;
     if ( ! ph) {
         so->reflection_filter = a->adjust.reflection_filter;
         so->absorption_filter = a->adjust.absorption_filter;
-        so->refraction_index = a->adjust.refraction_index;
         so->refraction_filter = a->adjust.refraction_filter;
-        so->traversion_filter = a->adjust.traversion_filter;
         return;
     }
     const color c = photo_color(ph, x * ph->width, y * ph->height);
@@ -74,11 +74,8 @@ map_apply__(const map_application * a, const photo * ph, real x, real y,
             c, a->reflection_factor, a->adjust.reflection_filter);
     so->absorption_filter = linear(
             c, a->absorption_factor, a->adjust.absorption_filter);
-    so->refraction_index = a->adjust.refraction_index;
     so->refraction_filter = linear(
             c, a->refraction_factor, a->adjust.refraction_filter);
-    so->traversion_filter = linear(
-            c, a->traversion_factor, a->adjust.traversion_filter);
 }
 
     static void
