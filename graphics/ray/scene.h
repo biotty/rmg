@@ -14,7 +14,7 @@ typedef direction (* object_normal)(point, void * object_arg, bool at_second);
 
 struct object_optics__;
 typedef void (* object_decoration)(const ray *, void * arg,
-        struct object_optics__ *);
+        struct object_optics__ * so, const struct object_optics__ * adjust);
 typedef void (* decoration_delete)(void *);
 
 typedef struct object_optics__ {

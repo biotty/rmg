@@ -246,7 +246,7 @@ trace__(const detector * detector_, world__ * w)
             optics = &auto_store;
             closest_object->decoration(&surface,
                     closest_object->decoration_arg,
-                    optics);
+                    optics, &closest_object->optics);
         }
         color detected = {0, 0, 0};
         if (exits) {

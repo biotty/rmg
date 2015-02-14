@@ -103,48 +103,48 @@ new_object(const char * object_class,
 }
 
     map_application
-get_map_application(void)
+get_map_application(object_optics * adjust)
 {
     map_application r;
     r.x_wrap = gr();
     r.y_wrap = gr();
     r.reflection_factor = (color){gr(), gr(), gr()};
-    r.adjust.reflection_filter = (color){gr(), gr(), gr()};
+    adjust->reflection_filter = (color){gr(), gr(), gr()};
     r.absorption_factor = (color){gr(), gr(), gr()};
-    r.adjust.absorption_filter = (color){gr(), gr(), gr()};
-    r.adjust.refraction_index = gr();
+    adjust->absorption_filter = (color){gr(), gr(), gr()};
+    adjust->refraction_index = gr();
     r.refraction_factor = (color){gr(), gr(), gr()};
-    r.adjust.refraction_filter = (color){gr(), gr(), gr()};
-    r.adjust.traversion_filter = (color){gr(), gr(), gr()};
+    adjust->refraction_filter = (color){gr(), gr(), gr()};
+    adjust->traversion_filter = (color){gr(), gr(), gr()};
     return r;
 }
 
     void *
 new_decoration(const char * deco_name,
-        object_decoration * df)
+        object_decoration * df, object_optics * adjust)
 {
     if (strcmp(deco_name, "map") == 0) {
         return map_decoration(df, & (n_map_setup){
             .n = {gr(), gr(), gr()},
             .path = gs().buf,
-            .a = get_map_application()});
+            .a = get_map_application(adjust)});
     } else if (strcmp(deco_name, "pmap") == 0) {
         return pmap_decoration(df, & (n_map_setup){
             .n = {gr(), gr(), gr()},
             .path = gs().buf,
-            .a = get_map_application()});
+            .a = get_map_application(adjust)});
     } else if (strcmp(deco_name, "omap") == 0) {
         return omap_decoration(df, & (n_o_map_setup){
             .n = {gr(), gr(), gr()},
             .o = {gr(), gr(), gr()},
             .path = gs().buf,
-            .a = get_map_application()});
+            .a = get_map_application(adjust)});
     } else if (strcmp(deco_name, "lmap") == 0) {
         return lmap_decoration(df, & (n_o_map_setup){
             .n = {gr(), gr(), gr()},
             .o = {gr(), gr(), gr()},
             .path = gs().buf,
-            .a = get_map_application()});
+            .a = get_map_application(adjust)});
     } else {
         fail("decoration \"%s\"?", deco_name);
     }
@@ -193,11 +193,12 @@ main(int argc, char *argv[])
         const char * buf = gs().buf;
         if (isalpha(buf[0])) {
             object_decoration df;
-            void * d = new_decoration(buf, &df);
+            object_optics adjust;
+            void * d = new_decoration(buf, &df, &adjust);
             if ( ! d) fail("decoration [%d] error\n", i);
             decoration_args[j] = d;
             ++j;
-            set_object(world_, i, (scene_object){ fi, fn, a,
+            set_object(world_, i, (scene_object){ fi, fn, a, adjust,
                     .decoration = df,
                     .decoration_arg = d,
                     });

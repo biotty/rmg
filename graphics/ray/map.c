@@ -59,23 +59,23 @@ linear(color x, color a, color b)
 
     static void
 map_apply__(const map_application * a, const photo * ph, real x, real y,
-        object_optics * so)
+        object_optics * so, const object_optics * adjust)
 {
-    so->refraction_index = a->adjust.refraction_index;
-    so->traversion_filter = a->adjust.traversion_filter;
+    so->refraction_index = adjust->refraction_index;
+    so->traversion_filter = adjust->traversion_filter;
     if ( ! ph) {
-        so->reflection_filter = a->adjust.reflection_filter;
-        so->absorption_filter = a->adjust.absorption_filter;
-        so->refraction_filter = a->adjust.refraction_filter;
+        so->reflection_filter = adjust->reflection_filter;
+        so->absorption_filter = adjust->absorption_filter;
+        so->refraction_filter = adjust->refraction_filter;
         return;
     }
     const color c = photo_color(ph, x * ph->width, y * ph->height);
     so->reflection_filter = linear(
-            c, a->reflection_factor, a->adjust.reflection_filter);
+            c, a->reflection_factor, adjust->reflection_filter);
     so->absorption_filter = linear(
-            c, a->absorption_factor, a->adjust.absorption_filter);
+            c, a->absorption_factor, adjust->absorption_filter);
     so->refraction_filter = linear(
-            c, a->refraction_factor, a->adjust.refraction_filter);
+            c, a->refraction_factor, adjust->refraction_filter);
 }
 
     static void
@@ -95,7 +95,8 @@ wrap_(const map_application * a, real * x, real * y)
 }
 
     static void
-map__(const ray * ray_, void * decoration_arg, object_optics * so)
+map__(const ray * ray_, void * decoration_arg,
+        object_optics * so, const object_optics * adjust)
 {
     const map_arg * da = decoration_arg;
     real x, y;
@@ -103,11 +104,12 @@ map__(const ray * ray_, void * decoration_arg, object_optics * so)
     direction_to_unitsquare(&d, &x, &y);
     zoom_(da->r, &x, &y);
     wrap_(&da->a, &x, &y);
-    map_apply__(&da->a, da->photo, x, y, so);
+    map_apply__(&da->a, da->photo, x, y, so, adjust);
 }
 
     static void
-pmap__(const ray * ray_, void * decoration_arg, object_optics * so)
+pmap__(const ray * ray_, void * decoration_arg,
+        object_optics * so, const object_optics * adjust)
 {
     const pmap_arg * da = decoration_arg;
     direction d = inverse_rotation(
@@ -117,11 +119,12 @@ pmap__(const ray * ray_, void * decoration_arg, object_optics * so)
     real y = d.y;
     zoom_(da->r, &x, &y);
     wrap_(&da->a, &x, &y);
-    map_apply__(&da->a, da->photo, x, y, so);
+    map_apply__(&da->a, da->photo, x, y, so, adjust);
 }
 
     static void
-omap__(const ray * ray_, void * decoration_arg, object_optics * so)
+omap__(const ray * ray_, void * decoration_arg,
+        object_optics * so, const object_optics * adjust)
 {
     const omap_arg * da = decoration_arg;
     direction d = inverse_rotation(
@@ -131,11 +134,12 @@ omap__(const ray * ray_, void * decoration_arg, object_optics * so)
     direction_to_unitsquare(&d, &x, &y);
     zoom_(da->r, &x, &y);
     wrap_(&da->a, &x, &y);
-    map_apply__(&da->a, da->photo, x, y, so);
+    map_apply__(&da->a, da->photo, x, y, so, adjust);
 }
 
     static void
-lmap__(const ray * ray_, void * decoration_arg, object_optics * so)
+lmap__(const ray * ray_, void * decoration_arg,
+        object_optics * so, const object_optics * adjust)
 {
     static const real pi = REAL_PI;
     static const real two_pi = REAL_PI * 2;
@@ -148,7 +152,7 @@ lmap__(const ray * ray_, void * decoration_arg, object_optics * so)
     y -= rfloor(y);
     if (y == 1) y = 0;
     wrap_(&da->a, &x, &y);
-    map_apply__(&da->a, da->photo, x, y, so);
+    map_apply__(&da->a, da->photo, x, y, so, adjust);
 }
 
     void *

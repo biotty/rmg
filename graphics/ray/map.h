@@ -8,7 +8,6 @@
 typedef struct {
     real x_wrap;
     real y_wrap;
-    object_optics adjust;
     color reflection_factor;
     color absorption_factor;
     color refraction_factor;
@@ -18,6 +17,7 @@ typedef struct {
     direction n;
     const char * path;
     map_application a;
+    object_optics adjust;
 } n_map_setup;
 
 void * map_decoration(
@@ -30,6 +30,7 @@ typedef struct {
     point o;
     const char * path;
     map_application a;
+    object_optics adjust;
 } n_o_map_setup;
 
 void * omap_decoration(
