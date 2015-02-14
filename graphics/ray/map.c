@@ -59,22 +59,26 @@ linear(color x, color a, color b)
 
     static void
 map_apply__(const map_application * a, const photo * ph, real x, real y,
-        scene_object * so)
+        object_optics * so)
 {
     if ( ! ph) {
-        so->reflection_filter = a->reflection_adjust;
-        so->absorption_filter = a->absorption_adjust;
-        so->refraction_index = a->refraction_index;
-        so->refraction_filter = a->refraction_adjust;
-        so->traversion_filter = a->traversion_adjust;
+        so->reflection_filter = a->adjust.reflection_filter;
+        so->absorption_filter = a->adjust.absorption_filter;
+        so->refraction_index = a->adjust.refraction_index;
+        so->refraction_filter = a->adjust.refraction_filter;
+        so->traversion_filter = a->adjust.traversion_filter;
         return;
     }
     const color c = photo_color(ph, x * ph->width, y * ph->height);
-    so->reflection_filter = linear(c, a->reflection_factor, a->reflection_adjust);
-    so->absorption_filter = linear(c, a->absorption_factor, a->absorption_adjust);
-    so->refraction_index = a->refraction_index;
-    so->refraction_filter = linear(c, a->refraction_factor, a->refraction_adjust);
-    so->traversion_filter = linear(c, a->traversion_factor, a->traversion_adjust);
+    so->reflection_filter = linear(
+            c, a->reflection_factor, a->adjust.reflection_filter);
+    so->absorption_filter = linear(
+            c, a->absorption_factor, a->adjust.absorption_filter);
+    so->refraction_index = a->adjust.refraction_index;
+    so->refraction_filter = linear(
+            c, a->refraction_factor, a->adjust.refraction_filter);
+    so->traversion_filter = linear(
+            c, a->traversion_factor, a->adjust.traversion_filter);
 }
 
     static void
@@ -94,9 +98,9 @@ wrap_(const map_application * a, real * x, real * y)
 }
 
     static void
-map__(const ray * ray_, scene_object * so)
+map__(const ray * ray_, void * decoration_arg, object_optics * so)
 {
-    const map_arg * da = so->decoration_arg;
+    const map_arg * da = decoration_arg;
     real x, y;
     direction d = inverse_rotation(ray_->head, da->theta, da->phi);
     direction_to_unitsquare(&d, &x, &y);
@@ -106,9 +110,9 @@ map__(const ray * ray_, scene_object * so)
 }
 
     static void
-pmap__(const ray * ray_, scene_object * so)
+pmap__(const ray * ray_, void * decoration_arg, object_optics * so)
 {
-    const pmap_arg * da = so->decoration_arg;
+    const pmap_arg * da = decoration_arg;
     direction d = inverse_rotation(
             direction_from_origo(ray_->endpoint),
             da->theta, da->phi);
@@ -120,9 +124,9 @@ pmap__(const ray * ray_, scene_object * so)
 }
 
     static void
-omap__(const ray * ray_, scene_object * so)
+omap__(const ray * ray_, void * decoration_arg, object_optics * so)
 {
-    const omap_arg * da = so->decoration_arg;
+    const omap_arg * da = decoration_arg;
     direction d = inverse_rotation(
             distance_vector(da->o, ray_->endpoint),
             da->theta, da->phi);
@@ -134,11 +138,11 @@ omap__(const ray * ray_, scene_object * so)
 }
 
     static void
-lmap__(const ray * ray_, scene_object * so)
+lmap__(const ray * ray_, void * decoration_arg, object_optics * so)
 {
     static const real pi = REAL_PI;
     static const real two_pi = REAL_PI * 2;
-    const lmap_arg * da = so->decoration_arg;
+    const lmap_arg * da = decoration_arg;
     direction d = inverse_rotation(
             distance_vector(da->o, ray_->endpoint),
             da->theta, da->phi);
@@ -151,8 +155,7 @@ lmap__(const ray * ray_, scene_object * so)
 }
 
     void *
-map_decoration(
-        object_decoration * df, const n_map_setup * setup)
+map_decoration(object_decoration * df, const n_map_setup * setup)
 {
     map_arg * da = malloc(sizeof *da);
     da->a = setup->a;
@@ -165,8 +168,7 @@ map_decoration(
 }
 
     void *
-pmap_decoration(
-        object_decoration * df, const n_map_setup * setup)
+pmap_decoration(object_decoration * df, const n_map_setup * setup)
 {
     pmap_arg * da = malloc(sizeof *da);
     da->a = setup->a;
@@ -179,8 +181,7 @@ pmap_decoration(
 }
 
     void *
-omap_decoration(
-        object_decoration * df, const n_o_map_setup * setup)
+omap_decoration(object_decoration * df, const n_o_map_setup * setup)
 {
     omap_arg * da = malloc(sizeof *da);
     da->a = setup->a;
@@ -194,8 +195,7 @@ omap_decoration(
 }
 
     void *
-lmap_decoration(
-        object_decoration * df, const n_o_map_setup * setup)
+lmap_decoration(object_decoration * df, const n_o_map_setup * setup)
 {
     lmap_arg * da = malloc(sizeof *da);
     da->a = setup->a;

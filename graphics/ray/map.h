@@ -8,15 +8,11 @@
 typedef struct {
     real x_wrap;
     real y_wrap;
+    object_optics adjust;
     color reflection_factor;
-    color reflection_adjust;
     color absorption_factor;
-    color absorption_adjust;
-    real refraction_index;
     color refraction_factor;
-    color refraction_adjust;
     color traversion_factor;
-    color traversion_adjust;
 } map_application;
 
 typedef struct {

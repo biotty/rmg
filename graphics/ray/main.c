@@ -105,19 +105,19 @@ new_object(const char * object_class,
     map_application
 get_map_application(void)
 {
-    return (map_application){
-        .x_wrap = gr(),
-        .y_wrap = gr(),
-        .reflection_factor = {gr(), gr(), gr()},
-        .reflection_adjust = {gr(), gr(), gr()},
-        .absorption_factor = {gr(), gr(), gr()},
-        .absorption_adjust = {gr(), gr(), gr()},
-        .refraction_index = gr(),
-        .refraction_factor = {gr(), gr(), gr()},
-        .refraction_adjust = {gr(), gr(), gr()},
-        .traversion_factor = {gr(), gr(), gr()},
-        .traversion_adjust = {gr(), gr(), gr()},
-    };
+    map_application r;
+    r.x_wrap = gr();
+    r.y_wrap = gr();
+    r.reflection_factor = (color){gr(), gr(), gr()};
+    r.adjust.reflection_filter = (color){gr(), gr(), gr()};
+    r.absorption_factor = (color){gr(), gr(), gr()};
+    r.adjust.absorption_filter = (color){gr(), gr(), gr()};
+    r.adjust.refraction_index = gr();
+    r.refraction_factor = (color){gr(), gr(), gr()};
+    r.adjust.refraction_filter = (color){gr(), gr(), gr()};
+    r.traversion_factor = (color){gr(), gr(), gr()};
+    r.adjust.traversion_filter = (color){gr(), gr(), gr()};
+    return r;
 }
 
     void *
@@ -206,12 +206,15 @@ main(int argc, char *argv[])
             real gr_;
             const int n = sscanf(buf, REAL_FMT, &gr_);
             if (n != 1) fail("optics [%d] error\n", i);
-            set_object(world_, i, (scene_object){ fi, fn, a,
-                    .reflection_filter = {gr_, gr(), gr()},
-                    .absorption_filter = {gr(), gr(), gr()},
+            set_object(world_, i, (scene_object){ fi, fn, a, (object_optics){
+                    .reflection_filter = (color){gr_, gr(), gr()},
+                    .absorption_filter = (color){gr(), gr(), gr()},
                     .refraction_index = gr(),
-                    .refraction_filter = {gr(), gr(), gr()},
-                    .traversion_filter = {gr(), gr(), gr()},
+                    .refraction_filter = (color){gr(), gr(), gr()},
+                    .traversion_filter = (color){gr(), gr(), gr()},
+                    },
+                    NULL,
+                    NULL,
                     });
         }
     }

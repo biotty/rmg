@@ -109,7 +109,7 @@ trace_hop(ray t, color filter_,
 }
 
     static void
-traversion_filter(color * color_, const scene_object * so,
+traversion_filter(color * color_, const object_optics * so,
         real distance_)
 {
     const color so_filter = so->traversion_filter;
@@ -131,7 +131,7 @@ traversion_filter(color * color_, const scene_object * so,
 }
 
     static color
-spot_absorption(const ray * surface, const scene_object * so,
+spot_absorption(const ray * surface, const object_optics * so,
         const world__ * w, bitarray * inside)
 {
     color sum_ = {0, 0, 0};
@@ -166,7 +166,7 @@ refraction_trace(ray ray_, const scene_object * so,
     ba_assign(detector_->inside, i, enters);
     if ( ! enters) outside_i = ba_firstset(detector_->inside);
     real outside_refraction_index = (outside_i >= 0)
-        ? w->scene->objects[outside_i].refraction_index
+        ? w->scene->objects[outside_i].optics.refraction_index
         : 1;
     if (outside_refraction_index <= 0) {
         if (debug) {
@@ -175,7 +175,8 @@ refraction_trace(ray ray_, const scene_object * so,
         }
         goto out;
     }
-    real refraction_index = outside_refraction_index / so->refraction_index;
+    real refraction_index = outside_refraction_index
+            / so->optics.refraction_index;
     if (refraction_index <= 0) {
         if (debug && ! enters && detector_->hop != max_hops) {
             fprintf(stderr, "hit objects[%d] from inside of surface"
@@ -196,7 +197,7 @@ refraction_trace(ray ray_, const scene_object * so,
     const color refraction_filter =
         (transparent_refraction_on_equal_index && is_near(refraction_index, 1))
         ? (color){1, 1, 1}
-        : so->refraction_filter;
+        : so->optics.refraction_filter;
     detected = trace_hop(ray_, refraction_filter, detector_, w);
 out:
     ba_assign(detector_->inside, i, ( ! enters));
@@ -219,7 +220,9 @@ trace__(const detector * detector_, world__ * w)
         const int adinf_i = detector_inside_i;
         int rgb_clear = 0;
         if (adinf_i >= 0) {
-            color f = w->scene->objects[adinf_i].traversion_filter;
+            scene_object * so = w->scene->objects + adinf_i;
+            if (so->decoration) return (color){0, 0, 0};
+            color f = so->optics.traversion_filter;
             if ( ! is_near(f.r, 1)) { f.r = 0; rgb_clear |= 0x1; }
             if ( ! is_near(f.g, 1)) { f.g = 0; rgb_clear |= 0x2; }
             if ( ! is_near(f.b, 1)) { f.b = 0; rgb_clear |= 0x4; }
@@ -235,9 +238,16 @@ trace__(const detector * detector_, world__ * w)
     } else {
         const ptrdiff_t i = closest_object - w->scene->objects;
         assert(i >= 0 && i < w->scene->object_count);
-        const bool exits = scalar_product(surface.head, detector_->ray.head) > 0;
-        if (closest_object->decoration)
-            closest_object->decoration(&surface, closest_object);
+        const bool exits = 0 < scalar_product(
+                surface.head, detector_->ray.head);
+        object_optics * optics = &closest_object->optics;
+        object_optics auto_store;
+        if (closest_object->decoration) {
+            optics = &auto_store;
+            closest_object->decoration(&surface,
+                    closest_object->decoration_arg,
+                    optics);
+        }
         color detected = {0, 0, 0};
         if (exits) {
             if (debug && ! ba_isset(detector_->inside, i))
@@ -246,7 +256,7 @@ trace__(const detector * detector_, world__ * w)
             if (reflection_on_inside > 0) {
                 direction normal_ = surface.head;
                 scale(&normal_, -1);
-                color filter_ = closest_object->reflection_filter;
+                color filter_ = optics->reflection_filter;
                 filter_.r *= reflection_on_inside;
                 filter_.g *= reflection_on_inside;
                 filter_.b *= reflection_on_inside;
@@ -259,28 +269,32 @@ trace__(const detector * detector_, world__ * w)
         } else {
             if (debug && ba_isset(detector_->inside, i))
                 fprintf(stderr, "hit objects[%d] from outside of surface"
-                        ", but book-keeping says we are inside of it\n", (int)i);
+                        ", but book-keeping says inside of it\n", (int)i);
             const ray reflection_ = {
                 .endpoint = surface.endpoint,
                 .head = reflection(surface.head, detector_->ray.head) };
             if (verbose) fprintf(stderr, "reflection\n");
-            detected = trace_hop(reflection_,
-                    closest_object->reflection_filter, detector_, w);
+            detected = trace_hop(
+                    reflection_, optics->reflection_filter,
+                    detector_, w);
         }
         const int inside_i = ba_firstset(detector_->inside);
         if (inside_i < 0) {
             if (verbose) fprintf(stderr, "absorption\n");
-            const color absorbed = spot_absorption(&surface, closest_object,
-                    w, detector_->inside);
+            const color absorbed = spot_absorption(
+                    &surface, optics, w, detector_->inside);
             detected = optical_sum(detected, absorbed);
         }
-        if (closest_object->refraction_index > 0) {
-            const color refraction_color = refraction_trace(surface, closest_object, detector_, w);
+        if (optics->refraction_index > 0) {
+            const color refraction_color = refraction_trace(
+                    surface, closest_object, detector_, w);
             detected = optical_sum(detected, refraction_color);
         }
         if (detector_inside_i >= 0) {
-            traversion_filter(&detected,
-                    &w->scene->objects[detector_inside_i],
+            scene_object * io = w->scene->objects + detector_inside_i;
+            if (io->decoration) { /* fully transparent */ }
+            else traversion_filter(
+                    &detected, &io->optics,
                     distance(detector_->ray.endpoint, surface.endpoint));
         }
         int toggled_i;

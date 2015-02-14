@@ -9,22 +9,27 @@
 #include "stack.h"
 #include "stddef.h"
 
-typedef pair (*object_intersection)(const ray *, void * object_arg);
-typedef direction (*object_normal)(point, void * object_arg, bool at_second);
+typedef pair (* object_intersection)(const ray *, void * object_arg);
+typedef direction (* object_normal)(point, void * object_arg, bool at_second);
 
-struct scene_object__;
-typedef void (*object_decoration)(const ray *, struct scene_object__ *);
-typedef void (*decoration_delete)(void *);
+struct object_optics__;
+typedef void (* object_decoration)(const ray *, void * arg,
+        struct object_optics__ *);
+typedef void (* decoration_delete)(void *);
 
-typedef struct scene_object__ {
-    object_intersection intersection;
-    object_normal normal;
-    void * object_arg;
+typedef struct object_optics__ {
     color reflection_filter;
     color absorption_filter;
     real refraction_index;
     color refraction_filter;
     color traversion_filter;
+} object_optics;
+
+typedef struct scene_object__ {
+    object_intersection intersection;
+    object_normal normal;
+    void * object_arg;
+    object_optics optics;
     object_decoration decoration;
     void * decoration_arg;
 } scene_object;

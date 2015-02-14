@@ -64,5 +64,6 @@ clean:
 
 .PHONY:
 sweep: clean
-	@rm -f ray/tracer.a *.world cray cwave cfluid bluf
+	@rm -f cray cwave cfluid bluf
+	@rm -f ray/tracer.a libformat.a *.world
 	@rm -f *.png *.jpeg *.avi *.mp4 *.pnm
