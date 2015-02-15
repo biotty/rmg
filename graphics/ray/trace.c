@@ -217,23 +217,24 @@ trace__(const detector * detector_, world__ * w)
     scene_object * closest_object
         = closest_surface(&surface, w->scene, detector_->inside, &toggled);
     if (closest_object == NULL) {
-        const int adinf_i = detector_inside_i;
         int rgb_clear = 0;
+        const int adinf_i = detector_inside_i;
         if (adinf_i >= 0) {
-            scene_object * so = w->scene->objects + adinf_i;
-            if (so->decoration) return (color){0, 0, 0};
-            color f = so->optics.traversion_filter;
-            if ( ! is_near(f.r, 1)) { f.r = 0; rgb_clear |= 0x1; }
-            if ( ! is_near(f.g, 1)) { f.g = 0; rgb_clear |= 0x2; }
-            if ( ! is_near(f.b, 1)) { f.b = 0; rgb_clear |= 0x4; }
-            if (rgb_clear == 0x7) return f;
+            const color * f = &w->scene->objects[adinf_i].optics
+                .traversion_filter;
+            if ( ! is_near(f->r, 1)) rgb_clear |= 0x1;
+            if ( ! is_near(f->g, 1)) rgb_clear |= 0x2;
+            if ( ! is_near(f->b, 1)) rgb_clear |= 0x4;
+            if (rgb_clear == 0x7) return (color){0, 0, 0};
         }
         color _ = (eliminate_direct_sky && detector_->hop == max_hops)
             ? DIRECT_SKY
             : w->sky(detector_->ray.head);
-        if (rgb_clear & 0x1) _.r = 0;
-        if (rgb_clear & 0x2) _.g = 0;
-        if (rgb_clear & 0x4) _.b = 0;
+        if (rgb_clear) {
+            if (rgb_clear & 0x1) _.r = 0;
+            if (rgb_clear & 0x2) _.g = 0;
+            if (rgb_clear & 0x4) _.b = 0;
+        }
         return _;
     } else {
         const ptrdiff_t i = closest_object - w->scene->objects;
@@ -292,8 +293,7 @@ trace__(const detector * detector_, world__ * w)
         }
         if (detector_inside_i >= 0) {
             scene_object * io = w->scene->objects + detector_inside_i;
-            if (io->decoration) { /* fully transparent */ }
-            else traversion_filter(
+            traversion_filter(
                     &detected, &io->optics,
                     distance(detector_->ray.endpoint, surface.endpoint));
         }
