@@ -1,10 +1,7 @@
-SUBDIRS=sound graphics
-.PHONY: all $(SUBDIRS)
-all: $(SUBDIRS)
+SCIENCES=graphics sound
+ACTIONS=all clean media sweep
 
-.PHONY:
-clean sweep:
-	@$(foreach product,$(SUBDIRS),make -C $(product) $@;)
+.PHONY: $(ACTIONS) $(SCIENCES)
 
-$(SUBDIRS):
-	@$(MAKE) -C $@
+$(ACTIONS):
+	@$(foreach p,$(SCIENCES),$(MAKE) -C $(p) $@;)

@@ -6,10 +6,10 @@
 from distutils.core import setup, Extension
 
 fuge = Extension('fuge',
-        extra_compile_args = ['-std=c++11', '-Iinclude'],
-        extra_objects = ['lib/synth.a'],
-        sources = ['src/fugemodule.cpp'])
+        extra_compile_args = ['-std=c++11', '-Isynth'],
+        extra_objects = ['synth/sizr.a'],
+        sources = ['fugemodule.cpp'])
 
-setup(name = 'fuge', version = '1.0',
+setup(name = 'fuge', version = '1.1',
        description = 'fuge',
        ext_modules = [fuge])
