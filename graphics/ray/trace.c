@@ -214,7 +214,7 @@ trace__(const detector * detector_, world__ * w)
     assert(is_near(length(surface.head), 1));
     stack toggled = empty_stack;
     const int detector_inside_i = ba_firstset(detector_->inside);
-    scene_object * closest_object
+    const scene_object * closest_object
         = closest_surface(&surface, w->scene, detector_->inside, &toggled);
     if (closest_object == NULL) {
         int rgb_clear = 0;
@@ -241,13 +241,13 @@ trace__(const detector * detector_, world__ * w)
         assert(i >= 0 && i < w->scene->object_count);
         const bool exits = 0 < scalar_product(
                 surface.head, detector_->ray.head);
-        object_optics * optics = &closest_object->optics;
+        const object_optics * optics = &closest_object->optics;
         object_optics auto_store;
         if (closest_object->decoration) {
-            optics = &auto_store;
             closest_object->decoration(&surface,
                     closest_object->decoration_arg,
-                    optics, &closest_object->optics);
+                    &auto_store, &closest_object->optics);
+            optics = &auto_store;
         }
         color detected = {0, 0, 0};
         if (exits) {
