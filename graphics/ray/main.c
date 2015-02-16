@@ -103,48 +103,42 @@ new_object(const char * object_class,
 }
 
     map_application
-get_map_application(object_optics * adjust)
+get_map_application()
 {
-    map_application r;
-    r.x_wrap = gr();
-    r.y_wrap = gr();
-    r.reflection_factor = (color){gr(), gr(), gr()};
-    adjust->reflection_filter = (color){gr(), gr(), gr()};
-    r.absorption_factor = (color){gr(), gr(), gr()};
-    adjust->absorption_filter = (color){gr(), gr(), gr()};
-    adjust->refraction_index = gr();
-    r.refraction_factor = (color){gr(), gr(), gr()};
-    adjust->refraction_filter = (color){gr(), gr(), gr()};
-    adjust->traversion_filter = (color){gr(), gr(), gr()};
-    return r;
+    return (map_application){
+        .x_wrap = gr(),
+        .y_wrap = gr(),
+        .reflection_factor = (color){gr(), gr(), gr()},
+        .absorption_factor = (color){gr(), gr(), gr()},
+        .refraction_factor = (color){gr(), gr(), gr()},
+    };
 }
 
     void *
-new_decoration(const char * deco_name,
-        object_decoration * df, object_optics * adjust)
+new_decoration(const char * deco_name, object_decoration * df)
 {
     if (strcmp(deco_name, "map") == 0) {
         return map_decoration(df, & (n_map_setup){
             .n = {gr(), gr(), gr()},
             .path = gs().buf,
-            .a = get_map_application(adjust)});
+            .a = get_map_application()});
     } else if (strcmp(deco_name, "pmap") == 0) {
         return pmap_decoration(df, & (n_map_setup){
             .n = {gr(), gr(), gr()},
             .path = gs().buf,
-            .a = get_map_application(adjust)});
+            .a = get_map_application()});
     } else if (strcmp(deco_name, "omap") == 0) {
         return omap_decoration(df, & (n_o_map_setup){
             .n = {gr(), gr(), gr()},
             .o = {gr(), gr(), gr()},
             .path = gs().buf,
-            .a = get_map_application(adjust)});
+            .a = get_map_application()});
     } else if (strcmp(deco_name, "lmap") == 0) {
         return lmap_decoration(df, & (n_o_map_setup){
             .n = {gr(), gr(), gr()},
             .o = {gr(), gr(), gr()},
             .path = gs().buf,
-            .a = get_map_application(adjust)});
+            .a = get_map_application()});
     } else {
         fail("decoration \"%s\"?", deco_name);
     }
@@ -174,7 +168,7 @@ main(int argc, char *argv[])
         .row_direction = {gr(), gr(), gr()},
         .width = atoi(dim_w), .height = atoi(dim_h)};
     const int n = gi();
-    if (gc() != ':') fail("object-count colon missing\n");
+    if (gc() != ':') fail("scene-object-count colon missing\n");
     world world_ = alloc_world(n);
     void * args[n];
     void * decoration_args[n];
@@ -190,33 +184,29 @@ main(int argc, char *argv[])
         if (!a) fail("object [%d] error\n", i);
         args[i] = a;
 
+        object_decoration df = NULL;
+        void * d = NULL;
         const char * buf = gs().buf;
+        real gr_;
         if (isalpha(buf[0])) {
-            object_decoration df;
-            object_optics adjust;
-            void * d = new_decoration(buf, &df, &adjust);
+            d = new_decoration(buf, &df);
             if ( ! d) fail("decoration [%d] error\n", i);
-            decoration_args[j] = d;
-            ++j;
-            set_object(world_, i, (scene_object){ fi, fn, a, adjust,
-                    .decoration = df,
-                    .decoration_arg = d,
-                    });
+            decoration_args[j++] = d;
+            gr_ = gr();
         } else {
-            real gr_;
             const int n = sscanf(buf, REAL_FMT, &gr_);
             if (n != 1) fail("optics [%d] error\n", i);
-            set_object(world_, i, (scene_object){ fi, fn, a, (object_optics){
-                    .reflection_filter = (color){gr_, gr(), gr()},
-                    .absorption_filter = (color){gr(), gr(), gr()},
-                    .refraction_index = gr(),
-                    .refraction_filter = (color){gr(), gr(), gr()},
-                    .traversion_filter = (color){gr(), gr(), gr()},
-                    },
-                    NULL,
-                    NULL,
-                    });
         }
+        set_object(world_, i, (scene_object){ fi, fn, a, (object_optics){
+                .reflection_filter = (color){gr_, gr(), gr()},
+                .absorption_filter = (color){gr(), gr(), gr()},
+                .refraction_index = gr(),
+                .refraction_filter = (color){gr(), gr(), gr()},
+                .traversion_filter = (color){gr(), gr(), gr()},
+                },
+                .decoration = df,
+                .decoration_arg = d,
+                });
     }
     char * sky_name = strdup(gs().buf);
     if (strcmp(sky_name, "funky") == 0) set_sky(world_, funky_sky);

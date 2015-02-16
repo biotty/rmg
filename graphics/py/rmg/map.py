@@ -10,6 +10,8 @@ class OpticsFactor:
         self.reflection = reflection
         self.absorption = absorption
         self.refraction = refraction
+    def __str__(self):
+        return "%s %s %s" % (self.reflection, self.absorption, self.refraction)
 
 class MapApplication:
     def __init__(self, wrap, factor, adjust):
@@ -19,12 +21,7 @@ class MapApplication:
         self.factor = factor
         self.adjust = adjust
     def __str__(self):
-        return "%s\n %s %s %s %s\n %LG %s %s %s" % (self.wrap,
-                self.factor.reflection, self.adjust.reflection_filter,
-                self.factor.absorption, self.adjust.absorption_filter,
-                                        self.adjust.refraction_index,
-                self.factor.refraction, self.adjust.refraction_filter,
-                                        self.adjust.traversion_filter)
+        return "%s\n %s\n%s" % (self.wrap, self.factor, self.adjust)
 
 class Map:
     def __init__(self, north, path, wrap, factor, adjust):

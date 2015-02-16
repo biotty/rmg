@@ -4,7 +4,9 @@ LDFLAGS=-lm
 .PHONY:
 all: ray/gun flow/fluid
 
-media: image1.jpeg video1.mp4 video2.mp4 fluid.mp4 fractzoom.mp4
+media: image1.jpeg
+
+heavy_media: video1.mp4 video2.mp4 fluid.mp4 fractzoom.mp4
 
 ray/gun: rgb/librgb.a
 	$(MAKE) -C ray

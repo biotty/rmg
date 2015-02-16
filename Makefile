@@ -1,4 +1,4 @@
-SCIENCES=graphics sound
+SCIENCES=sound graphics
 ACTIONS=all clean media sweep
 
 .PHONY: $(ACTIONS) $(SCIENCES)
