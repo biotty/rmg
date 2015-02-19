@@ -1,13 +1,12 @@
+MOD_INCS=`python-config --includes` -Isynth
 CXXFLAGS=-Wextra -Werror -std=c++11
+LAME_S16=-mm -r -s 44.1 --signed --bitwidth 16 --little-endian
 
 .PHONY:
 all: digitarp mrender/mrender amuse/amuse py/fuge.so
 
 .PHONY:
 media: digitarp.mp3 compo.mp3
-
-digitarp: digitarp.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
 
 mrender/mrender:
 	$(MAKE) -C mrender
@@ -18,12 +17,14 @@ synth/sizr.a:
 amuse/amuse: synth/sizr.a
 	$(MAKE) -C amuse
 
-py/fuge.so: synth/sizr.a
-	./setup.py install --home .
-	ln lib/python/fuge.so py
+py/fuge.so: fugemodule.o synth/sizr.a
+	$(CXX) -o $@ $^ -shared
+
+fugemodule.o: fugemodule.cpp
+	$(CXX) -c $^ $(CXXFLAGS) $(MOD_INCS) -fPIC
 
 %.mp3: %.raw
-	lame -mm -r -s 44.1 --signed --bitwidth 16 --little-endian $^ $@
+	lame $(LAME_S16) $^ $@
 
 digitarp.raw: digitarp
 	./digitarp > $@
@@ -34,7 +35,6 @@ digitarp.raw: digitarp
 .PHONY:
 clean:
 	@rm -f *.o
-	@rm -fr build lib
 	@find py -name "*.pyc" -delete
 
 .PHONY:

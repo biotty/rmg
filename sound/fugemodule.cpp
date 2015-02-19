@@ -62,6 +62,7 @@ PyTypeObject UgenType = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, Ugen_call,
     0, 0, 0, 0, Py_TPFLAGS_DEFAULT, "encoded-unit generator",
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Ugen_new,
+    0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 long
@@ -352,7 +353,7 @@ just(PyObject * self, PyObject * args)
 PyMethodDef FugeMethods[] = {
     { "render", render, METH_VARARGS, "render." },
     { "just", just, METH_VARARGS, "just." },
-    { NULL }, /* Sentinel */
+    { NULL, NULL, 0, NULL }, /* Sentinel */
 };
 
 } //namespace
