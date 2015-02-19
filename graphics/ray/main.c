@@ -202,7 +202,7 @@ main(int argc, char *argv[])
                 .absorption_filter = (color){gr(), gr(), gr()},
                 .refraction_index = gr(),
                 .refraction_filter = (color){gr(), gr(), gr()},
-                .traversion_filter = (color){gr(), gr(), gr()},
+                .passthrough_filter = (color){gr(), gr(), gr()},
                 },
                 .decoration = df,
                 .decoration_arg = d,

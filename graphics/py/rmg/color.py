@@ -257,12 +257,12 @@ class TvColor:  # YUV for HDTV
 class Optics:
     
     def __init__(self, reflection, absorption, index = -1,
-            refraction = black, traversion = black):
+            refraction = black, passthrough = black):
         self.reflection_filter = reflection
         self.absorption_filter = absorption
         self.refraction_index = index
         self.refraction_filter = refraction
-        self.traversion_filter = traversion
+        self.passthrough_filter = passthrough
 
     def __str__(self):
         return "%s %s\n%LG %s %s" % (
@@ -270,5 +270,5 @@ class Optics:
                 self.absorption_filter,
                 self.refraction_index,
                 self.refraction_filter,
-                self.traversion_filter)
+                self.passthrough_filter)
 

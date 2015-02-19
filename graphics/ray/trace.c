@@ -109,10 +109,10 @@ trace_hop(ray t, color filter_,
 }
 
     static void
-traversion_filter(color * color_, const object_optics * so,
+passthrough_filter(color * color_, const object_optics * so,
         real distance_)
 {
-    const color so_filter = so->traversion_filter;
+    const color so_filter = so->passthrough_filter;
     color filter_;
     if (distance_ >= HUGE_REAL / 2) {
         color f = so_filter;
@@ -221,7 +221,7 @@ trace__(const detector * detector_, world__ * w)
         const int adinf_i = detector_inside_i;
         if (adinf_i >= 0) {
             const color * f = &w->scene->objects[adinf_i].optics
-                .traversion_filter;
+                .passthrough_filter;
             if ( ! is_near(f->r, 1)) rgb_clear |= 0x1;
             if ( ! is_near(f->g, 1)) rgb_clear |= 0x2;
             if ( ! is_near(f->b, 1)) rgb_clear |= 0x4;
@@ -293,7 +293,7 @@ trace__(const detector * detector_, world__ * w)
         }
         if (detector_inside_i >= 0) {
             scene_object * io = w->scene->objects + detector_inside_i;
-            traversion_filter(
+            passthrough_filter(
                     &detected, &io->optics,
                     distance(detector_->ray.endpoint, surface.endpoint));
         }

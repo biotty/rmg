@@ -22,7 +22,7 @@ typedef struct object_optics__ {
     color absorption_filter;
     real refraction_index;
     color refraction_filter;
-    color traversion_filter;
+    color passthrough_filter;
 } object_optics;
 
 typedef struct scene_object__ {

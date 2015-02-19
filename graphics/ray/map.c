@@ -62,7 +62,7 @@ map_apply__(const map_application * a, const photo * ph, real x, real y,
         object_optics * so, const object_optics * adjust)
 {
     so->refraction_index = adjust->refraction_index;
-    so->traversion_filter = adjust->traversion_filter;
+    so->passthrough_filter = adjust->passthrough_filter;
     if ( ! ph) {
         so->reflection_filter = adjust->reflection_filter;
         so->absorption_filter = adjust->absorption_filter;

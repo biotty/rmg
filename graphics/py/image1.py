@@ -23,9 +23,9 @@ def optics_a():
     absorption = color * .06
     diamond_index = 2.6
     refraction = color * .9
-    traversion = color * .8
+    passthrough = color * .8
     return Optics(reflection, absorption,
-            diamond_index, refraction, traversion)
+            diamond_index, refraction, passthrough)
 
 def optics_b():
     water = Color(.9, .92, 1)
@@ -33,8 +33,8 @@ def optics_b():
     reflection = color.mix(water) * .5
     absorption = black
     refraction = white * .65
-    traversion = water * .65
-    return Optics(reflection, absorption, 1.3, refraction, traversion)
+    passthrough = water * .65
+    return Optics(reflection, absorption, 1.3, refraction, passthrough)
 
 def rnd_optics(p):
     return rnd_weighted([optics_a, optics_b], [2, 1])()
