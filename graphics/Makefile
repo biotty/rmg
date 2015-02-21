@@ -23,14 +23,14 @@ rgb/librgb.a:
 %.jpeg: ray/gun %.world sky.pnm
 	ray/gun 1920x1080 $@ < $*.world
 
-sky.pnm: py/lsr.py
-	echo "f x()x()x+y f()y()f x-y" | py/lsr.py -b128 -c12 512x512 > $@
+sky.pnm: py/lindo.py
+	echo "f x()x()x+y f()y()f x-y" | py/lindo.py -b128 -c12 512x512 > $@
 
 %.mp4: ray/gun movie.sh py/%.py sky.pnm
 	./movie.sh $@ 'py/$*.py 736 "$(PWD)/ray/gun 1280x720"'
 
 fractzoom.mp4: fract.sh
-	py/fz.py | ./fract.sh $@
+	py/border.py | ./fract.sh $@
 
 fluid.mp4: img.png fluid cmd.sh
 	flow/fluid -p /tmp/ -i img.png
