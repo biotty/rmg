@@ -212,7 +212,7 @@ trace__(const detector * detector_, world__ * w)
 
     ray surface = detector_->ray;
     assert(is_near(length(surface.head), 1));
-    stack toggled = empty_stack;
+    stack toggled = EMPTY_STACK;
     const int detector_inside_i = ba_firstset(detector_->inside);
     const scene_object * closest_object
         = closest_surface(&surface, w->scene, detector_->inside, &toggled);
@@ -298,7 +298,7 @@ trace__(const detector * detector_, world__ * w)
                     distance(detector_->ray.endpoint, surface.endpoint));
         }
         int toggled_i;
-        while ((toggled_i = st_pop(&toggled)) != stack_void)
+        while ((toggled_i = st_pop(&toggled)) != STACK_VOID)
             ba_toggle(detector_->inside, toggled_i);
 
         return detected;

@@ -25,9 +25,7 @@ typedef struct {
         j; /*invariant: when i >= 0 then j >= 0 as well*/
 } partition;
 
-static const partition empty = {{-1, -1}, -1, -1};
-
-static inline bool is_void(partition i_) { return i_.j < 0; }
+#define EMPTY_PARTITION (partition){{-1, -1}, -1, -1}
 
     static partition
 partition_substract(partition part, const partition * subs, int n_subs)
@@ -39,7 +37,7 @@ partition_substract(partition part, const partition * subs, int n_subs)
         assert(p.second < p.first);
         if ((p.second < 2*TINY_REAL && part.p.first < 0)
                 || (p.second < part.p.first && p.first > part.p.first)) {
-            if (p.first > part.p.second) return empty;
+            if (p.first > part.p.second) return EMPTY_PARTITION;
             else {
                 part.p.first = p.first;
                 part.i = i;
@@ -47,7 +45,7 @@ partition_substract(partition part, const partition * subs, int n_subs)
         } else if (p.second < part.p.second && p.first > part.p.second) {
             if ((p.second < 2*TINY_REAL && part.p.first < 0)
                     || p.second < part.p.first)
-                return empty;
+                return EMPTY_PARTITION;
             else {
                 part.p.second = p.second;
                 part.j = i;
@@ -58,8 +56,8 @@ partition_substract(partition part, const partition * subs, int n_subs)
             first_part.p.second = p.second;
             first_part.j = i;
             partition i_ = partition_substract(first_part, subs + x, n_subs - x);
-            if ( ! is_void(i_)) return i_;
-            // first part got void.  keep on, with last part
+            if (i_.j >= 0) return i_;
+            // first part got void then keep on, with last part
             part.p.first = p.first;
             part.i = i;
         }
@@ -71,7 +69,7 @@ partition_substract(partition part, const partition * subs, int n_subs)
 inter_intersection(const ray * ray_, void * inter__)
 {
     inter * inter_ = inter__;
-    partition subs[inter_->count], part = empty;
+    partition subs[inter_->count], part = EMPTY_PARTITION;
     int n_subs = 0;
     for (int i = 0; i < inter_->count; i++) {
         void * a = &inter_->objects[i].arg;

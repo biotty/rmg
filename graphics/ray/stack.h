@@ -3,7 +3,10 @@
 #ifndef STACK_H
 #define STACK_H
 
-typedef int stack_value;
+#include <stdint.h>
+
+typedef uint16_t stack_value;
+#define STACK_VALUE_MAX UINT16_MAX
 
 typedef struct {
     stack_value * values;
@@ -11,11 +14,11 @@ typedef struct {
     unsigned capacity;
 } stack;
 
-extern stack empty_stack;
-extern stack_value stack_void;
+#define EMPTY_STACK { NULL, 0, 0 }
+#define STACK_VOID -1
 
-void st_push(stack * st, stack_value v);
-stack_value st_pop(stack * st);
+void st_push(stack * st, int v);
+int st_pop(stack * st);
 
 #endif
 

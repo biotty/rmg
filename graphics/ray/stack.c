@@ -8,44 +8,34 @@
 #include <assert.h>
 
 
-stack empty_stack = { NULL, 0, 0 };
-stack_value stack_void = -1;
+#define INITIAL_CAPACITY 8
 
 
-static const unsigned initial_capacity = 32;
-
-
-void st_push(stack * st, stack_value v)
+void st_push(stack * st, int v)
 {
+    assert(v < STACK_VALUE_MAX);
+    assert(v >= 0);
     if (st->n_values == 0) {
         assert(st->values == NULL);
-        st->capacity = initial_capacity;
+        st->capacity = INITIAL_CAPACITY;
         st->values = malloc(st->capacity * sizeof st->values[0]);
-    }
-    //possible-improvement: our only use of stack, is to remember which
-    //             among some flags are togled.  this means i could keep them
-    //             sorted in order to make a second insert lead to a removal.
-
-    st->values[st->n_values ++ ] = v;
-
-    if (st->n_values >= st->capacity) {
-        //improvement: initial_capacity could be tuned over time, because
-        //             when this if-test triggers, then it does so often.
-        st->capacity *= 2;
+    } else if (st->n_values == st->capacity) {
+        st->capacity += st->capacity >> 1;
         st->values = realloc(st->values, st->capacity * sizeof st->values[0]);
         assert(st->values);
     }
+    st->values[st->n_values ++ ] = v;
 }
 
 
-stack_value st_pop(stack * st)
+int st_pop(stack * st)
 {
     if (st->n_values == 0) {
         if (st->values != NULL) {
             free(st->values);
             st->values = NULL;
         }
-        return stack_void;
+        return STACK_VOID;
     } else {
         return st->values[ -- st->n_values];
     }
