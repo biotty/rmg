@@ -30,7 +30,7 @@ digitarp.raw: digitarp
 	./digitarp > $@
 
 %.raw: py/%.py py/fuge.so
-	PYTHONPATH=py py/$*.py > $@
+	py/$*.py > $@
 
 .PHONY:
 clean:
