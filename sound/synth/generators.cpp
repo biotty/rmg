@@ -4,8 +4,6 @@
 #include "math.hpp"
 #include <algorithm>
 
-generators_global ug_global;
-
 namespace {
 
 template<typename T> void fill(ug_ptr g, T ptr, unsigned n)
@@ -44,8 +42,6 @@ void prune(std::vector<weighted<ug_ptr>> & s)
 }
 
 }//namespace
-
-generators_global::generators_global() : sr(44100) {}
 
 bool infinite::more() { return true; }
 

@@ -1,14 +1,7 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 #include "filters.hpp"
-
 #include "math.hpp"
-
-filters_global fl_global;
-
-filters_global::filters_global() : sr(44100) {}
-
-double shift(double y) { return y; }
 
 period_buffer::period_buffer(unsigned n) : f(rnd(0, 1)), w(n) {}
 
@@ -45,14 +38,14 @@ double strong::shift(double y)
 strong::strong(double a, double b) : a(a), b(b), w() {}
 
 delay_network::delay_network(fl_ptr l, double s)
-        : i(), b(s * fl_global.sr), l(l), s(s)
+        : i(), b(s * SR), l(l), s(s)
 {}
 
 void delay_network::step(double z)
 {
     b.w[i] = z;
     if (++i == b.w.size()) {
-        b.cycle(s * fl_global.sr);
+        b.cycle(s * SR);
         for (auto & x: b.w) x = l->shift(x);
         i = 0;
     }
@@ -67,7 +60,7 @@ void control_clock::tick(std::function<void(double)> f)
     if (i == 0) {
         f(x);
         i = SC;
-        x += SC /(double) fl_global.sr;
+        x += SC /(double) SR;
     }
     --i;
 }

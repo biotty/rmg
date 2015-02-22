@@ -24,13 +24,13 @@ class speaker
 public:
     ug_ptr g;
     ringbuf<e> b;
-    speaker(unsigned sr);
+    speaker();
     ~speaker();
     bool produce();
 };
 
 void speaker_callback(void *u, Uint8 *stream, int len);
-void init_sdl_audio(unsigned sr, speaker * sp);
+void init_sdl_audio(speaker * sp);
 
 #endif
 

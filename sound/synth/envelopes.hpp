@@ -8,8 +8,6 @@
 #include <memory>
 #include <functional>
 
-#define SC 21
-
 struct envelope;
 typedef std::shared_ptr<envelope> en_ptr;
 

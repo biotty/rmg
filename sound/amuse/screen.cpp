@@ -38,15 +38,13 @@ void screen::write_r(bool i)
     print_r();
 }
 
-screen::screen(unsigned sr)
+screen::screen()
     : z(), r(), g(P<sum>()), n(), m(30)
     , k(new book(this)), o(new orchestra())
 {
     init_ncurses();
     k->print_h();
     print_m();
-    ug_global.sr = sr;
-    fl_global.sr = sr;
 }
 
 screen::~screen()

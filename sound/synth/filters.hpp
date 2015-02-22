@@ -9,14 +9,6 @@
 #include <memory>
 #include <vector>
 
-struct filters_global
-{
-    unsigned sr;
-    filters_global();
-};
-
-extern filters_global fl_global;
-
 struct filter
 {
     virtual double shift(double y) = 0;

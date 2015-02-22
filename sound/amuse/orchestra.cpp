@@ -89,7 +89,7 @@ sound_entry fspread(instruction ii)
     double a = .05;
     ii.d += a;
     pe_ptr t = P<punctual>(c_at(ii.f) * 2, c_at(ii.f) * .5);
-    bu_ptr s = P<psi>(P<chorus>(P<still>(ii.f, .3), t, P<sine>(0), 4));
+    bu_ptr s = P<chorus>(P<still>(ii.f, .3), t, P<sine>(0), 4);
     return sound_entry(P<attack>(a, ii.h, ii.d, s), a);
 }
 

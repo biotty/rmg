@@ -1,27 +1,9 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 #include "builders.hpp"
-
 #include "generators.hpp"
 #include "math.hpp"
 #include <algorithm>
-
-builders_global cr_global;
-
-builders_global::builders_global() : psi()
-{
-    phases.push_back(0);
-    for (unsigned i=1; i<64; i++) phases.push_back(rnd(0, 1));
-}
-
-double builders_global::phase(unsigned i)
-{
-    return phases[(i + psi) % phases.size()];
-}
-
-psi::psi(bu_ptr c) : c(c) {}
-
-ug_ptr psi::build() { cr_global.psi++; return c->build(); }
 
 sound::sound(mv_ptr s, bu_ptr c) : s(s), c(c) {};
 
@@ -33,7 +15,7 @@ ug_ptr sound::build()
 attack::attack(double h, double y1, double t, bu_ptr c)
     : a(P<punctual>(0, y1))
     , s(P<stroke>(a, h, t))
-    , w(P<psi>(P<sound>(s, c)))
+    , w(P<sound>(s, c))
 {}
 
 ug_ptr attack::build() { return w->build(); }
@@ -83,8 +65,8 @@ ug_ptr harmonics::build()
     mg_ptr s = P<sum>();
     for (unsigned i=0; i<n; i++) {
         const double f = b * (i + 1);
-        if (f * 3 > ug_global.sr) break;
-        en_ptr w = P<sine>(cr_global.phase(i));
+        if (f * 3 > SR) break;
+        en_ptr w = P<sine>(rnd(0, 1));
         s->c(wave(P<still>(f), w).build(), a(i) * k);
     }
     pg_ptr r = P<record>(s, P<movement>(P<inverted>(f->e), f->s));
@@ -107,7 +89,7 @@ ug_ptr chorus::build()
         s->c(P<periodic>(p), k);
         std::vector<double> & w = r->b.w;
         std::rotate(w.begin(),
-                w.begin() + unsigned(w.size() * cr_global.phase(i)),
+                w.begin() + unsigned(rnd(0, w.size())),
                 w.end());
     }
     return s;
@@ -138,7 +120,7 @@ fm::fm(bu_ptr m, mv_ptr i, mv_ptr f) : m(m), i(i), f(f) {}
 ug_ptr fm::build()
 {
     return P<modulation>(P<multiply>(P<pulse>(i), m->build()),
-            P<sine>(cr_global.phase(0)), f);
+            P<sine>(rnd(0, 1)), f);
 }
 
 karpluss_strong::karpluss_strong(mv_ptr f, double a, double b) : f(f), a(a), b(b) {}

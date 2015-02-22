@@ -43,7 +43,7 @@ public:
     bool eager();
     ug_ptr mastered();
 
-    screen(unsigned sr);
+    screen();
     ~screen();
 
     unsigned nr();

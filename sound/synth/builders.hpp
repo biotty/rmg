@@ -8,24 +8,6 @@
 #include "filters.hpp"
 #include <set>
 
-struct builders_global
-{
-    std::vector<double> phases;
-
-    unsigned psi;
-    builders_global();
-    double phase(unsigned i);
-};
-
-extern builders_global cr_global;
-
-struct psi : builder
-{
-    bu_ptr c;
-    psi(bu_ptr c);
-    ug_ptr build();
-};
-
 struct sound : builder
 {
     mv_ptr s;

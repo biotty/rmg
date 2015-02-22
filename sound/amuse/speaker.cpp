@@ -12,9 +12,9 @@ void speaker::put(double y)
     b.put(y * 32767);
 }
 
-speaker::speaker(unsigned sr) : b(4096)
+speaker::speaker() : b(4096)
 {
-    init_sdl_audio(sr, this);
+    init_sdl_audio(this);
 }
 
 speaker::~speaker() { SDL_CloseAudio(); }
@@ -40,12 +40,12 @@ void speaker_callback(void *u, Uint8 *s, int n)
     for (int i=0; i<n; i+=2) ((speaker *)u)->b.get().set(&s[i]);
 }
 
-void init_sdl_audio(unsigned sr, speaker * sp)
+void init_sdl_audio(speaker * sp)
 {
     static bool i = false;
     if (i) fprintf(stderr, "SDL already inited\n");
     SDL_AudioSpec s;
-    s.freq = sr;
+    s.freq = SR;
     s.format = AUDIO_S16;
     s.channels = 1;
     s.samples = 1024;

@@ -9,16 +9,6 @@
 #include "unit.hpp"
 #include <set>
 
-struct generators_global
-{
-    unsigned sr;
-    generators_global();
-};
-
-extern generators_global ug_global;
-
-#define SR ug_global.sr
-
 struct infinite : generator
 {
     bool more();

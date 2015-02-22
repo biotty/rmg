@@ -5,9 +5,8 @@
 
 int main()
 {
-    unsigned sr = 44100;
-    screen scr(sr);
-    speaker spk(sr);
+    screen scr;
+    speaker spk;
     while (scr.editing()) {
         if ( ! scr.running() && scr.eager()) {
             spk.g = scr.mastered();
@@ -15,7 +14,7 @@ int main()
             scr.start();
         }
         if (scr.running() && ! scr.eager()) {
-            SDL_Delay(1 + spk.b.n * 1000 / sr);
+            SDL_Delay(1 + spk.b.n * 1000 / SR);
             SDL_PauseAudio(1);
             scr.stop();
         }
