@@ -12,7 +12,7 @@ void speaker::put(double y)
     b.put(y * 32767);
 }
 
-speaker::speaker() : b(4096)
+speaker::speaker() : g(), b(4096)
 {
     init_sdl_audio(this);
 }

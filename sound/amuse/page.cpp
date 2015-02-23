@@ -237,7 +237,8 @@ void page::handle(int ch)
             if (sound_entry y = play(c, t)) s->speak(y.s->build());
         move_t(1);
     } else if (ch == 'r') {
-        s->store(s->compile(0, h + 1));
+        ug_ptr g = s->compile(0, h + 1);
+        s->store(*g);
     }
     else if (ch == 'i') set_i();
     else if (ch == 'u') set_u();

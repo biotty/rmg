@@ -39,7 +39,7 @@ void screen::write_r(bool i)
 }
 
 screen::screen()
-    : z(), r(), g(P<sum>()), n(), m(30)
+    : z(), r(), lim(U<limiter>(U<sum>())), n(), m(30)
     , k(new book(this)), o(new orchestra())
 {
     init_ncurses();
@@ -54,15 +54,18 @@ screen::~screen()
     endwin();
 }
 
-sum * screen::g_ptr() { return dynamic_cast<sum *>(g.get()); }
-
-void screen::speak(ug_ptr c)
-{
-    sum * z = g_ptr();
-    z->c(c, 8 / (9 + double(z->s.size())));
+sum * screen::g_ptr() {
+    limiter * g = dynamic_cast<limiter *>(mastered());
+    return dynamic_cast<sum *>(g->z.get());
 }
 
-void screen::shut() { g_ptr()->s.resize(0); }
+void screen::speak(ug_ptr && c)
+{
+    sum * z = g_ptr();
+    z->c(std::move(c), 8 / (9 + double(z->s.size())));
+}
+
+void screen::shut() { g_ptr()->s.clear(); }
 
 bool screen::editing() { return !z; }
 bool screen::running() { return r; }
@@ -87,11 +90,11 @@ void screen::edit()
     if (ch == 'Z') z = true;
 }
 
-bool screen::eager() { return g->more(); }
+bool screen::eager() { return g_ptr()->more(); }
 
-ug_ptr screen::mastered()
+generator * screen::mastered()
 {
-    return P<limiter>(g);
+    return lim.get();
 }
 
 unsigned screen::consume_n()
@@ -120,7 +123,7 @@ void init_ncurses()
 
 unsigned screen::nr() { return 10; } //must be less than bits in unsigned page::m
 
-void screen::store(ug_ptr g)
+void screen::store(generator & g)
 {
     recorder r("r.wav");
     r.run(g);

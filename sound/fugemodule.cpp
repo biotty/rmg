@@ -18,7 +18,7 @@ namespace {
 
 struct UgenObject {
     PyObject_HEAD
-    ug_ptr g;
+    generator * g;
 };
 
 PyObject *
@@ -26,9 +26,7 @@ Ugen_new(PyTypeObject * type, PyObject * args, PyObject * kw)
 {
     PyObject * self = type->tp_alloc(type, 0);
     UgenObject & u = *reinterpret_cast<UgenObject *>(self);
-    void * p = new (&u.g) ug_ptr;
-    assert(p == (void *)&u.g);
-    (void) p;  // compile: otherwise "unused"
+    u.g = nullptr;
     return self;
 }
 
@@ -36,7 +34,7 @@ void
 Ugen_dealloc(PyObject * self)
 {
     UgenObject & u = *reinterpret_cast<UgenObject *>(self);
-    u.g.ug_ptr::~ug_ptr();
+    delete u.g;
     self->ob_type->tp_free(self);
 }
 
@@ -330,7 +328,7 @@ render(PyObject * self, PyObject * args)
         return NULL;
     score_entry se(0, data);
     PyObject * o = PyObject_CallObject((PyObject *)&UgenType, NULL);
-    reinterpret_cast<UgenObject *>(o)->g = P<limiter>(se.b->build());
+    reinterpret_cast<UgenObject *>(o)->g = new limiter(se.b->build());
     return o;
 }
 

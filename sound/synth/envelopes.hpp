@@ -14,6 +14,7 @@ typedef std::shared_ptr<envelope> en_ptr;
 struct envelope
 {
     virtual double y(double x) = 0;
+    virtual ~envelope();
 };
 
 typedef std::function<double (double)> fun;
@@ -95,6 +96,7 @@ struct movement
 
     movement(en_ptr e, double s);
     virtual double z(double t);
+    virtual ~movement();
 };
 
 typedef std::shared_ptr<movement> mv_ptr;

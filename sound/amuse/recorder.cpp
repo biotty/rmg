@@ -16,11 +16,11 @@ void put(double v, FILE * f)
 
 recorder::recorder(const char * path) : out(fopen(path, "wb")) {}
 
-void recorder::run(ug_ptr g)
+void recorder::run(generator & g)
 {
-    while (g->more()) {
+    while (g.more()) {
         unit u;
-        g->generate(u);
+        g.generate(u);
         FOR_SU(i) put(u.y[i], out);
     }
 }

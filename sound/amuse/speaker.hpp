@@ -22,7 +22,7 @@ class speaker
     };
     void put(double y);
 public:
-    ug_ptr g;
+    generator * g;
     ringbuf<e> b;
     speaker();
     ~speaker();

@@ -6,17 +6,17 @@
 
 namespace {
 
-template<typename T> void fill(ug_ptr g, T ptr, unsigned n)
+template<typename T> void fill(generator & g, T ptr, unsigned n)
 {
     const unsigned b = n / SU;
     for (unsigned k=0; k!=b; k++) {
         unit u;
-        g->generate(u);
+        g.generate(u);
         std::copy(u.y, u.y + SU, ptr + k * SU);
     }
     if (unsigned r = n % SU) {
         unit v;
-        g->generate(v);
+        g.generate(v);
         std::copy(v.y, v.y + r, ptr + b * SU);
     }
 }
@@ -42,6 +42,8 @@ void prune(std::vector<weighted<ug_ptr>> & s)
 }
 
 }//namespace
+
+generator::~generator() {}
 
 bool infinite::more() { return true; }
 
@@ -79,7 +81,7 @@ void record::reset()
     c = 0;
 }
 
-record::record(ug_ptr g, mv_ptr duration)
+record::record(generator & g, mv_ptr duration)
     : b(duration->z(0) * SR), duration(duration), c(), t()
 {
     fill(g, b.w.begin(), b.w.size());
@@ -129,7 +131,7 @@ void periodic::shift(unit & u)
     FOR_SU(i) u.y[i] = carry->get();
 }
 
-periodic::periodic(pg_ptr g) : g(g), carry(new buffer) {}
+periodic::periodic(pg_ptr && g) : g(std::move(g)), carry(new buffer) {}
 
 void periodic::generate(unit & u)
 {
@@ -147,7 +149,7 @@ void periodic::generate(unit & u)
     shift(u);
 }
 
-karpluss::karpluss(fl_ptr l, ug_ptr g, mv_ptr duration)
+karpluss::karpluss(fl_ptr l, generator & g, mv_ptr duration)
     : record(g, duration), l(l) {}
 
 void karpluss::reset()
@@ -156,7 +158,7 @@ void karpluss::reset()
     for (double & x : b.w) x = l->shift(x);
 }
 
-multiply::multiply(ug_ptr a, ug_ptr b) : a(a), b(b) {}
+multiply::multiply(ug_ptr && a, ug_ptr && b) : a(std::move(a)), b(std::move(b)) {}
 
 void multiply::generate(unit & u)
 {
@@ -170,9 +172,9 @@ bool multiply::more() { return a->more() && b->more(); }
 
 product::product() : anymore() {}
 
-void product::c(ug_ptr g, double w)
+void product::c(ug_ptr && g, double w)
 {
-    s.push_back({g, w});
+    s.emplace_back(std::move(g), w);
     anymore = true;
 }
 
@@ -195,9 +197,9 @@ bool product::more() { return anymore; }
 
 sum::sum() : anymore() {}
 
-void sum::c(ug_ptr g, double w)
+void sum::c(ug_ptr && g, double w)
 {
-    s.push_back({g, w});
+    s.emplace_back(std::move(g), w);
     anymore = true;
 }
 
@@ -218,8 +220,8 @@ void sum::generate(unit & u)
 
 bool sum::more() { return anymore; }
 
-modulation::modulation(ug_ptr m, en_ptr c, mv_ptr f)
-    : m(m), c(c), f(f), x(), t()
+modulation::modulation(ug_ptr && m, en_ptr c, mv_ptr f)
+    : m(std::move(m)), c(c), f(f), x(), t()
 {}
 
 void modulation::generate(unit & u)
@@ -240,8 +242,8 @@ void modulation::generate(unit & u)
     }
 }
 
-delayed_sum::entry::entry(double t, ug_ptr g)
-    : t(t), g(g), offset(unsigned(t * SR) % SU)
+delayed_sum::entry::entry(double t, ug_ptr && g)
+    : t(t), g(std::move(g)), offset(unsigned(t * SR) % SU)
 {}
 
 delayed_sum::couple::couple() : c(2) { a.set(0); b.set(0); }
@@ -266,10 +268,10 @@ bool delayed_sum::couple::carry() { return c < 2; }
 
 delayed_sum::delayed_sum() : v(new couple), pending(), k() {}
 
-void delayed_sum::c(ug_ptr g, double t)
+void delayed_sum::c(ug_ptr && g, double t)
 {
     if (!entries.empty() && entries.back().t > t) throw 1;
-    entries.push_back(entry(t, g));
+    entries.emplace_back(t, std::move(g));
     pending = true;
 }
 
@@ -279,7 +281,7 @@ void delayed_sum::generate(unit & u)
     const double s = ++k * SU /(double) SR;
     unsigned z = 0;
     bool h = false;
-    for (auto e : entries) {
+    for (auto & e : entries) {
         if (e.g->more()) {
             if (e.t >= s) {
                 pending = true;
@@ -324,7 +326,7 @@ void limiter::out(unit & u, double t)
     }
 }
 
-limiter::limiter(ug_ptr z) : z(z), b(), q(), i(.01), s(1), g(1) {}
+limiter::limiter(ug_ptr && z) : z(std::move(z)), b(), q(), i(.01), s(1), g(1) {}
 
 void limiter::generate(unit & u)
 {
@@ -362,7 +364,7 @@ bool limiter::more()
     return true;
 }
 
-filtration::filtration(ug_ptr g, fl_ptr l) : g(g), l(l) {}
+filtration::filtration(ug_ptr && g, fl_ptr l) : g(std::move(g)), l(l) {}
 
 void filtration::generate(unit & u)
 {
@@ -370,7 +372,7 @@ void filtration::generate(unit & u)
     for (double & x : u.y) x = l->shift(x);
 }
 
-timed::timed(ug_ptr g, double t) : g(g), n(SR * t / SU), k() {}
+timed::timed(ug_ptr && g, double t) : g(std::move(g)), n(SR * t / SU), k() {}
 
 void timed::generate(unit & u)
 {

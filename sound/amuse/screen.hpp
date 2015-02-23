@@ -13,11 +13,11 @@ class screen
 {
     bool z;
     bool r;
-    ug_ptr g;
+    ug_ptr lim;
     sum * g_ptr();
 public:
-    void store(ug_ptr c);
-    void speak(ug_ptr c);
+    void store(generator & c);
+    void speak(ug_ptr && c);
     void shut();
 
     bool editing();
@@ -41,7 +41,7 @@ public:
     orchestra * o;
     void edit();
     bool eager();
-    ug_ptr mastered();
+    generator * mastered();
 
     screen();
     ~screen();

@@ -3,6 +3,7 @@
 #ifndef UNIT_HPP
 #define UNIT_HPP
 
+#include "unitfwd.hpp"
 #include <memory>
 
 #define SU 441
@@ -18,14 +19,6 @@ struct unit
     void add(unit & u, double w);
     void mul(unit & u, double w);
 };
-
-struct generator
-{
-    virtual void generate(unit & u) = 0;
-    virtual bool more() = 0;
-};
-
-typedef std::shared_ptr<generator> ug_ptr;
 
 #endif
 

@@ -5,6 +5,8 @@
 #include "generators.hpp"
 #include "math.hpp"
 
+envelope::~envelope() {}
+
 shaped::shaped(en_ptr e, fun f) : e(e), f(f) {}
 double shaped::y(double x) { return f(e->y(x)); }
 
@@ -23,9 +25,6 @@ double added::y(double x) { return a->y(x) + b->y(x); }
 scaled::scaled(en_ptr e, double m) : e(e), m(m) {}
 double scaled::y(double x) { return m * e->y(x); }
 
-//todo: implement invert and exponential using shape.
-// or let the user do that.  check out c++11 lambda syntax ?
-
 inverted::inverted(en_ptr e) : e(e) {}
 double inverted::y(double x) { return 1 / e->y(x); }
 
@@ -42,6 +41,8 @@ double movement::z(const double t)
     if (t >= s) return e->y(IB1);
     return e->y(t / s);
 }
+
+movement::~movement() {}
 
 still::still(double k, double t) : movement(P<constant>(k), t) {}
 

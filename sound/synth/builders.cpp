@@ -5,11 +5,13 @@
 #include "math.hpp"
 #include <algorithm>
 
+builder::~builder() {}
+
 sound::sound(mv_ptr s, bu_ptr c) : s(s), c(c) {};
 
 ug_ptr sound::build()
 {
-    return P<multiply>(P<pulse>(s), c->build());
+    return U<multiply>(U<pulse>(s), c->build());
 }
 
 attack::attack(double h, double y1, double t, bu_ptr c)
@@ -18,16 +20,17 @@ attack::attack(double h, double y1, double t, bu_ptr c)
     , w(P<sound>(s, c))
 {}
 
-ug_ptr attack::build() { return w->build(); }
+ug_ptr attack::build() {
+    return w->build();
+}
 
 wave::wave(mv_ptr f, en_ptr e) : f(f), e(e) {}
 
 ug_ptr wave::build()
 {
     mv_ptr p = P<movement>(P<inverted>(f->e), f->s);
-    ug_ptr w = P<pulse>(P<movement>(e, p->z(0)));
-    pg_ptr g = P<record>(w, p);
-    return P<periodic>(g);
+    pulse w(P<movement>(e, p->z(0)));
+    return U<periodic>(U<record>(w, p));
 }
 
 harmonics::harmonics(mv_ptr f, en_ptr e, unsigned n, double ow)
@@ -62,15 +65,14 @@ ug_ptr harmonics::build()
 {
     const double k = 1 / p();
     const double b = f->z(0);
-    mg_ptr s = P<sum>();
+    sum s;
     for (unsigned i=0; i<n; i++) {
         const double f = b * (i + 1);
         if (f * 3 > SR) break;
         en_ptr w = P<sine>(rnd(0, 1));
-        s->c(wave(P<still>(f), w).build(), a(i) * k);
+        s.c(wave(P<still>(f), w).build(), a(i) * k);
     }
-    pg_ptr r = P<record>(s, P<movement>(P<inverted>(f->e), f->s));
-    return P<periodic>(r);
+    return U<periodic>(U<record>(s, P<movement>(P<inverted>(f->e), f->s)));
 };
 
 chorus::chorus(mv_ptr f, en_ptr t, en_ptr w, unsigned n)
@@ -79,20 +81,19 @@ chorus::chorus(mv_ptr f, en_ptr t, en_ptr w, unsigned n)
 ug_ptr chorus::build()
 {
     const double k = 1 / log2(n);
-    mg_ptr s = P<sum>();
+    mg_ptr s = U<sum>();
     for (unsigned i=0; i<n; i++) {
         const double m = (2 * i - double(n)) / n;
         en_ptr h = P<added>(f->e, P<scaled>(t, m));
         ug_ptr g = wave(P<still>(h->y(0)), w).build();
-        record * r = new record(g, P<movement>(P<inverted>(h), f->s));
-        pg_ptr p(r);
-        s->c(P<periodic>(p), k);
+        record * r = new record(*g, P<movement>(P<inverted>(h), f->s));
         std::vector<double> & w = r->b.w;
         std::rotate(w.begin(),
                 w.begin() + unsigned(rnd(0, w.size())),
                 w.end());
+        s->c(U<periodic>(pg_ptr(r)), k);
     }
-    return s;
+    return std::move(s);
 }
 
 cross::cross(bu_ptr a, bu_ptr b, mv_ptr c) : a(a), b(b), c(c) {}
@@ -107,36 +108,36 @@ ug_ptr cross::build()
                                    //so we could solve the problem of disconituity by
                                    //simply making wb a P<hung> instead of P<pulse>
                                    //as well.  then remove this if ... throw line.
-    ug_ptr wa = P<hung>(c);
-    ug_ptr wb = P<pulse>(P<movement>(P<subtracted>(P<constant>(1), c->e), c->s));
-    mg_ptr mx = P<sum>();
-    mx->c(P<multiply>(wa, a->build()), 1);
-    mx->c(P<multiply>(wb, b->build()), 1);
-    return mx;
+    ug_ptr wa = U<hung>(c);
+    ug_ptr wb = U<hung>(P<movement>(P<subtracted>(P<constant>(1), c->e), c->s));
+    mg_ptr mx = U<sum>();
+    mx->c(U<multiply>(std::move(wa), a->build()), 1);
+    mx->c(U<multiply>(std::move(wb), b->build()), 1);
+    return std::move(mx);
 }
 
 fm::fm(bu_ptr m, mv_ptr i, mv_ptr f) : m(m), i(i), f(f) {}
 
 ug_ptr fm::build()
 {
-    return P<modulation>(P<multiply>(P<pulse>(i), m->build()),
-            P<sine>(rnd(0, 1)), f);
+    return U<modulation>(U<multiply>(U<pulse>(i), m->build()),
+            U<sine>(rnd(0, 1)), f);
 }
 
 karpluss_strong::karpluss_strong(mv_ptr f, double a, double b) : f(f), a(a), b(b) {}
 
 ug_ptr karpluss_strong::build()
 {
-    pg_ptr r = P<karpluss>(P<strong>(a, b), P<noise>(1),
-            P<movement>(P<inverted>(f->e), f->s));
-    return P<periodic>(r);
+    noise n(1);
+    return U<periodic>(U<karpluss>(P<strong>(a, b), n,
+                P<movement>(P<inverted>(f->e), f->s)));
 }
 
 timed_filter::timed_filter(bu_ptr i, fl_ptr l, double t) : i(i), l(l), t(t) {}
 
 ug_ptr timed_filter::build()
 {
-    return P<timed>(P<filtration>(i->build(), l), t);
+    return U<timed>(U<filtration>(i->build(), l), t);
 }
 
 bool score::event::operator<(event const & e) const
@@ -148,16 +149,16 @@ void score::add(double t, bu_ptr c) { v.insert({c, t, i++}); }
 
 ug_ptr score::build()
 {
-    mg_ptr m = P<delayed_sum>();
-    for (auto e : v) m->c(P<lazy>(e.c), e.t);
-    return P<limiter>(m);
+    mg_ptr m = U<delayed_sum>();
+    for (auto & e : v) m->c(U<lazy>(e.c), e.t);
+    return U<limiter>(std::move(m));
 }
 
 adder::adder() : w(1) {}
 
 ug_ptr adder::build()
 {
-    mg_ptr s = P<sum>();
-    for (auto p : v) s->c(p->build(), w);
-    return s;
+    mg_ptr s = U<sum>();
+    for (auto & p : v) s->c(p->build(), w);
+    return std::move(s);
 }

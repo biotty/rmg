@@ -53,7 +53,7 @@ struct period : generator
     virtual void reset() = 0;
 };
 
-typedef std::shared_ptr<period> pg_ptr;
+typedef std::unique_ptr<period> pg_ptr;
 
 struct record : period
 {
@@ -64,7 +64,7 @@ struct record : period
     bool more();
     unsigned size();
     void reset();
-    record(ug_ptr g, mv_ptr duration);
+    record(generator & g, mv_ptr duration);
     void generate(unit & u);
 };
 
@@ -72,7 +72,7 @@ struct karpluss : record
 {
     fl_ptr l;
 
-    karpluss(fl_ptr l, ug_ptr g, mv_ptr duration);
+    karpluss(fl_ptr l, generator & g, mv_ptr duration);
     void reset();
 };
 
@@ -96,7 +96,7 @@ struct periodic : infinite
     void append(unit & u, unsigned n);
     void shift(unit & u);
 
-    periodic(pg_ptr g);
+    periodic(pg_ptr && g);
     void generate(unit & u);
 };
 
@@ -105,23 +105,25 @@ struct multiply : generator
     ug_ptr a;
     ug_ptr b;
 
-    multiply(ug_ptr a, ug_ptr b);
+    multiply(ug_ptr && a, ug_ptr && b);
     void generate(unit & u);
     bool more();
 };
 
 struct mix : generator
 {
-    virtual void c(ug_ptr g, double p) = 0;
+    virtual void c(ug_ptr && g, double p) = 0;
 };
 
-typedef std::shared_ptr<mix> mg_ptr;
+typedef std::unique_ptr<mix> mg_ptr;
 
 template<typename T>
 struct weighted
 {
     T e;
     double w;
+
+    weighted(T && e, double w) : e(std::move(e)), w(w) {}
 };
 
 struct product : mix
@@ -130,7 +132,7 @@ struct product : mix
     bool anymore;
 
     product();
-    void c(ug_ptr g, double w);
+    void c(ug_ptr && g, double w);
     void generate(unit & u);
     bool more();
 };
@@ -141,7 +143,7 @@ struct sum : mix
     bool anymore;
 
     sum();
-    void c(ug_ptr g, double w);
+    void c(ug_ptr && g, double w);
     void generate(unit & u);
     bool more();
 };
@@ -154,7 +156,7 @@ struct modulation : infinite
     double x;
     double t;
 
-    modulation(ug_ptr m, en_ptr c, mv_ptr f);
+    modulation(ug_ptr && m, en_ptr c, mv_ptr f);
     void generate(unit & u);
 };
 
@@ -166,7 +168,7 @@ struct delayed_sum : mix
         ug_ptr g;
         unsigned offset;
 
-        entry(double t, ug_ptr g);
+        entry(double t, ug_ptr && g);
     };
 
     struct couple
@@ -187,7 +189,7 @@ struct delayed_sum : mix
     unsigned k;
 
     delayed_sum();
-    void c(ug_ptr g, double t);
+    void c(ug_ptr && g, double t);
     void generate(unit & u);
     bool more();
 };
@@ -218,7 +220,7 @@ struct limiter : generator
     double g;
     void out(unit & u, double t);
     
-    limiter(ug_ptr z);
+    limiter(ug_ptr && z);
     void generate(unit & u);
     bool more();
 };
@@ -229,7 +231,7 @@ struct timed : generator
     unsigned n;
     unsigned k;
 
-    timed(ug_ptr g, double t);
+    timed(ug_ptr && g, double t);
     void generate(unit & u);
     bool more();
 };
@@ -238,7 +240,7 @@ struct filtration : infinite
 {
     ug_ptr g;
     fl_ptr l;
-    filtration(ug_ptr g, fl_ptr l);
+    filtration(ug_ptr && g, fl_ptr l);
     void generate(unit & u);
 };
 

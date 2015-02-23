@@ -31,13 +31,13 @@ fm = lambda d, m, i, c: ox.play(d, "fqm", 1, .65, 1,
 ps = ox.pause
 compo = Composition()
 compo.add_filter(Instruction("comb", rndlist(0, .2, 19), rndlist(0, .2, 19)), .2)
-rcx = []
+row = []
 for _ in range(64):
     cs = Composition()
     cs.add_filter(Instruction("echo", [rnd(.2, .4)], [rnd(.1, .5)]), 10)
-    xa = [ps(cx.span)]
-    xb = [ps(cx.span + 2)]
-    xc = [ps(cx.span + 4)]
+    xa = [ps(compo.span)]
+    xb = [ps(compo.span + 2)]
+    xc = [ps(compo.span + 4)]
 
     x = Composition()
     m = [int(rnd(48, 80)), int(rnd(48, 80))]
@@ -60,8 +60,8 @@ for _ in range(64):
     cs.add_row(xa)
     cs.add_row(xb)
     cs.add_row(xc)
-    rcx.append(cs)
-compo.add_row(rcx)
+    row.append(cs)
+compo.add_row(row)
 ug = ox.render(compo())
 while True:
     b = ug()
