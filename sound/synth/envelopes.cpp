@@ -110,4 +110,3 @@ double tabular::y(double x)
 
 sine::sine(double phase) : phase(phase) {}
 double sine::y(double x) { return sin(2 * PI * (x + phase)); }
-

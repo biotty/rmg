@@ -30,7 +30,7 @@ double just_ratio(unsigned i)
         : 2 / just_ratio_firsthalf(12 - i);
 }
 
-} //namespace
+}
 
 double p_of(double f) { return 69 + 12 * std::log2(f / 440); }
 double c_at(double f) { return f_of(p_of(f) + .01) - f; }

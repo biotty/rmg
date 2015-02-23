@@ -132,6 +132,4 @@ struct adder : builder
     ug_ptr build();
 };
 
-
 #endif
-

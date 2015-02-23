@@ -14,4 +14,3 @@ struct builder
 typedef std::shared_ptr<builder> bu_ptr;
 
 #endif
-

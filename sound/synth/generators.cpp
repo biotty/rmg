@@ -6,7 +6,8 @@
 
 namespace {
 
-template<typename T> void fill(generator & g, T ptr, unsigned n)
+template<typename T>
+void fill(generator & g, T ptr, unsigned n)
 {
     const unsigned b = n / SU;
     for (unsigned k=0; k!=b; k++) {
@@ -31,17 +32,14 @@ inline void mod1inc(double & x, double d)
 
 inline double famp(double z) { return z * z; }
 
-bool nomore(weighted<ug_ptr> & c) {
-    return !c.e->more();
-}
+bool nomore(weighted<ug_ptr> & c) { return ! c.e->more(); }
 
 void prune(std::vector<weighted<ug_ptr>> & s)
 {
-    s.erase(std::remove_if(s.begin(), s.end(), nomore),
-            s.end());
+    s.erase(std::remove_if(s.begin(), s.end(), nomore), s.end());
 }
 
-}//namespace
+}
 
 generator::~generator() {}
 
@@ -101,23 +99,19 @@ void record::generate(unit & u)
 }
 
 periodic::buffer::buffer() : head(), tail(), a() {}
-
 unsigned periodic::buffer::n()
 {
     if (head == tail) return 0;
     else if (head > tail) return head - tail;
     else return head + (2*SU - tail);
 }
-
 unsigned periodic::buffer::post_incr(unsigned & i)
 {
     const unsigned r = i;
     if (++i >= 2*SU) i = 0;
     return r;
 }
-
 void periodic::buffer::put(double y) { a[post_incr(head)] = y; }
-
 double periodic::buffer::get() { return a[post_incr(tail)]; }
 
 void periodic::append(unit & u, unsigned n)
@@ -150,7 +144,8 @@ void periodic::generate(unit & u)
 }
 
 karpluss::karpluss(fl_ptr l, generator & g, mv_ptr duration)
-    : record(g, duration), l(l) {}
+    : record(g, duration), l(l)
+{}
 
 void karpluss::reset()
 {
@@ -158,7 +153,9 @@ void karpluss::reset()
     for (double & x : b.w) x = l->shift(x);
 }
 
-multiply::multiply(ug_ptr && a, ug_ptr && b) : a(std::move(a)), b(std::move(b)) {}
+multiply::multiply(ug_ptr && a, ug_ptr && b)
+    : a(std::move(a)), b(std::move(b))
+{}
 
 void multiply::generate(unit & u)
 {
@@ -247,7 +244,6 @@ delayed_sum::entry::entry(double t, ug_ptr && g)
 {}
 
 delayed_sum::couple::couple() : c(2) { a.set(0); b.set(0); }
-
 void delayed_sum::couple::add(unsigned h, unit & u)
 {
     unsigned i = 0;
@@ -255,7 +251,6 @@ void delayed_sum::couple::add(unsigned h, unit & u)
     FOR(j, 0, h) b.y[j] += u.y[i++];
     c = 0;
 }
-
 void delayed_sum::couple::flush(unit & u)
 {
     u = a;
@@ -263,7 +258,6 @@ void delayed_sum::couple::flush(unit & u)
     b.set(0);
     ++c;
 }
-
 bool delayed_sum::couple::carry() { return c < 2; }
 
 delayed_sum::delayed_sum() : v(new couple), pending(), k() {}
@@ -390,4 +384,3 @@ void timed::generate(unit & u)
 }
 
 bool timed::more() { return k <= n; }
-

@@ -9,15 +9,9 @@
 #include "unit.hpp"
 #include <set>
 
-struct infinite : generator
-{
-    bool more();
-};
+struct infinite : generator { bool more(); };
 
-struct silence : infinite
-{
-    void generate(unit & u);
-};
+struct silence : infinite { void generate(unit & u); };
 
 struct noise : infinite
 {
@@ -64,6 +58,7 @@ struct record : period
     bool more();
     unsigned size();
     void reset();
+
     record(generator & g, mv_ptr duration);
     void generate(unit & u);
 };
@@ -240,9 +235,9 @@ struct filtration : infinite
 {
     ug_ptr g;
     fl_ptr l;
+
     filtration(ug_ptr && g, fl_ptr l);
     void generate(unit & u);
 };
 
 #endif
-

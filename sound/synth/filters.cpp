@@ -85,4 +85,3 @@ feedback::feedback(fl_ptr l, mv_ptr f, en_ptr s) : feed(l, f, s)
 {
     back = true;
 }
-

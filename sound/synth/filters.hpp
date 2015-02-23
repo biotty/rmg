@@ -37,6 +37,7 @@ struct strong : filter
     double b;
     double w;
     double shift(double y);
+
     strong(double a, double b);
 };
 
@@ -77,4 +78,3 @@ struct feed : filter
 struct feedback : feed { feedback(fl_ptr l, mv_ptr f, en_ptr s); };
 
 #endif
-

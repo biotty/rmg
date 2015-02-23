@@ -112,4 +112,3 @@ TEST(Basic, BufferChunk)
     EXPECT_EQ(8, b.get());
     EXPECT_EQ(9, b.get());
 }
-

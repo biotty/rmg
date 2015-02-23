@@ -32,10 +32,7 @@ public:
         else return head + (n - tail);
     }
 
-    void skip()
-    {
-        if (++tail == n) tail = 0;
-    }
+    void skip() { if (++tail == n) tail = 0; }
 
     T get()
     {
@@ -68,4 +65,3 @@ public:
 typedef ringbuf<double> ring_buffer;
 
 #endif
-

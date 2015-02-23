@@ -19,6 +19,6 @@ double rnd(double a, double b)
 double linear(double a, double b, double r)
 { return a * (1 - r) + b * r; }
 
-}//namespace
+}
 
 #endif

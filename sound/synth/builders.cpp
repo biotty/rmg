@@ -9,10 +9,7 @@ builder::~builder() {}
 
 sound::sound(mv_ptr s, bu_ptr c) : s(s), c(c) {};
 
-ug_ptr sound::build()
-{
-    return U<multiply>(U<pulse>(s), c->build());
-}
+ug_ptr sound::build() { return U<multiply>(U<pulse>(s), c->build()); }
 
 attack::attack(double h, double y1, double t, bu_ptr c)
     : a(P<punctual>(0, y1))
@@ -20,9 +17,7 @@ attack::attack(double h, double y1, double t, bu_ptr c)
     , w(P<sound>(s, c))
 {}
 
-ug_ptr attack::build() {
-    return w->build();
-}
+ug_ptr attack::build() { return w->build(); }
 
 wave::wave(mv_ptr f, en_ptr e) : f(f), e(e) {}
 
@@ -76,7 +71,8 @@ ug_ptr harmonics::build()
 };
 
 chorus::chorus(mv_ptr f, en_ptr t, en_ptr w, unsigned n)
-    : f(f), t(t), w(w), n(n) {}
+    : f(f), t(t), w(w), n(n)
+{}
 
 ug_ptr chorus::build()
 {
@@ -100,14 +96,6 @@ cross::cross(bu_ptr a, bu_ptr b, mv_ptr c) : a(a), b(b), c(c) {}
 
 ug_ptr cross::build()
 {
-    if (c->z(c->s) <= .9) throw 1; //see that user took care of ending c high
-                                   //should actually be very close to 1
-                                   //because wb will step to 0 at c->s as it's
-                                   //an envelope's irect values (to be !more at c->s
-                                   // -- but the built ug will never be !more anyway,
-                                   //so we could solve the problem of disconituity by
-                                   //simply making wb a P<hung> instead of P<pulse>
-                                   //as well.  then remove this if ... throw line.
     ug_ptr wa = U<hung>(c);
     ug_ptr wb = U<hung>(P<movement>(P<subtracted>(P<constant>(1), c->e), c->s));
     mg_ptr mx = U<sum>();
@@ -124,7 +112,9 @@ ug_ptr fm::build()
             U<sine>(rnd(0, 1)), f);
 }
 
-karpluss_strong::karpluss_strong(mv_ptr f, double a, double b) : f(f), a(a), b(b) {}
+karpluss_strong::karpluss_strong(mv_ptr f, double a, double b)
+    : f(f), a(a), b(b)
+{}
 
 ug_ptr karpluss_strong::build()
 {
@@ -133,7 +123,9 @@ ug_ptr karpluss_strong::build()
                 P<movement>(P<inverted>(f->e), f->s)));
 }
 
-timed_filter::timed_filter(bu_ptr i, fl_ptr l, double t) : i(i), l(l), t(t) {}
+timed_filter::timed_filter(bu_ptr i, fl_ptr l, double t)
+    : i(i), l(l), t(t)
+{}
 
 ug_ptr timed_filter::build()
 {
@@ -141,7 +133,9 @@ ug_ptr timed_filter::build()
 }
 
 bool score::event::operator<(event const & e) const
-{ return t < e.t || (t == e.t && i < e.i); }
+{
+    return t < e.t || (t == e.t && i < e.i);
+}
 
 score::score() : i() {}
 

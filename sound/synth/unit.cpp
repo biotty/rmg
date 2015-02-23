@@ -9,7 +9,7 @@ inline double linear(double a, double b, double r)
     return a * (1 - r) + b * r;
 }
 
-}//namespace
+}
 
 void unit::set(double s)
 {
@@ -25,4 +25,3 @@ void unit::mul(unit & u, double w)
 {
     FOR_SU(i) y[i] *= linear(1 - w, 1, u.y[i]);
 }
-
