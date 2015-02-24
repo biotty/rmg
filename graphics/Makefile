@@ -1,5 +1,6 @@
 CFLAGS=-Wextra -Werror -std=c11 -Irgb
 LDFLAGS=-lm
+RAY_GUN=$(shell pwd)/ray/gun
 
 .PHONY:
 all: ray/gun flow/fluid
@@ -17,17 +18,14 @@ flow/fluid: rgb/librgb.a
 rgb/librgb.a:
 	$(MAKE) -C rgb
 
-%.world: py/%.py py/rmg/scene.py
-	py/$*.py 16 > $@
-
-%.jpeg: ray/gun %.world sky.pnm
-	ray/gun 1920x1080 $@ < $*.world
+%.jpeg: ray/gun py/rmg/script.py py/%.py sky.pnm
+	py/$*.py -r 1920x1080 -C $(RAY_GUN) 8 $@
 
 sky.pnm: py/lindo.py
-	echo "f x()x()x+y f()y()f x-y" | py/lindo.py -b128 -c12 512x512 > $@
+	echo "f x()x()x+y f()y()f x-y" | py/lindo.py -b128 -c12 -o $@
 
 %.mp4: ray/gun movie.sh py/%.py sky.pnm
-	./movie.sh $@ 'py/$*.py 736 "$(PWD)/ray/gun 1280x720"'
+	./movie.sh $@ "py/$*.py -c 736 -C $(RAY_GUN)"
 
 fractzoom.mp4: fract.sh
 	py/border.py | ./fract.sh $@
@@ -47,6 +45,6 @@ clean:
 
 .PHONY:
 sweep: clean
-	@rm -f *.world *.png *.jpeg *.avi *.mp4 *.pnm
+	@rm -f *.png *.jpeg *.avi *.mp4 *.pnm
 	$(MAKE) -C ray sweep
 	$(MAKE) -C flow sweep

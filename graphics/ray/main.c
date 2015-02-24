@@ -154,7 +154,7 @@ new_member(object_intersection * fi, object_normal * fn)
     int
 main(int argc, char *argv[])
 {
-    const bool report_status = getenv("CRAY_RS") != NULL;
+    const bool report_status = getenv("GUN_RS") != NULL;
     if (argc < 2) fail("dimention argument missing\n");
     const char * dim_w = argv[1];
     const char * dim_h = strchr(dim_w, 'x');
@@ -231,7 +231,8 @@ main(int argc, char *argv[])
     }
     set_spots(world_, spots, k);
     image out = image_create(out_path, o.width, o.height);
-    if (report_status) fprintf(stderr, "Tracing view of Observer\n");
+    if (report_status)
+        fprintf(stderr, "Tracing %dx%d of Observer\ny", o.width, o.height);
     for (int row = 0; row < o.height; row++) {
         for (int column = 0; column < o.width; column++) {
             ray ray_ = observer_ray(&o, column, row);

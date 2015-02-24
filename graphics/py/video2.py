@@ -12,8 +12,7 @@ from rmg.space import Point, Direction, origo, random_orbit
 from rmg.color import Color, Optics, white, black
 from rmg.map import Map, OpticsFactor
 from rmg.scene import SceneObject, LightSpot, Observer
-from rmg.script import ParameterWorld, ScriptInvocation, UnitT
-from rmg.board import Image
+from rmg.script import ParametricWorld, ScriptInvocation
 from globe import GlobeMapRenderer
 import os
 
@@ -58,25 +57,15 @@ class RandomSceneObject:
 param_scene_objects = [RandomSceneObject(i) for i in range(count)]
 
 
-@UnitT(1)
-def scene_objects(t):
-    return [s(t) for s in param_scene_objects]
+def scene_objects(t): return [s(t) for s in param_scene_objects]
+def sky(t): return "photo"
 
-
-@UnitT(1)
 def observer(t):
     a = unit_angle(t)
     d = Direction(cos(a), sin(a), 1)
     d *= 1 / abs(d)
     return Observer(d*-2, d, view_opening = .65)
 
-
-@UnitT(1)
-def sky(t):
-    return "photo"
-
-
-@UnitT(1)
 def light_spots(t):
     return [
         LightSpot(Point(-20, 15, -30), Color(0.7, 0.1, 0.1)),
@@ -94,6 +83,6 @@ for n in names:
         globe_map(32, 32, n)
 
 
-p_world = ParameterWorld(scene_objects, light_spots, observer, sky)
+pw = ParametricWorld(scene_objects, light_spots, observer, sky)
 script = ScriptInvocation.from_sys()
-script.run(p_world)
+script.sequence(pw)

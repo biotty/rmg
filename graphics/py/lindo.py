@@ -4,6 +4,8 @@
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
 
+from math import pi
+from rmg.math_ import degrees_unit, rnd
 from rmg.board import Board, Pencil
 from rmg.draw import Drawing, TreeBuilder
 from rmg.ls import Settings, System, OperationsVisitor
@@ -11,11 +13,10 @@ from rmg.color import Optics, Color, white, black
 from rmg.scene import World, WorldPencil, SceneObject, LightSpot
 from rmg.bodies import Sphere, Cylinder, Plane, Inter
 from rmg.space import Point, Direction
-from rmg.math_ import degrees_unit, rnd
-from sys import stdout, stdin, stderr, exit
 from optparse import OptionParser
-from os import popen
-from math import pi
+from subprocess import Popen, PIPE
+from sys import stdout, stdin, stderr, exit
+from os import environ
 
 
 def status(n):
@@ -108,11 +109,13 @@ opts.add_option("-e", "--l-system-expression", type="string", default="")
 opts.add_option("-g", "--eval-globals", type="string", default="")
 opts.add_option("-i", "--palette-index", type="int", default=0)
 opts.add_option("-n", "--only-last-nodes", type="int")
+opts.add_option("-o", "--image-path", type="string", default="ls.jpeg")
 opts.add_option("-r", "--resolution", type="string", default="512x512")
 opts.add_option("-s", "--random-seed", type="int")
 opts.add_option("-t", "--ray-trace-mode", action="store_true", default=False)
 opts.add_option("-u", "--unit-turn-degrees", type="float", default=360)
-opts.add_option("-w", "--write-image-file")
+opts.add_option("-w", "--print-world", action="store_true", default=False)
+opts.add_option("-C", "--trace-command", type="string", default="gun")
 (options, args) = opts.parse_args()
 if options.auto_test:
     print "self-test:",
@@ -145,7 +148,7 @@ if not options.ray_trace_mode:
     drawing.rescale()
     drawing.render(Pencil(board))
     status("Writing Baord")
-    board.save(options.write_image_file, gray = (options.palette_breadth == 0))
+    board.save(options.image_path, gray = (options.palette_breadth == 0))
 else:
     world = World([], [
         LightSpot(Point(-8,-8, 6), Color( 1,.6,.6)),
@@ -153,7 +156,7 @@ else:
         LightSpot(Point(-8, 8, 6), Color(.6, 1,.6)),
         LightSpot(Point( 8, 8, 6), Color(.6,.6, 1)),
     ],
-    sky = "photo")
+    sky = "funky")
     def factory(p, q, c):
         if p == q: return []
         f = 0.65
@@ -175,14 +178,13 @@ else:
     pencil = WorldPencil(world, factory)
     drawing.rescale()
     drawing.render(pencil)
-    
-    if options.write_image_file:
-        status("\nRay-tracing World")
-        cmd = "CRAY_RS=On cray %s %s" % (options.resolution, options.write_image_file)
-        o = popen(cmd, "w")
-    else:
-        status("\nWriting World")
-        o = stdout
-    o.write(str(world))
-    o.close()
 
+    data = str(world)
+    if options.print_world: status("\nPrinting World\n%s" % (data,))
+    status("\nRay-tracing World")
+    comm = "%s %s %s" % (options.trace_command, options.resolution, options.image_path)
+    environ["GUN_RS"] = "Yes"
+    p = Popen(comm, stdin=PIPE, shell=True, close_fds=True)
+    p.stdin.write(data)
+    p.stdin.close()
+    exit(p.wait())

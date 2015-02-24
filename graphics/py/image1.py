@@ -14,7 +14,7 @@ from rmg.bodies import (Plane, Sphere,
 from rmg.solids import (intersection,
         tetrahedron, cube, octahedron, dodecahedron, icosahedron)
 from rmg.scene import SceneObject, World, LightSpot, Observer
-from sys import argv
+from rmg.script import ScriptInvocation
 
 
 def optics_a():
@@ -123,7 +123,7 @@ def rnd_intersection_of_two(p, r):
                 rnd_tilted(fig(), p, r),
                 rnd_tilted(fig(), p, r)]))]
 
-def rnd_scene_object():
+def rnd_scene_cluster():
     p = Point(*(Direction.random(rnd(.3, 1.8)).xyz()))
     dice = rnd(1)
     if dice < .65:
@@ -134,16 +134,18 @@ def rnd_scene_object():
                 [1, 3, 1, 2])(p, 1)
 
 
+invocation = ScriptInvocation.from_sys()
 scene_objects = []
-for c in range(int(argv[1])):
-    scene_objects.extend(rnd_scene_object())
+for c in range(int(invocation.positional_args[0])):
+    scene_objects.extend(rnd_scene_cluster())
 
-print World(scene_objects,
-    [
-        LightSpot(Point(7, 0, 0), Color(1, .65, .65)),
-        LightSpot(Point(0, 7, 0), Color(.65, .65, 1)),
-        LightSpot(Point(-3, -3, 9), Color(1, 1, .65)),
-    ],
-    Observer(Direction.random(2), origo),
-    "funky"
-)
+
+invocation.image(World(
+        scene_objects,
+        [
+            LightSpot(Point(7, 0, 0), Color(1, .65, .65)),
+            LightSpot(Point(0, 7, 0), Color(.65, .65, 1)),
+            LightSpot(Point(-3, -3, 9), Color(1, 1, .65)),
+        ],
+        Observer(Direction.random(2), origo), "funky"),
+    invocation.positional_args[1])

@@ -12,8 +12,7 @@ from rmg.solids import (intersection,
 from rmg.space import Point, Direction, origo, random_orbit
 from rmg.color import Color, Optics, white, black
 from rmg.scene import SceneObject, LightSpot, Observer
-from rmg.script import ParameterWorld, ScriptInvocation, UnitT
-from rmg.board import Image
+from rmg.script import ParametricWorld, ScriptInvocation
 
 
 def random_optics():
@@ -50,28 +49,13 @@ class RandomSceneObject:
 param_scene_objects = [RandomSceneObject() for _ in range(8)]
 
 
-@UnitT(1)
-def scene_objects(t):
-    return [s(t) for s in param_scene_objects]
-
-
 d = Direction(0, 0, 1)
-@UnitT(1)
-def observer(t):
-    return Observer(d*-2, d, view_opening = 0.65)
+def scene_objects(t): return [s(t) for s in param_scene_objects]
+def light_spots(t): return []
+def observer(t): return Observer(d*-2, d, view_opening = 0.65)
+def sky(t): return "funky"
 
 
-@UnitT(1)
-def sky(t):
-    return "funky"
-
-
-@UnitT(1)
-def light_spots(t):
-    return []
-
-
-p_world = ParameterWorld(scene_objects, light_spots, observer, sky)
+pw = ParametricWorld(scene_objects, light_spots, observer, sky)
 script = ScriptInvocation.from_sys()
-script.run(p_world)
-
+script.sequence(pw)
