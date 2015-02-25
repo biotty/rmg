@@ -293,7 +293,7 @@ void delayed_sum::generate(unit & u)
 
 bool delayed_sum::more() { return pending || v->carry(); }
 
-lazy::lazy(bu_ptr c) : c(c) {}
+lazy::lazy(bs_ptr b) : b(b) {}
 
 void lazy::generate(unit & u)
 {
@@ -303,10 +303,9 @@ void lazy::generate(unit & u)
 bool lazy::more()
 {
     if ( ! g) {
-        g = c->build();
-        c.reset();
+        g = b->build();
+        b = nullptr;
     }
-
     return g->more();
 }
 

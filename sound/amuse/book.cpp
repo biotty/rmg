@@ -56,9 +56,9 @@ mv_ptr book::glide(unsigned k, unsigned p, unsigned q)
 
 bu_ptr book::link(unsigned k, unsigned p, unsigned q)
 {
-    if ( ! k) return bu_ptr();
+    if ( ! k) return nullptr;
 
-    sc_ptr sc = P<score>();
+    sc_ptr sc = U<score>();
     while (k) {
         --k;
         FOR(i, p, q) {
@@ -80,11 +80,11 @@ bu_ptr book::link(unsigned k, unsigned p, unsigned q)
                 double x = t + MAX_T_AHEAD;
                 for (unsigned j=0; j<BE; j++, x += s.duration() / BE)
                     if (sound_entry y = pages[i]->play(k, j))
-                        sc->add(x - y.a, y.s);
+                        sc->add(x - y.a, std::move(y.s));
             }
         }
     }
-    return sc;
+    return std::move(sc);
 }
 
 void book::print_h()

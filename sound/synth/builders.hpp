@@ -3,7 +3,6 @@
 #ifndef BUILDERS_HPP
 #define BUILDERS_HPP
 
-#include "builderdecl.hpp"
 #include "envelopes.hpp"
 #include "filters.hpp"
 #include <set>
@@ -11,9 +10,9 @@
 struct sound : builder
 {
     mv_ptr s;
-    bu_ptr c;
+    bu_ptr b;
 
-    sound(mv_ptr s, bu_ptr c);
+    sound(mv_ptr s, bu_ptr && b);
     ug_ptr build();
 };
 
@@ -23,11 +22,11 @@ struct attack : builder
     mv_ptr s;
     bu_ptr w;
 
-    attack(double h, double y1, double t, bu_ptr c);
+    attack(double h, double y1, double t, bu_ptr && w);
     ug_ptr build();
 };
 
-typedef std::shared_ptr<attack> at_ptr;
+typedef std::unique_ptr<attack> at_ptr;
 
 struct wave : builder
 {
@@ -70,7 +69,7 @@ struct cross : builder
     bu_ptr b;
     mv_ptr c;
 
-    cross(bu_ptr a, bu_ptr b, mv_ptr c);
+    cross(bu_ptr && a, bu_ptr && b, mv_ptr c);
     ug_ptr build();
 };
 
@@ -80,7 +79,7 @@ struct fm : builder
     mv_ptr i;
     mv_ptr f;
 
-    fm(bu_ptr m, mv_ptr i, mv_ptr f);
+    fm(bu_ptr && m, mv_ptr i, mv_ptr f);
     ug_ptr build();
 };
 
@@ -96,11 +95,11 @@ struct karpluss_strong : builder
 
 struct timed_filter : builder
 {
-    bu_ptr i;
+    bs_ptr i;
     fl_ptr l;
     double t;
 
-    timed_filter(bu_ptr i, fl_ptr l, double t);
+    timed_filter(bs_ptr i, fl_ptr l, double t);
     ug_ptr build();
 };
 
@@ -108,20 +107,22 @@ struct score : builder
 {
     struct event
     {
-        bu_ptr c;
+        bs_ptr b;
         double t;
         unsigned i;
+
+        event(bs_ptr b, double t, unsigned i);
         bool operator<(event const & e) const;
     };
     unsigned i;
     std::set<event> v;
-    void add(double t, bu_ptr c);
+    void add(double t, bs_ptr b);
 
     score();
     ug_ptr build();
 };
 
-typedef std::shared_ptr<score> sc_ptr;
+typedef std::unique_ptr<score> sc_ptr;
 
 struct adder : builder
 {

@@ -3,7 +3,6 @@
 #ifndef GENERATORS_HPP
 #define GENERATORS_HPP
 
-#include "builderdecl.hpp"
 #include "envelopes.hpp"
 #include "filters.hpp"
 #include "unit.hpp"
@@ -189,17 +188,12 @@ struct delayed_sum : mix
     bool more();
 };
 
-struct generator_creation
-{
-    virtual ug_ptr build();
-};
-
 struct lazy : generator
 {
     ug_ptr g;
-    bu_ptr c;
+    bs_ptr b;
 
-    lazy(bu_ptr c);
+    lazy(bs_ptr b);
     void generate(unit & u);
     bool more();
 };

@@ -9,20 +9,21 @@
 
 #include <cstdint>
 
-struct builder;
-typedef std::shared_ptr<builder> bu_ptr;
-
 struct movement;
+struct builder;
+
 typedef std::shared_ptr<movement> mv_ptr;
+typedef std::shared_ptr<builder> bs_ptr;
+typedef std::unique_ptr<builder> bu_ptr;
 
 #define MAX_T_AHEAD .4
 struct sound_entry
 {
-    bu_ptr s;
+    bs_ptr s;
     double a;
 
-    sound_entry(bu_ptr s, double a);
-    sound_entry(bu_ptr s);
+    sound_entry(bs_ptr s, double a);
+    sound_entry(bs_ptr s);
     sound_entry();
     operator bool();
 };
@@ -47,12 +48,12 @@ struct instruction
 class orchestra
 {
     std::vector<std::function<sound_entry(instruction)>> a;
-    std::vector<std::function<bu_ptr(bu_ptr, mv_ptr, double u, double t)>> e;
+    std::vector<std::function<bs_ptr(bs_ptr, mv_ptr, double u, double t)>> e;
 
 public:
     bool is_effect(unsigned i);
     sound_entry play(unsigned i, instruction ii);
-    bu_ptr effect(unsigned i, bu_ptr b, mv_ptr m, double u, double t);
+    bs_ptr effect(unsigned i, bs_ptr b, mv_ptr m, double u, double t);
     orchestra();
 };
 

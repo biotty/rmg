@@ -28,4 +28,13 @@ std::unique_ptr<T> make_unique(Args&&... args)
 #define SR 44100
 #define SC 21
 
+struct builder
+{
+    virtual ug_ptr build() = 0;
+    virtual ~builder();
+};
+
+typedef std::unique_ptr<builder> bu_ptr;
+typedef std::shared_ptr<builder> bs_ptr;
+
 #endif

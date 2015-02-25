@@ -7,14 +7,14 @@
 
 builder::~builder() {}
 
-sound::sound(mv_ptr s, bu_ptr c) : s(s), c(c) {};
+sound::sound(mv_ptr s, bu_ptr && b) : s(s), b(std::move(b)) {};
 
-ug_ptr sound::build() { return U<multiply>(U<pulse>(s), c->build()); }
+ug_ptr sound::build() { return U<multiply>(U<pulse>(s), b->build()); }
 
-attack::attack(double h, double y1, double t, bu_ptr c)
+attack::attack(double h, double y1, double t, bu_ptr && w)
     : a(P<punctual>(0, y1))
     , s(P<stroke>(a, h, t))
-    , w(P<sound>(s, c))
+    , w(U<sound>(s, std::move(w)))
 {}
 
 ug_ptr attack::build() { return w->build(); }
@@ -92,7 +92,9 @@ ug_ptr chorus::build()
     return std::move(s);
 }
 
-cross::cross(bu_ptr a, bu_ptr b, mv_ptr c) : a(a), b(b), c(c) {}
+cross::cross(bu_ptr && a, bu_ptr && b, mv_ptr c)
+    : a(std::move(a)), b(std::move(b)), c(c)
+{}
 
 ug_ptr cross::build()
 {
@@ -104,7 +106,7 @@ ug_ptr cross::build()
     return std::move(mx);
 }
 
-fm::fm(bu_ptr m, mv_ptr i, mv_ptr f) : m(m), i(i), f(f) {}
+fm::fm(bu_ptr && m, mv_ptr i, mv_ptr f) : m(std::move(m)), i(i), f(f) {}
 
 ug_ptr fm::build()
 {
@@ -123,7 +125,7 @@ ug_ptr karpluss_strong::build()
                 P<movement>(P<inverted>(f->e), f->s)));
 }
 
-timed_filter::timed_filter(bu_ptr i, fl_ptr l, double t)
+timed_filter::timed_filter(bs_ptr i, fl_ptr l, double t)
     : i(i), l(l), t(t)
 {}
 
@@ -132,6 +134,10 @@ ug_ptr timed_filter::build()
     return U<timed>(U<filtration>(i->build(), l), t);
 }
 
+score::event::event(bs_ptr b, double t, unsigned i)
+    : b(b), t(t), i(i)
+{}
+
 bool score::event::operator<(event const & e) const
 {
     return t < e.t || (t == e.t && i < e.i);
@@ -139,12 +145,15 @@ bool score::event::operator<(event const & e) const
 
 score::score() : i() {}
 
-void score::add(double t, bu_ptr c) { v.insert({c, t, i++}); }
+void score::add(double t, bs_ptr b)
+{
+    v.emplace_hint(v.cend(), b, t, i++);
+}
 
 ug_ptr score::build()
 {
     mg_ptr m = U<delayed_sum>();
-    for (auto & e : v) m->c(U<lazy>(e.c), e.t);
+    for (auto & e : v) m->c(U<lazy>(e.b), e.t);
     return U<limiter>(std::move(m));
 }
 

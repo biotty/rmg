@@ -142,8 +142,8 @@ struct tense_string : instrument
                 "tense_string requires 6 params");
         const double d = span * p[0].get();
         en_ptr e = mk_envelope(p[3]);
-        return P<attack>(p[2].get() / p[3].get(), p[1].get(), d,
-                P<karpluss_strong>(P<movement>(e, d),
+        return U<attack>(p[2].get() / p[3].get(), p[1].get(), d,
+                U<karpluss_strong>(P<movement>(e, d),
                     p[4].get(), p[5].get()));
     }
 };
@@ -156,10 +156,11 @@ struct mouth : instrument
                 "mouth requires 8 params");
         const double d = span * p[0].get();
         mv_ptr f = P<movement>(mk_envelope(p[3]), d);
-        bu_ptr a = P<harmonics>(f, mk_envelope(p[4]), 9, p[5].get());
-        bu_ptr b = P<harmonics>(f, mk_envelope(p[6]), 9, p[7].get());
-        return P<attack>(p[2].get() / p[3].get(), p[1].get(), d,
-                P<cross>(a, b, P<movement>(P<punctual>(0, 1), d)));
+        bu_ptr a = U<harmonics>(f, mk_envelope(p[4]), 9, p[5].get());
+        bu_ptr b = U<harmonics>(f, mk_envelope(p[6]), 9, p[7].get());
+        return U<attack>(p[2].get() / p[3].get(), p[1].get(), d,
+                U<cross>(std::move(a), std::move(b),
+                    P<movement>(P<punctual>(0, 1), d)));
     }
 };
 
@@ -173,11 +174,11 @@ struct fqm : instrument
         en_ptr modulator = mk_envelope(p[3]);
         en_ptr index = mk_envelope(p[4]);
         en_ptr carrier = mk_envelope(p[5]);
-        bu_ptr m = P<wave>(P<movement>(modulator, d), P<sine>(0));
+        bu_ptr m = U<wave>(P<movement>(modulator, d), P<sine>(0));
         mv_ptr i = P<movement>(index, d);
         mv_ptr c = P<movement>(carrier, d); 
-        return P<attack>(p[2].get() / p[3].get(), p[1].get(), d,
-                P<fm>(m, i, c));
+        return U<attack>(p[2].get() / p[3].get(), p[1].get(), d,
+                U<fm>(std::move(m), i, c));
     }
 };
 
@@ -204,11 +205,11 @@ namespace fuge { // because ::filter exists
 
 struct filter
 {
-    bu_ptr  operator()(double span, bu_ptr input, PyObject * list)
+    bu_ptr  operator()(double span, bu_ptr && input, PyObject * list)
     {
-        return apply(span, input, parse_params(list));
+        return apply(span, std::move(input), parse_params(list));
     }
-    virtual bu_ptr apply(double span, bu_ptr input, params const &) = 0;
+    virtual bu_ptr apply(double span, bu_ptr && input, params const &) = 0;
     virtual ~filter() {}
 };
 
@@ -216,7 +217,7 @@ struct filter
 
 struct echo : fuge::filter
 {
-    bu_ptr apply(double span, bu_ptr input, params const & p)
+    bu_ptr apply(double span, bu_ptr && input, params const & p)
     {
         if (p.size() != 2) throw std::runtime_error(
                 "echo requires 2 params");
@@ -224,13 +225,13 @@ struct echo : fuge::filter
         en_ptr delay = mk_envelope(p[1]);
         const double d = span + p[1].get();
         fl_ptr lf = P<feedback>(P<as_is>(), P<movement>(mix, d), delay);
-        return P<timed_filter>(input, lf, d);
+        return U<timed_filter>(std::move(input), lf, d);
     }
 };
 
 struct comb : fuge::filter
 {
-    bu_ptr apply(double span, bu_ptr input, params const & p)
+    bu_ptr apply(double span, bu_ptr && input, params const & p)
     {
         if (p.size() != 2) throw std::runtime_error(
                 "comb requires 2 params");
@@ -238,7 +239,7 @@ struct comb : fuge::filter
         en_ptr delay = mk_envelope(p[1]);
         const double d = span + p[1].get();
         fl_ptr lf = P<feed>(P<as_is>(), P<movement>(mix, d), delay);
-        return P<timed_filter>(input, lf, d);
+        return U<timed_filter>(std::move(input), lf, d);
     }
 };
 
@@ -290,13 +291,13 @@ parse_entry(PyObject * seq)
 }
 
 bu_ptr
-parse_filter(bu_ptr input, PyObject * seq)
+parse_filter(bu_ptr && input, PyObject * seq)
 {
     const int n = PyTuple_Size(seq);
     if (n != 3) throw std::runtime_error("effect isn't tripple");
     const double span = parse_float(PyTuple_GetItem(seq, 0));
     std::string label = parse_string(PyTuple_GetItem(seq, 1));
-    return (*effects.at(label))(span, input, PyTuple_GetItem(seq, 2));
+    return (*effects.at(label))(span, std::move(input), PyTuple_GetItem(seq, 2));
 }
 
 bu_ptr
@@ -307,15 +308,15 @@ parse_score(PyObject * seq)
     PyObject * fl = PyList_GetItem(seq, 0);
     if ( ! PyList_Check(fl))
         throw std::runtime_error("first score-entry must be filter-list");
-    sc_ptr sc = P<score>();
-    bu_ptr rt = sc;
+    score * sc = new score();
+    bu_ptr rt = bu_ptr(sc);
     const int k = PyList_Size(fl);
     for (int j=0; j<k; j++) {
-        rt = parse_filter(rt, PyList_GetItem(fl, j));
+        rt = parse_filter(std::move(rt), PyList_GetItem(fl, j));
     }
     for (int i=1; i<n; i++) {
-        score_entry se = parse_entry(PyList_GetItem(seq, i));
-        sc->add(se.t, se.b);
+        score_entry && se = parse_entry(PyList_GetItem(seq, i));
+        sc->add(se.t, std::move(se.b));
     }
     return rt;
 }
