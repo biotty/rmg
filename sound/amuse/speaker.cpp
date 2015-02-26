@@ -1,9 +1,9 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 #include "speaker.hpp"
-
 #include "unit.hpp"
 #include "SDL.h"
+#include <algorithm>
 
 void speaker::put(double y)
 {
@@ -23,12 +23,13 @@ bool speaker::produce()
 {
     unsigned i = 0;
     if (g->more()) {
-        while (b.count() + SU <= b.n) {
+        while (b.count() + unit::size <= b.n) {
             ++i;
             unit u;
             g->generate(u);
             SDL_LockAudio();
-            FOR_SU(i) put(u.y[i]);
+            std::for_each(std::begin(u.y), std::end(u.y),
+                    [this](double q){ this->put(q); });
             SDL_UnlockAudio();
         }
     }

@@ -3,8 +3,11 @@
 #include "recorder.hpp"
 
 #include "unit.hpp"
+#include <algorithm>
 #include <cstdio>
 #include <cstdint>
+
+namespace {
 
 void put(double v, FILE * f)
 {
@@ -14,6 +17,8 @@ void put(double v, FILE * f)
     fwrite(&b, 2, 1, f);
 }
 
+}
+
 recorder::recorder(const char * path) : out(fopen(path, "wb")) {}
 
 void recorder::run(generator & g)
@@ -21,7 +26,9 @@ void recorder::run(generator & g)
     while (g.more()) {
         unit u;
         g.generate(u);
-        FOR_SU(i) put(u.y[i], out);
+        FILE * o = out;
+        std::for_each(std::begin(u.y), std::end(u.y),
+                [o](double q){ ::put(q, o); });
     }
 }
 

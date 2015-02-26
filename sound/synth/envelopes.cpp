@@ -88,13 +88,14 @@ double punctual::y(double x)
 
 tabular::tabular(ug_ptr g, unsigned n)
 {
-    a.resize(n + SU);
+    a.resize(n + unit::size);
     unsigned k = 0;
     while (g->more()) {
         unit u;
         g->generate(u);
-        FOR_SU(i) a[i + k] = u.y[i];
-        k += SU;
+        std::copy(std::begin(u.y), std::end(u.y),
+                std::begin(a) + k);
+        k += unit::size;
     }
     a.resize(n);
 }

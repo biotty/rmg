@@ -10,6 +10,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <algorithm>
 #include <cstdint>
 #include <cassert>
 #include <cmath>
@@ -42,12 +43,14 @@ PyObject *
 Ugen_call(PyObject * self, PyObject * args, PyObject * kw)
 {
     UgenObject & u = *reinterpret_cast<UgenObject *>(self);
-    int16_t e[SU];
+    int16_t e[unit::size];
     int z = sizeof e;
     if (u.g && u.g->more()) {
         unit a;
         u.g->generate(a);
-        FOR_SU(i) e[i] = 32766 * a.y[i];
+        std::transform(std::begin(a.y), std::end(a.y),
+                std::begin(e),
+                [](double q) -> int16_t { return 32766 * q; });
     } else {
         z = 0;
     }

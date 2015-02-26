@@ -9,16 +9,16 @@ namespace {
 template<typename T>
 void fill(generator & g, T ptr, unsigned n)
 {
-    const unsigned b = n / SU;
+    const unsigned b = n / unit::size;
     for (unsigned k=0; k!=b; k++) {
         unit u;
         g.generate(u);
-        std::copy(u.y, u.y + SU, ptr + k * SU);
+        std::copy(u.y, u.y + unit::size, ptr + k * unit::size);
     }
-    if (unsigned r = n % SU) {
+    if (unsigned r = n % unit::size) {
         unit v;
         g.generate(v);
-        std::copy(v.y, v.y + r, ptr + b * SU);
+        std::copy(v.y, v.y + r, ptr + b * unit::size);
     }
 }
 
@@ -48,17 +48,24 @@ bool infinite::more() { return true; }
 void silence::generate(unit & u) { u.set(0); }
 
 noise::noise(double a) : a(a) {}
-void noise::generate(unit & u) { FOR_SU(i) u.y[i] = rnd(-a, a); }
+void noise::generate(unit & u)
+{
+    const double r = a;
+    std::generate(std::begin(u.y), std::end(u.y),
+            [r](){ return rnd(-r, r); });
+}
 
 double pulse::start() { const double x = at(); ++k; return x; }
-double pulse::at() { return (SU /(double) SR) * k; }
+double pulse::at() { return (unit::size /(double) SR) * k; }
 bool pulse::more() { return m->s > at(); }
 pulse::pulse(mv_ptr m) : m(m), k() {}
 void pulse::generate(unit & u)
 {
     double x = start();
     const double d = 1./SR;
-    FOR_SU(i) u.y[i] = m->z(x += d);
+    movement * p = m.get();
+    std::generate(std::begin(u.y), std::end(u.y),
+            [&x, d, p](){ return p->z(x += d); });
 }
 
 hung::hung(mv_ptr m) : pulse(m) {}
@@ -66,8 +73,7 @@ bool hung::more() { return true; }
 void hung::generate(unit & u)
 {
     if (at() < m->s) return pulse::generate(u);
-    const double y = m->z(m->s);
-    FOR_SU(i) u.y[i] = y;
+    u.set(m->z(m->s));
 }
 
 bool record::more() { return c < b.w.size(); }
@@ -82,17 +88,20 @@ void record::reset()
 record::record(generator & g, mv_ptr duration)
     : b(duration->z(0) * SR), duration(duration), c(), t()
 {
-    fill(g, b.w.begin(), b.w.size());
+    ::fill(g, b.w.begin(), b.w.size());
 }
 
 void record::generate(unit & u)
 {
-    if (c + SU < b.w.size()) {
-        FOR_SU(i) u.y[i] = b.w[c++];
+    if (c + unit::size < b.w.size()) {
+        std::copy(b.w.begin(), b.w.begin() + unit::size,
+                std::begin(u.y));
+        c += unit::size;
     } else if (c < b.w.size()) {
         const unsigned h = b.w.size() - c;
-        FOR(i, 0, h) u.y[i] = b.w[c++];
-        FOR(i, h, SU) u.y[i] = 0;
+        std::copy(b.w.begin(), b.w.begin() + h, std::begin(u.y));
+        std::fill(std::begin(u.y) + h, std::end(u.y), 0);
+        c = b.w.size();
     } else {
         u.set(0);
     }
@@ -103,12 +112,12 @@ unsigned periodic::buffer::n()
 {
     if (head == tail) return 0;
     else if (head > tail) return head - tail;
-    else return head + (2*SU - tail);
+    else return head + (2*unit::size - tail);
 }
 unsigned periodic::buffer::post_incr(unsigned & i)
 {
     const unsigned r = i;
-    if (++i >= 2*SU) i = 0;
+    if (++i >= 2*unit::size) i = 0;
     return r;
 }
 void periodic::buffer::put(double y) { a[post_incr(head)] = y; }
@@ -116,13 +125,17 @@ double periodic::buffer::get() { return a[post_incr(tail)]; }
 
 void periodic::append(unit & u, unsigned n)
 {
-   FOR(i, 0, n) carry->put(u.y[i]);
+    buffer * p = carry.get();
+    std::for_each(std::begin(u.y), std::begin(u.y) + n,
+            [p](double v){ p->put(v); });
 }
 
 void periodic::shift(unit & u)
 {
-    if (carry->n() < SU) throw 1;
-    FOR_SU(i) u.y[i] = carry->get();
+    buffer * p = carry.get();
+    if (carry->n() < unit::size) throw 1;
+    std::generate(std::begin(u.y), std::end(u.y),
+            [p](){ return p->get(); });
 }
 
 periodic::periodic(pg_ptr && g) : g(std::move(g)), carry(new buffer) {}
@@ -130,15 +143,15 @@ periodic::periodic(pg_ptr && g) : g(std::move(g)), carry(new buffer) {}
 void periodic::generate(unit & u)
 {
     for (;;) {
-        unsigned n = SU;
+        unsigned n = unit::size;
         unit v;
         g->generate(v);
         if ( ! g->more()) {
-            if (unsigned r = g->size() % SU) n = r;
+            if (unsigned r = g->size() % unit::size) n = r;
             g->reset();
         }
         append(v, n);
-        if (carry->n() >= SU) break;
+        if (carry->n() >= unit::size) break;
     }
     shift(u);
 }
@@ -162,7 +175,9 @@ void multiply::generate(unit & u)
     unit v;
     a->generate(v);
     b->generate(u);
-    FOR_SU(i) u.y[i] *= v.y[i];
+    std::transform(std::begin(v.y), std::end(v.y),
+            std::begin(u.y),
+            std::begin(u.y), std::multiplies<double>());
 }
 
 bool multiply::more() { return a->more() && b->more(); }
@@ -226,10 +241,9 @@ void modulation::generate(unit & u)
     unit v;
     m->generate(v);
     double s = t;
-    t += SU /(double) SR;
+    t += unit::size /(double) SR;
     double d = 0;
-    FOR_SU(i)
-    {
+    for (unsigned i=0; i<unit::size; ++i) {
         if (i % SC == 0) {
             d = f->z(s) / SR;
             s += SC /(double) SR;
@@ -240,15 +254,22 @@ void modulation::generate(unit & u)
 }
 
 delayed_sum::entry::entry(double t, ug_ptr && g)
-    : t(t), g(std::move(g)), offset(unsigned(t * SR) % SU)
+    : t(t), g(std::move(g)), offset(unsigned(t * SR) % unit::size)
 {}
 
 delayed_sum::couple::couple() : c(2) { a.set(0); b.set(0); }
 void delayed_sum::couple::add(unsigned h, unit & u)
 {
-    unsigned i = 0;
-    FOR(j, h, SU) a.y[j] += u.y[i++];
-    FOR(j, 0, h) b.y[j] += u.y[i++];
+    if (h > unit::size) throw nullptr;
+    const unsigned r = unit::size - h;
+
+    std::transform(std::begin(u.y), std::begin(u.y) + r,
+            std::begin(a.y) + h,
+            std::begin(a.y) + h, std::plus<double>());
+
+    std::transform(std::begin(u.y) + r, std::end(u.y),
+            std::begin(b.y),
+            std::begin(b.y), std::plus<double>());
     c = 0;
 }
 void delayed_sum::couple::flush(unit & u)
@@ -272,7 +293,7 @@ void delayed_sum::c(ug_ptr && g, double t)
 void delayed_sum::generate(unit & u)
 {
     pending = false;
-    const double s = ++k * SU /(double) SR;
+    const double s = ++k * unit::size /(double) SR;
     unsigned z = 0;
     bool h = false;
     for (auto & e : entries) {
@@ -311,12 +332,15 @@ bool lazy::more()
 
 void limiter::out(unit & u, double t)
 {
-    const double d = (t - g) / SU;
+    const double d = (t - g) / unit::size;
     double a = g;
-    FOR_SU(j) {
-        u.y[j] = v.y[j] * (a += d);
-        if (std::fabs(u.y[j] > 1)) throw 1;
-    }
+    std::transform(std::begin(v.y), std::end(v.y),
+            std::begin(u.y),
+            [&a, d](double x){
+            const double y = x * (a += d);
+            if (std::fabs(y > 1)) throw 1;
+            return y;
+            });
 }
 
 limiter::limiter(ug_ptr && z) : z(std::move(z)), b(), q(), i(.01), s(1), g(1) {}
@@ -329,15 +353,8 @@ void limiter::generate(unit & u)
     }
     unit w;
     z->generate(w);
-    double a = 0;
-    double b = 0;
-    FOR_SU(j) {
-        const double c = w.y[j];
-        if (a < c) a = c;
-        else if (c < b) b = c;
-    }
-    b = -b;
-    if (a < b) a = b;
+    const auto p = std::minmax_element(std::begin(w.y), std::end(w.y));
+    const double a = std::max(std::abs(*p.first), std::abs(*p.second));
     const double m = (a > 1) ? 1/a : 1;
     double t = s;
     if (t > m) t = m;
@@ -365,7 +382,7 @@ void filtration::generate(unit & u)
     for (double & x : u.y) x = l->shift(x);
 }
 
-timed::timed(ug_ptr && g, double t) : g(std::move(g)), n(SR * t / SU), k() {}
+timed::timed(ug_ptr && g, double t) : g(std::move(g)), n(SR * t / unit::size), k() {}
 
 void timed::generate(unit & u)
 {
@@ -374,11 +391,12 @@ void timed::generate(unit & u)
 
     if (k == n) {
         double a = 1;
-        double d = a / SU;
-        FOR_SU(i) {
-            u.y[i] *= a;
-            a -= d;
-        }
+        double d = a / unit::size;
+        std::for_each(std::begin(u.y), std::end(u.y),
+                [&a, d](double & y){
+                y *= a;
+                a -= d;
+                });
     }
 }
 

@@ -76,7 +76,7 @@ struct periodic : infinite
     {
         unsigned head;
         unsigned tail;
-        double a[2*SU];
+        double a[2 * unit::size];
         unsigned n();
 
         buffer();

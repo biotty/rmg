@@ -1,6 +1,7 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 #include "unit.hpp"
+#include <algorithm>
 
 namespace {
 
@@ -11,17 +12,26 @@ inline double linear(double a, double b, double r)
 
 }
 
-void unit::set(double s)
+void unit::set(double w)
 {
-    FOR_SU(i) y[i] = s;
+    std::fill(std::begin(y), std::end(y), w);
 }
 
 void unit::add(unit & u, double w)
 {
-    FOR_SU(i) y[i] += u.y[i] * w;
+    std::transform(std::begin(u.y), std::end(u.y),
+            std::begin(y), std::begin(y),
+            [w](double p, double q){
+            return q + p * w;
+            });
 }
 
 void unit::mul(unit & u, double w)
 {
-    FOR_SU(i) y[i] *= linear(1 - w, 1, u.y[i]);
+    const double _w = 1 - w;
+    std::transform(std::begin(u.y), std::end(u.y),
+            std::begin(y), std::begin(y),
+            [_w](double p, double q){
+            return q * linear(_w, 1, p);
+            });
 }
