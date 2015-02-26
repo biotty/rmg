@@ -32,11 +32,13 @@ inline void mod1inc(double & x, double d)
 
 inline double famp(double z) { return z * z; }
 
-bool nomore(weighted<ug_ptr> & c) { return ! c.e->more(); }
-
-void prune(std::vector<weighted<ug_ptr>> & s)
+void prune(std::vector<weighted_transform::component> & s)
 {
-    s.erase(std::remove_if(s.begin(), s.end(), nomore), s.end());
+    s.erase(std::remove_if(s.begin(), s.end(),
+                [](const weighted_transform::component & w){
+                return ! w.e->more();
+                }),
+            s.end());
 }
 
 }
@@ -47,218 +49,236 @@ bool infinite::more() { return true; }
 
 void silence::generate(unit & u) { u.set(0); }
 
-noise::noise(double a) : a(a) {}
+noise::noise(double amplitude) : amplitude_(amplitude) {}
+
 void noise::generate(unit & u)
 {
-    const double r = a;
+    const double r = amplitude_;
     std::generate(std::begin(u.y), std::end(u.y),
             [r](){ return rnd(-r, r); });
 }
 
-double pulse::start() { const double x = at(); ++k; return x; }
-double pulse::at() { return (unit::size /(double) SR) * k; }
-bool pulse::more() { return m->s > at(); }
-pulse::pulse(mv_ptr m) : m(m), k() {}
+double pulse::t_generated()
+{
+    return (unit::size /(double) SR) * units_generated_;
+}
+
+bool pulse::more()
+{
+    return movement_->s > t_generated();
+}
+
+pulse::pulse(mv_ptr m)
+    : movement_(m), units_generated_()
+{}
+
 void pulse::generate(unit & u)
 {
-    double x = start();
+    double x = t_generated();
+    ++units_generated_;
     const double d = 1./SR;
-    movement * p = m.get();
+    movement * p = movement_.get();
     std::generate(std::begin(u.y), std::end(u.y),
             [&x, d, p](){ return p->z(x += d); });
 }
 
 hung::hung(mv_ptr m) : pulse(m) {}
+
 bool hung::more() { return true; }
+
 void hung::generate(unit & u)
 {
-    if (at() < m->s) return pulse::generate(u);
-    u.set(m->z(m->s));
+    if (pulse::more())
+        return pulse::generate(u);
+
+    u.set(movement_->z(movement_->s));
 }
 
-bool record::more() { return c < b.w.size(); }
-unsigned record::size() { return b.w.size(); }
+bool record::more() { return samples_generated_ < buffer_.w.size(); }
+
+unsigned record::size() { return buffer_.w.size(); }
+
 void record::reset()
 {
-    t += c /(double) SR;
-    b.cycle(duration->z(t) * SR);
-    c = 0;
+    const double t = samples_generated_ /(double) SR;
+    buffer_.cycle(duration_->z(t) * SR);
+    samples_generated_ = 0;
 }
 
 record::record(generator & g, mv_ptr duration)
-    : b(duration->z(0) * SR), duration(duration), c(), t()
+    : buffer_(duration->z(0) * SR)
+    , duration_(duration)
+    , samples_generated_()
 {
-    ::fill(g, b.w.begin(), b.w.size());
+    ::fill(g, buffer_.w.begin(), buffer_.w.size());
 }
 
 void record::generate(unit & u)
 {
-    if (c + unit::size < b.w.size()) {
-        std::copy(b.w.begin(), b.w.begin() + unit::size,
+    if (samples_generated_ + unit::size < buffer_.w.size()) {
+        std::copy(buffer_.w.begin(), buffer_.w.begin() + unit::size,
                 std::begin(u.y));
-        c += unit::size;
-    } else if (c < b.w.size()) {
-        const unsigned h = b.w.size() - c;
-        std::copy(b.w.begin(), b.w.begin() + h, std::begin(u.y));
+        samples_generated_ += unit::size;
+    } else if (samples_generated_ < buffer_.w.size()) {
+        const unsigned h = buffer_.w.size() - samples_generated_;
+        std::copy(buffer_.w.begin(), buffer_.w.begin() + h, std::begin(u.y));
         std::fill(std::begin(u.y) + h, std::end(u.y), 0);
-        c = b.w.size();
+        samples_generated_ = buffer_.w.size();
     } else {
         u.set(0);
     }
 }
 
-periodic::buffer::buffer() : head(), tail(), a() {}
-unsigned periodic::buffer::n()
+periodic::carry_buffer::carry_buffer() : head(), tail(), a() {}
+
+unsigned periodic::carry_buffer::n()
 {
     if (head == tail) return 0;
     else if (head > tail) return head - tail;
-    else return head + (2*unit::size - tail);
+    else return head + (unit::size * 2 - tail);
 }
-unsigned periodic::buffer::post_incr(unsigned & i)
+
+unsigned periodic::carry_buffer::post_incr(unsigned & i)
 {
     const unsigned r = i;
-    if (++i >= 2*unit::size) i = 0;
+    if (++i >= unit::size * 2) i = 0;
     return r;
 }
-void periodic::buffer::put(double y) { a[post_incr(head)] = y; }
-double periodic::buffer::get() { return a[post_incr(tail)]; }
+
+void periodic::carry_buffer::put(double y) { a[post_incr(head)] = y; }
+
+double periodic::carry_buffer::get() { return a[post_incr(tail)]; }
 
 void periodic::append(unit & u, unsigned n)
 {
-    buffer * p = carry.get();
+    carry_buffer * p = carry_.get();
     std::for_each(std::begin(u.y), std::begin(u.y) + n,
             [p](double v){ p->put(v); });
 }
 
 void periodic::shift(unit & u)
 {
-    buffer * p = carry.get();
-    if (carry->n() < unit::size) throw 1;
+    if (carry_->n() < unit::size) throw 1;
+
+    carry_buffer * p = carry_.get();
     std::generate(std::begin(u.y), std::end(u.y),
             [p](){ return p->get(); });
 }
 
-periodic::periodic(pg_ptr && g) : g(std::move(g)), carry(new buffer) {}
+periodic::periodic(pg_ptr && g)
+    : g_(std::move(g))
+    , carry_(new carry_buffer)
+{}
 
 void periodic::generate(unit & u)
 {
     for (;;) {
         unsigned n = unit::size;
         unit v;
-        g->generate(v);
-        if ( ! g->more()) {
-            if (unsigned r = g->size() % unit::size) n = r;
-            g->reset();
+        g_->generate(v);
+        if ( ! g_->more()) {
+            if (unsigned r = g_->size() % unit::size) n = r;
+            g_->reset();
         }
         append(v, n);
-        if (carry->n() >= unit::size) break;
+        if (carry_->n() >= unit::size) break;
     }
     shift(u);
 }
 
 karpluss::karpluss(fl_ptr l, generator & g, mv_ptr duration)
-    : record(g, duration), l(l)
+    : record(g, duration), filter_(l)
 {}
 
 void karpluss::reset()
 {
     record::reset();
-    for (double & x : b.w) x = l->shift(x);
+    for (double & x : buffer_.w) x = filter_->shift(x);
 }
 
 multiply::multiply(ug_ptr && a, ug_ptr && b)
-    : a(std::move(a)), b(std::move(b))
+    : a_(std::move(a)), b_(std::move(b))
 {}
 
 void multiply::generate(unit & u)
 {
     unit v;
-    a->generate(v);
-    b->generate(u);
+    a_->generate(v);
+    b_->generate(u);
     std::transform(std::begin(v.y), std::end(v.y),
             std::begin(u.y),
             std::begin(u.y), std::multiplies<double>());
 }
 
-bool multiply::more() { return a->more() && b->more(); }
+bool multiply::more() { return a_->more() && b_->more(); }
 
-product::product() : anymore() {}
+weighted_transform::weighted_transform(double i) : init_(i), anymore_() {}
 
-void product::c(ug_ptr && g, double w)
+void weighted_transform::c(ug_ptr && g, double w)
 {
-    s.emplace_back(std::move(g), w);
-    anymore = true;
+    s_.emplace_back(std::move(g), w);
+    anymore_ = true;
 }
 
-void product::generate(unit & u)
+void weighted_transform::generate(unit & u)
 {
-    anymore = false;
-    u.set(1);
-    for (unsigned i=0; i!=s.size(); i++) {
-        if (s[i].e->more()) {
+    anymore_ = false;
+    u.set(init_);
+    for (unsigned i=0; i!=s_.size(); i++) {
+        if (s_[i].e->more()) {
             unit v;
-            s[i].e->generate(v);
-            u.mul(v, s[i].w);
-            if (s[i].e->more()) anymore = true;
+            s_[i].e->generate(v);
+            f(u, v, s_[i].w);
+            if (s_[i].e->more()) anymore_ = true;
         }
     }
-    prune(s);
+    prune(s_);
 }
 
-bool product::more() { return anymore; }
+bool weighted_transform::more() { return anymore_; }
 
-sum::sum() : anymore() {}
+sum::sum() : weighted_transform(0) {}
 
-void sum::c(ug_ptr && g, double w)
+void sum::f(unit & accumulator, unit & u, double w)
 {
-    s.emplace_back(std::move(g), w);
-    anymore = true;
+    accumulator.add(u, w);
 }
 
-void sum::generate(unit & u)
+product::product() : weighted_transform(1) {}
+
+void product::f(unit & accumulator, unit & u, double w)
 {
-    anymore = false;
-    u.set(0);
-    for (unsigned i=0; i!=s.size(); i++) {
-        if (s[i].e->more()) {
-            unit v;
-            s[i].e->generate(v);
-            u.add(v, s[i].w);
-            if (s[i].e->more()) anymore = true;
-        }
-    }
-    prune(s);
+    accumulator.mul(u, w);
 }
 
-bool sum::more() { return anymore; }
-
-modulation::modulation(ug_ptr && m, en_ptr c, mv_ptr f)
-    : m(std::move(m)), c(c), f(f), x(), t()
+modulation::modulation(ug_ptr && modulator, en_ptr carrier, mv_ptr index)
+    : modulator_(std::move(modulator))
+    , carrier_(carrier)
+    , index_(index)
+    , x_()
+    , t_generated_()
 {}
 
 void modulation::generate(unit & u)
 {
     unit v;
-    m->generate(v);
-    double s = t;
-    t += unit::size /(double) SR;
-    double d = 0;
+    modulator_->generate(v);
+
+    static constexpr double t_per_sample = 1./ SR;
     for (unsigned i=0; i<unit::size; ++i) {
-        if (i % SC == 0) {
-            d = f->z(s) / SR;
-            s += SC /(double) SR;
-        }
-        u.y[i] = c->y(x);
-        mod1inc(x, d * (1 + v.y[i]));
+        u.y[i] = carrier_->y(x_);
+        mod1inc(x_, t_per_sample
+                * (1 + v.y[i]) * index_->z(t_generated_));
+        t_generated_ += t_per_sample;
     }
 }
 
-delayed_sum::entry::entry(double t, ug_ptr && g)
+delayed_sum::term::term(double t, ug_ptr && g)
     : t(t), g(std::move(g)), offset(unsigned(t * SR) % unit::size)
 {}
 
-delayed_sum::couple::couple() : c(2) { a.set(0); b.set(0); }
-void delayed_sum::couple::add(unsigned h, unit & u)
+delayed_sum::glue_buffer::glue_buffer() : c(2) { a.set(0); b.set(0); }
+void delayed_sum::glue_buffer::add(unsigned h, unit & u)
 {
     if (h > unit::size) throw nullptr;
     const unsigned r = unit::size - h;
@@ -272,69 +292,73 @@ void delayed_sum::couple::add(unsigned h, unit & u)
             std::begin(b.y), std::plus<double>());
     c = 0;
 }
-void delayed_sum::couple::flush(unit & u)
+void delayed_sum::glue_buffer::flush(unit & u)
 {
     u = a;
     a = b;
     b.set(0);
     ++c;
 }
-bool delayed_sum::couple::carry() { return c < 2; }
+bool delayed_sum::glue_buffer::more_to_flush() { return c < 2; }
 
-delayed_sum::delayed_sum() : v(new couple), pending(), k() {}
+delayed_sum::delayed_sum()
+    : buffer_(new glue_buffer)
+    , pending_()
+    , units_generated_()
+{}
 
 void delayed_sum::c(ug_ptr && g, double t)
 {
-    if (!entries.empty() && entries.back().t > t) throw 1;
-    entries.emplace_back(t, std::move(g));
-    pending = true;
+    if (terms_.size() && terms_.back().t > t) throw 1;
+    terms_.emplace_back(t, std::move(g));
+    pending_ = true;
 }
 
 void delayed_sum::generate(unit & u)
 {
-    pending = false;
-    const double s = ++k * unit::size /(double) SR;
+    pending_ = false;
+    const double s = ++units_generated_ * unit::size /(double) SR;
     unsigned z = 0;
     bool h = false;
-    for (auto & e : entries) {
+    for (auto & e : terms_) {
         if (e.g->more()) {
             if (e.t >= s) {
-                pending = true;
+                pending_ = true;
                 break;
             }
             unit w;
             e.g->generate(w);
-            v->add(e.offset, w);
+            buffer_->add(e.offset, w);
             h = true;
         } else if ( ! h) ++z;
     }
-    entries.erase(entries.begin(), entries.begin() + z);
-    v->flush(u);
+    terms_.erase(terms_.begin(), terms_.begin() + z);
+    buffer_->flush(u);
 }
 
-bool delayed_sum::more() { return pending || v->carry(); }
+bool delayed_sum::more() { return pending_ || buffer_->more_to_flush(); }
 
-lazy::lazy(bs_ptr b) : b(b) {}
+lazy::lazy(bs_ptr b) : builder_(b) {}
 
 void lazy::generate(unit & u)
 {
-    g->generate(u);
+    generator_->generate(u);
 }
 
 bool lazy::more()
 {
-    if ( ! g) {
-        g = b->build();
-        b = nullptr;
+    if ( ! generator_) {
+        generator_ = builder_->build();
+        builder_ = nullptr;
     }
-    return g->more();
+    return generator_->more();
 }
 
-void limiter::out(unit & u, double t)
+void limiter::out(unit & u, double target)
 {
-    const double d = (t - g) / unit::size;
-    double a = g;
-    std::transform(std::begin(v.y), std::end(v.y),
+    const double d = (target - glider_) / unit::size;
+    double a = glider_;
+    std::transform(std::begin(buffer_unit_.y), std::end(buffer_unit_.y),
             std::begin(u.y),
             [&a, d](double x){
             const double y = x * (a += d);
@@ -343,34 +367,42 @@ void limiter::out(unit & u, double t)
             });
 }
 
-limiter::limiter(ug_ptr && z) : z(std::move(z)), b(), q(), i(.01), s(1), g(1) {}
+limiter::limiter(ug_ptr && z)
+    : generator_(std::move(z))
+    , started_()
+    , quit_()
+    , increment_(.01)
+    , s_(1)
+    , glider_(1)
+{}
 
 void limiter::generate(unit & u)
 {
-    if (!b) {
-        b = true;
-        z->generate(v);
+    if ( ! started_) {
+        started_ = true;
+        generator_->generate(buffer_unit_);
     }
     unit w;
-    z->generate(w);
+    generator_->generate(w);
+
     const auto p = std::minmax_element(std::begin(w.y), std::end(w.y));
     const double a = std::max(std::abs(*p.first), std::abs(*p.second));
     const double m = (a > 1) ? 1/a : 1;
-    double t = s;
-    if (t > m) t = m;
-    if (t > g + i) t = g + i;
-    out(u, t);
-    g = t;
-    v = w;
-    s = m;
+    double target = s_;
+    if (target > m) target = m;
+    if (target > glider_ + increment_) target = glider_ + increment_;
+    out(u, target);
+    glider_ = target;
+    buffer_unit_ = w;
+    s_ = m;
 }
 
 bool limiter::more()
 {
-    if (q) return false;
-    if (z->more()) return true;
+    if (quit_) return false;
+    if (generator_->more()) return true;
 
-    q = true;
+    quit_ = true;
     return true;
 }
 
@@ -382,22 +414,25 @@ void filtration::generate(unit & u)
     for (double & x : u.y) x = l->shift(x);
 }
 
-timed::timed(ug_ptr && g, double t) : g(std::move(g)), n(SR * t / unit::size), k() {}
+timed::timed(ug_ptr && g, double t)
+    : generator_(std::move(g))
+    , units_to_generate_(SR * t / unit::size)
+    , units_generated_()
+{}
 
 void timed::generate(unit & u)
 {
-    g->generate(u);
-    if (k <= n) ++k;
-
-    if (k == n) {
+    generator_->generate(u);
+    if (more()) ++units_generated_;
+    else {
         double a = 1;
-        double d = a / unit::size;
+        static constexpr double per_unit = 1. / unit::size;
         std::for_each(std::begin(u.y), std::end(u.y),
-                [&a, d](double & y){
+                [&a](double & y){
                 y *= a;
-                a -= d;
+                a -= per_unit;
                 });
     }
 }
 
-bool timed::more() { return k <= n; }
+bool timed::more() { return units_generated_ < units_to_generate_; }

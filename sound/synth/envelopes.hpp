@@ -8,15 +8,13 @@
 #include <memory>
 #include <functional>
 
-struct envelope;
-typedef std::shared_ptr<envelope> en_ptr;
-
 struct envelope
 {
     virtual double y(double x) = 0;
     virtual ~envelope();
 };
 
+typedef std::shared_ptr<envelope> en_ptr;
 typedef std::function<double (double)> fun;
 
 struct shaped : envelope
@@ -136,9 +134,8 @@ typedef std::shared_ptr<punctual> pe_ptr;
 
 struct tabular : envelope
 {
-    std::vector<double> a;
+    std::vector<double> values;
 
-    tabular(ug_ptr g, unsigned n);
     double y(double x);
 };
 

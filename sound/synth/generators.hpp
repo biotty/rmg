@@ -14,19 +14,17 @@ struct silence : infinite { void generate(unit & u); };
 
 struct noise : infinite
 {
-    double a;
+    double amplitude_;
 
-    noise(double a);
+    noise(double amplitude);
     void generate(unit & u);
 };
 
 struct pulse : generator
 {
-    mv_ptr m;
-    unsigned k;
-    double start();
-    double step();
-    double at();
+    mv_ptr movement_;
+    unsigned units_generated_;
+    double t_generated();
 
     pulse(mv_ptr m);
     void generate(unit & u);
@@ -50,10 +48,9 @@ typedef std::unique_ptr<period> pg_ptr;
 
 struct record : period
 {
-    period_buffer b;
-    mv_ptr duration;
-    unsigned c;
-    double t;
+    period_buffer buffer_;
+    mv_ptr duration_;
+    unsigned samples_generated_;
     bool more();
     unsigned size();
     void reset();
@@ -64,7 +61,7 @@ struct record : period
 
 struct karpluss : record
 {
-    fl_ptr l;
+    fl_ptr filter_;
 
     karpluss(fl_ptr l, generator & g, mv_ptr duration);
     void reset();
@@ -72,21 +69,20 @@ struct karpluss : record
 
 struct periodic : infinite
 {
-    struct buffer
+    struct carry_buffer
     {
         unsigned head;
         unsigned tail;
         double a[2 * unit::size];
         unsigned n();
 
-        buffer();
+        carry_buffer();
         unsigned post_incr(unsigned & i);
         void put(double y);
         double get();
     };
-
-    pg_ptr g;
-    std::unique_ptr<buffer> carry;
+    pg_ptr g_;
+    std::unique_ptr<carry_buffer> carry_;
     void append(unit & u, unsigned n);
     void shift(unit & u);
 
@@ -96,8 +92,8 @@ struct periodic : infinite
 
 struct multiply : generator
 {
-    ug_ptr a;
-    ug_ptr b;
+    ug_ptr a_;
+    ug_ptr b_;
 
     multiply(ug_ptr && a, ug_ptr && b);
     void generate(unit & u);
@@ -111,76 +107,77 @@ struct mix : generator
 
 typedef std::unique_ptr<mix> mg_ptr;
 
-template<typename T>
-struct weighted
+struct weighted_transform : mix
 {
-    T e;
-    double w;
+    struct component
+    {
+        ug_ptr e;
+        double w;
 
-    weighted(T && e, double w) : e(std::move(e)), w(w) {}
-};
+        component(ug_ptr && e, double w) : e(std::move(e)), w(w) {}
+    };
+    std::vector<component> s_;
+    virtual void f(unit & accumulator, unit & u, double w) = 0;
+    const double init_;
+    bool anymore_;
 
-struct product : mix
-{
-    std::vector<weighted<ug_ptr>> s;
-    bool anymore;
-
-    product();
+    weighted_transform(double i);
     void c(ug_ptr && g, double w);
     void generate(unit & u);
     bool more();
 };
 
-struct sum : mix
+struct sum : weighted_transform
 {
-    std::vector<weighted<ug_ptr>> s;
-    bool anymore;
-
     sum();
-    void c(ug_ptr && g, double w);
-    void generate(unit & u);
-    bool more();
+    void f(unit & accumulator, unit & u, double w);
+};
+
+struct product : weighted_transform
+{
+    product();
+    void f(unit & accumulator, unit & u, double w);
 };
 
 struct modulation : infinite
 {
-    ug_ptr m;
-    en_ptr c;
-    mv_ptr f;
-    double x;
-    double t;
+    ug_ptr modulator_;
+    en_ptr carrier_;
+    mv_ptr index_;
+    double x_;
+    double t_generated_;
 
-    modulation(ug_ptr && m, en_ptr c, mv_ptr f);
+    modulation(ug_ptr && modulator, en_ptr carrier, mv_ptr index);
     void generate(unit & u);
 };
 
 struct delayed_sum : mix
 {
-    struct entry
+    struct term
     {
         double t;
         ug_ptr g;
         unsigned offset;
 
-        entry(double t, ug_ptr && g);
+        term(double t, ug_ptr && g);
     };
 
-    struct couple
+    struct glue_buffer
     {
         unit a;
         unit b;
         unsigned c;
 
-        couple();
+        glue_buffer();
         void add(unsigned h, unit & u);
         void flush(unit & u);
-        bool carry();
+        bool more_to_flush();
     };
 
-    std::vector<entry> entries;
-    std::unique_ptr<couple> v;
-    bool pending;
-    unsigned k;
+    std::vector<term> terms_;
+    std::unique_ptr<glue_buffer> buffer_;
+    bool pending_;
+    unsigned units_generated_;
 
     delayed_sum();
     void c(ug_ptr && g, double t);
@@ -190,8 +187,8 @@ struct delayed_sum : mix
 
 struct lazy : generator
 {
-    ug_ptr g;
-    bs_ptr b;
+    ug_ptr generator_;
+    bs_ptr builder_;
 
     lazy(bs_ptr b);
     void generate(unit & u);
@@ -200,14 +197,14 @@ struct lazy : generator
 
 struct limiter : generator
 {
-    ug_ptr z;
-    unit v;
-    bool b;
-    bool q;
-    double i;
-    double s;
-    double g;
-    void out(unit & u, double t);
+    ug_ptr generator_;
+    unit buffer_unit_;
+    bool started_;
+    bool quit_;
+    double increment_;
+    double s_;
+    double glider_;
+    void out(unit & u, double target);
     
     limiter(ug_ptr && z);
     void generate(unit & u);
@@ -216,9 +213,9 @@ struct limiter : generator
 
 struct timed : generator
 {
-    ug_ptr g;
-    unsigned n;
-    unsigned k;
+    ug_ptr generator_;
+    unsigned units_to_generate_;
+    unsigned units_generated_;
 
     timed(ug_ptr && g, double t);
     void generate(unit & u);

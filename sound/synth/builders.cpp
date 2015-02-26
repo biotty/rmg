@@ -83,7 +83,7 @@ ug_ptr chorus::build()
         en_ptr h = P<added>(f->e, P<scaled>(t, m));
         ug_ptr g = wave(P<still>(h->y(0)), w).build();
         record * r = new record(*g, P<movement>(P<inverted>(h), f->s));
-        std::vector<double> & w = r->b.w;
+        std::vector<double> & w = r->buffer_.w;
         std::rotate(w.begin(),
                 w.begin() + unsigned(rnd(0, w.size())),
                 w.end());

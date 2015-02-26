@@ -56,16 +56,16 @@ screen::~screen()
 
 sum * screen::g_ptr() {
     limiter * g = dynamic_cast<limiter *>(mastered());
-    return dynamic_cast<sum *>(g->z.get());
+    return dynamic_cast<sum *>(g->generator_.get());
 }
 
 void screen::speak(ug_ptr && c)
 {
     sum * z = g_ptr();
-    z->c(std::move(c), 8 / (9 + double(z->s.size())));
+    z->c(std::move(c), 8 / (9 + double(z->s_.size())));
 }
 
-void screen::shut() { g_ptr()->s.clear(); }
+void screen::shut() { g_ptr()->s_.clear(); }
 
 bool screen::editing() { return !z; }
 bool screen::running() { return r; }

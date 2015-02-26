@@ -80,31 +80,19 @@ double punctual::y(double x)
     //   if i same, then we CAN calculate
     //   y = w * x + z FOR SOME w AND z that we could calculate
     //   INSTEAD OF doing the following, slightly more heavy.
+    //   also, the offset function could start at hint previous i - 1
+    //   that is checked to be below x inside of offset_hint(x, i)
     const double a = points[i - 1].first;
     const double b = points[i].first;
     const double t = (x - a) / (b - a);
     return linear(points[i - 1].second, points[i].second, t);
 }
 
-tabular::tabular(ug_ptr g, unsigned n)
-{
-    a.resize(n + unit::size);
-    unsigned k = 0;
-    while (g->more()) {
-        unit u;
-        g->generate(u);
-        std::copy(std::begin(u.y), std::end(u.y),
-                std::begin(a) + k);
-        k += unit::size;
-    }
-    a.resize(n);
-}
-
 double tabular::y(double x)
 {
     if (x < 0 || x >= 1) return 0;
-    if (x >= IB1) return a.back();
-    return a[x * a.size()];
+    if (x >= IB1) return values.back();
+    return values[x * values.size()];
 }
 
 #define PI 3.141592653589793
