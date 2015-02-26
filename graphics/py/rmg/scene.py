@@ -66,7 +66,7 @@ class World:
     def __init__(self, scene_objects, light_spots = None, observer = None, sky = None):
         self.scene_objects = scene_objects
         self.light_spots = light_spots if light_spots else []
-        self.observer = observer or Observer(Point(0, 0, 3), origo, Direction(.65, 0, 0))
+        self.observer = observer or Observer(Point(0, 0, 2), origo, Direction(.8, 0, 0))
         self.sky = sky or "funky"
 
     def __str__(self):

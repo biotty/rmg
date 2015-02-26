@@ -603,7 +603,6 @@ class System:
         for i in range(n):
             if status: status(i)
             self.derive_()
-        if status: status("")
 
 
 if __name__ == "__main__":

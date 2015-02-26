@@ -112,7 +112,6 @@ class Turtle:
 
     def set_color(self, color): self.color = color
     def multiply_scale(self, m): self.scale *= m
-    def divide_scale(self, m): self.scale /= m
     def adjust_value(self, i): self.value += i
 
 
@@ -154,7 +153,6 @@ class TreeBuilder:
     def turn_right(self, u = None):  self.turtle.turn( -self.dflt(u) * self.angle_scale)
 
     def multiply_scale(self, m): self.turtle.multiply_scale(m)
-    def divide_scale(self, m): self.turtle.divide_scale(m)
     def adjust_value(self, i): self.turtle.adjust_value(i)
 
 

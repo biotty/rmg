@@ -22,7 +22,7 @@ rgb/librgb.a:
 	py/$*.py -r 1920x1080 -C $(RAY_GUN) 8 $@
 
 sky.pnm: py/lindo.py
-	echo "f x()x()x+y f()y()f x-y" | py/lindo.py -b128 -c12 -o $@
+	py/lindo.py -b128 -c12 -o $@ -e "f x()x()x+y f()y()f x-y"
 
 %.mp4: ray/gun movie.sh py/%.py sky.pnm
 	./movie.sh $@ "py/$*.py -c 736 -C $(RAY_GUN)"

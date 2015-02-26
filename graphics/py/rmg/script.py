@@ -34,11 +34,10 @@ class ScriptInvocation:
     @classmethod
     def from_sys(cls):
         opts = OptionParser()
-        opts, args = getopt.getopt(argv[1:], "c:r:C:")
         opts.add_option("-c", "--frame-count", type="int", default=0)
         opts.add_option("-r", "--resolution", type="string", default="1280x720")
         opts.add_option("-C", "--trace-command", type="string", default="gun")
-        (o, a) = opts.parse_args()
+        o, a = opts.parse_args()
         return cls(o.resolution, o.frame_count, o.trace_command, a)
 
     def image(self, world, path):
