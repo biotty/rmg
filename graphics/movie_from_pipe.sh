@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 o=$1
-
+t=${MOVIE_TMP:-/tmp}
 h=$PWD
-p=/tmp/$$.d
-echo touch $p/k "# <--" if you want to keep images
+d=$$.movie.d
+p=$t/$d
 mkdir $p
-rm -f fract.d
-ln -s $p fract.d
-cd fract.d
+ln -s $p .
+echo touch $d/k "# <--" if you want to keep images
+cd $p
 touch r
 
 while sleep 4 && test -e r
@@ -24,6 +24,5 @@ done &
 pnmsplit - %d.pnm 2> $p/t
 rm r
 cd $h
-./cmd.sh $p $o && test ! -f $p/k && rm -rf $p
+./assemble_movie.sh $p $o && test ! -f $p/k && rm -rf $p
 true
-
