@@ -416,8 +416,8 @@ jc = XY(rnd(-1, 1), rnd(-1, 1)) # julia-set ^
 jh = 2 # julia-set ^
 
 stderr.write("Localizing Mandelbrot border coordinate\n")
-m = FractalMovie(MandelFrame(r, mc, mh, block_size),
+m = FractalMovie(MandelFrame(r, mc, mh, block_side),
         zoom_steps).generate(images_per_step)
 stderr.write("Using final location as constant for Julia Set\n")
-m = FractalMovie(JuliaFrame(m.f.a, r, jc, jh, block_size),
+m = FractalMovie(JuliaFrame(m.f.a, r, jc, jh, block_side),
         zoom_steps).generate(images_per_step)

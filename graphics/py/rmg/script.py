@@ -25,20 +25,23 @@ class ParametricWorld:
 class ScriptInvocation:
 
     def __init__(self, frame_resolution, frame_count,
-            trace_command, positional_args):
+            trace_command, path_prefix, positional_args):
         self.frame_resolution = frame_resolution
         self.frame_count = frame_count
         self.trace_command = trace_command
+        self.path_prefix = path_prefix
         self.positional_args = positional_args
 
     @classmethod
     def from_sys(cls):
         opts = OptionParser()
         opts.add_option("-c", "--frame-count", type="int", default=0)
+        opts.add_option("-p", "--path-prefix", type="string", default="")
         opts.add_option("-r", "--resolution", type="string", default="1280x720")
         opts.add_option("-C", "--trace-command", type="string", default="gun")
         o, a = opts.parse_args()
-        return cls(o.resolution, o.frame_count, o.trace_command, a)
+        return cls(o.resolution, o.frame_count,
+                o.trace_command, o.path_prefix, a)
 
     def image(self, world, path):
         data = str(world)
@@ -55,5 +58,5 @@ class ScriptInvocation:
         stderr.write("%d\n+" % (self.frame_count,))
         for i in range(self.frame_count):
             self.image(parametric_world(float(i) / self.frame_count),
-                   "%d.jpeg" % (i,))
+                   "%s%d.jpeg" % (self.path_prefix, i,))
             stderr.write("\r%d" % (i,))

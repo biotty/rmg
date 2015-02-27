@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
 
 o=$1
-t=${MOVIE_TMP:-/tmp}
 h=$PWD
-d=$$.movie.d
-p=$t/$d
-mkdir $p
-ln -s $p .
-echo touch $d/k "# <--" if you want to keep images
-cd $p
-touch r
+d=$(./movie_directory.sh)
+echo "touch $d/k # to keep"
 
+cd $d
+touch r
 while sleep 4 && test -e r
 do
     find . -name '*.pnm' |
@@ -20,9 +16,9 @@ do
         pnmtojpeg 2> /dev/null $f > $g && rm $f
     done
 done &
-
-pnmsplit - %d.pnm 2> $p/t
+pnmsplit - %d.pnm 2> t
 rm r
 cd $h
-./assemble_movie.sh $p $o && test ! -f $p/k && rm -rf $p
+./assemble_movie.sh $d $o || exit 1
+./movie_directory.sh -d $d
 true
