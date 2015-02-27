@@ -11,13 +11,13 @@ media: image.jpeg
 heavy_media: example.avi fluid.mp4 mandelbrot.mp4
 
 ray/gun: rgb/librgb.a
-	$(MAKE) -C ray
+	@$(MAKE) -C ray
 
 flow/fluid: rgb/librgb.a
-	$(MAKE) -C flow fluid
+	@$(MAKE) -C flow fluid
 
 rgb/librgb.a:
-	$(MAKE) -C rgb
+	@$(MAKE) -C rgb
 
 image.jpeg: py/image1.py sky.pnm ray/gun
 	$< -r 1920x1080 -C $(RAY_GUN) 12 $@
@@ -45,6 +45,6 @@ clean:
 .PHONY:
 sweep: clean
 	@rm -f *.png *.jpeg *.avi *.mp4 *.pnm
-	@ls -d *.movie | xargs -n1 ./movie_directory.sh -D
-	$(MAKE) -C ray sweep
-	$(MAKE) -C flow sweep
+	@ls -d *.movie 2>/dev/null | xargs -i ./movie_directory.sh -D {}
+	@$(MAKE) -C ray sweep
+	@$(MAKE) -C flow sweep

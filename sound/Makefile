@@ -9,13 +9,13 @@ all: digitarp mrender/mrender amuse/amuse py/fuge.so
 media: digitarp.mp3 compo.mp3
 
 mrender/mrender:
-	$(MAKE) -C mrender
+	@$(MAKE) -C mrender
 
 synth/sizr.a:
-	$(MAKE) -C synth
+	@$(MAKE) -C synth
 
 amuse/amuse: synth/sizr.a
-	$(MAKE) -C amuse
+	@$(MAKE) -C amuse
 
 py/fuge.so: fugemodule.o synth/sizr.a
 	$(CXX) -o $@ $^ -shared
@@ -34,14 +34,13 @@ digitarp.raw: digitarp
 
 .PHONY:
 clean:
-	@rm -f *.o
 	@find py -name "*.pyc" -delete
 
 .PHONY:
 sweep: clean
 	@rm -f digitarp
-	@rm -f py/fuge.so
+	@rm -f py/fuge.so *.o
 	@rm -f *.raw *.mp3
-	$(MAKE) -C mrender $@
-	$(MAKE) -C synth $@
-	$(MAKE) -C amuse $@
+	@$(MAKE) -C mrender $@
+	@$(MAKE) -C synth $@
+	@$(MAKE) -C amuse $@
