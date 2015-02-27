@@ -30,9 +30,9 @@
 
 ### Graphics
 
-* **cray** optics of overlapping and intersecting basic shapes
-* **cfluid** traces a heterogenous viscous fluid in a plane
-* **border** border-hunting zoomer for Mandelbrot and its Julia-set
+* **raygun** optics of overlapping and intersecting basic shapes
+* **fluid** traces a heterogenous viscous fluid in a plane
+* **follow** border-hunting zoomer for Mandelbrot and its Julia-set
 * **lindo** context-sensitive parametric bracketed L-system
 * **avrepr** a **pygame** module allowing non-text ``__repr__``
 * **icons** console using avrepr for tuples and lists saves video
