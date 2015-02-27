@@ -5,11 +5,11 @@ LDFLAGS=-L$(GRAPHICS)/rgb -lrgb -lm
 .PHONY:
 all: wave fluid
 
-wave: main_wave.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
+wave: wave.o wave.hpp
+	$(CXX) -o $@ $< $(LDFLAGS)
 
-fluid: main_fluid.o
-	$(CXX) -o $@ $^ $(LDFLAGS)
+fluid: fluid.o fluid.hpp
+	$(CXX) -o $@ $< $(LDFLAGS)
 
 .PHONY:
 clean:

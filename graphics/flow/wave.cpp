@@ -9,56 +9,7 @@
 #include <sstream>
 #include <ctime>
 
-//
-//   # what's ahead #
-//
-//--description 1--
-//make a gradient-sky (set of (color,direction)),
-//and a set of (photo,direction) that are mixed in X along into the center,
-//*or* striped out (edge-pixel and out from center) X image-size fade-out
-//(mix in both cases means with the gradient-background and every other
-//photos interaction at that direction.
-//
-//--description 2--
-//have an alternate mode of cray.c -- where no image is traced, but we run
-//the trace function for random-direction rays from random-selected spots,
-//and one of the decoration-maps must have path specified as "*", meaning
-//it is the collector.  each time the decoration-function is called, the
-//x,y coordinates that would have been taken from a photo, will instead have
-//mixed(added) to a pixel in a result-map (starting at all-black) the
-//current filter-color of the calling detector (this is what is left of the
-//spots light (if we consider we followed light-direction and not traced it).
-//-after a while, or at regular intervals, the collector image is written.
-//the mode is simply triggered by the presence of a "[C]*P[!Q]" in a map-path,
-//snapshot (path will be P and eventually seceral N.P for each Qth light-shot)
-//-the refraction-index of all objects are first set to match red, then we
-//do some thousands of photon-emits from all spots, then blue then green.
-//
-// . make cray mode that collects on a map-photo; see description 2.
-// . see description 1.
-// ? make an image-filter program in cpp that applies as watermark (gray is neutral) to other image.
-// . make photo.c tolerate header-comment (see the py code) and handle ".png".
-// . program "spheretrim" that 
-// . function in palette converting wavelength to rgb (fortran found in wavelength_to_rgb.txt)
-//   -- to be used on cray in collect-mode, see description 2.  the refraction-index-adjustment
-//   is to be done based on the wave-length of the color (instead of simply shooting r, g and b).
-// 9 indicate with a picture with displaced pixels drawed on a grid like photo-colorizers tracer
-//   -- scan over after all is drawn filling-in all black spots (seek down-right to closest hit)
-// . functions that moves over both fluid or wave applying friction-force based on velocity diff.
-// b have force (i.e. small) that drags displacement back to zero
-// c program-parameters that picks (cwave and cfluid) a color to be immovable concrete.
-// d enable cwave to take picture from a picture-sequence (can use cfluid-generated files)
-// e fixation that applies an acceleration (like gravity (static south), so density-invariant) based on color
-//   -- applies to both fluid and waveflow.
-// f color-based reactions
-//   * cfluid -- two colors giving a third (all three selected by coordinates in original picture)
-//               and a slight augmentation in pressure on those two transformed cells.
-//               (colors are result of quantize, just like for the fluid-parameters).
-//   * cwave -- two colors repelling (we talk about dominant-colors of cell-quantization)
-//              like magnets.
 
-// a have independent resolution on output-image todo use Interpolation
-// b do -displacement to fetch color (like tracer-move once, but no rnd)
 struct SqueezeIndicator : WaveIndicator
 {
     const Picture & picture;
