@@ -23,8 +23,6 @@ fail(const char * fmt, ...)
     exit(EXIT_FAILURE);
 }
 
-char * strdup(const char * s); // posix-2001 not c
-
 typedef struct {
     char buf[256];
 } bufstr_256;
@@ -49,47 +47,47 @@ new_object(const char * object_class,
         *fi = plane_intersection;
         *fn = plane_normal;
     } else if (0 == strcmp(object_class, "sphere")
-            || 0 == strcmp(object_class, "minusphere")) {
+            || 0 == strcmp(object_class, "-sphere")) {
         sphere sphere_ = {
             .center = {gr(), gr(), gr()},
             .radius = gr()};
         object_arg->sphere_ = sphere_;
-        if (memcmp(object_class, "minu", 4) != 0) {
+        if (*object_class != '-') {
             *fi = sphere_intersection;
             *fn = sphere_normal;
         } else {
-            *fi = minusphere_intersection;
-            *fn = minusphere_normal;
+            *fi = _sphere_intersection;
+            *fn = _sphere_normal;
         }
     } else if (0 == strcmp(object_class, "cylinder")
-            || 0 == strcmp(object_class, "minucylinder")) {
+            || 0 == strcmp(object_class, "-cylinder")) {
         real r, theta, phi;
         direction p = {gr(), gr(), gr()};
         direction axis = {gr(), gr(), gr()};
         spherical(axis, &r, &theta, &phi);
         cylinder cylinder_ = {{-p.x, -p.y, -p.z}, square(r), theta, phi};
         object_arg->cylinder_ = cylinder_;
-        if (memcmp(object_class, "minu", 4) != 0) {
+        if (*object_class != '-') {
             *fi = cylinder_intersection;
             *fn = cylinder_normal;
         } else {
-            *fi = minucylinder_intersection;
-            *fn = minucylinder_normal;
+            *fi = _cylinder_intersection;
+            *fn = _cylinder_normal;
         }
     } else if (0 == strcmp(object_class, "cone")
-            || 0 == strcmp(object_class, "minucone")) {
+            || 0 == strcmp(object_class, "-cone")) {
         real r, theta, phi;
         direction apex = {gr(), gr(), gr()};
         direction axis = {gr(), gr(), gr()};
         spherical(axis, &r, &theta, &phi);
         cone cone_ = {{-apex.x, -apex.y, -apex.z}, 1/r, theta, phi};
         object_arg->cone_ = cone_;
-        if (memcmp(object_class, "minu", 4) != 0) {
+        if (*object_class != '-') {
             *fi = cone_intersection;
             *fn = cone_normal;
         } else {
-            *fi = minucone_intersection;
-            *fn = minucone_normal;
+            *fi = _cone_intersection;
+            *fn = _cone_normal;
         }
     } else {
         free(object_arg);
@@ -166,22 +164,19 @@ main(int argc, char *argv[])
     };
     int c = gi();
     if (c <= 0) fail("no scene objects\n");
-    world world_ = { white_sky, NULL, 0,
-        {
-            c, new scene_object[c]
-        }
-    };
+    world world_ = { color_sky, NULL, 0, { c, new scene_object[c] } };
+    sky_color = {1, 1, 1};
     void ** args = new void *[c];
     void ** decoration_args = new void *[c];
     int j = 0;
     for (int i = 0; i < world_.scene_.object_count; i++) {
         object_intersection fi;
         object_normal fn;
-        char * class_name = strdup(gs().buf);
-        void * a = (strcmp(class_name, "inter"))
+        bufstr_256 bs = gs();
+        char * class_name = bs.buf;
+        void * a = (strcmp(class_name, "x"))
             ? new_object(class_name, &fi, &fn)
             : new_inter(&fi, &fn, gi(), new_member);
-        free(class_name);
         if (!a) fail("object [%d] error\n", i);
         args[i] = a;
 
@@ -211,18 +206,19 @@ main(int argc, char *argv[])
         world_.scene_.objects[i] = o;
     }
 
-    char * sky_name = strdup(gs().buf);
-    if (strcmp(sky_name, "funky") == 0) world_.sky = funky_sky;
-    if (strcmp(sky_name, "photo") == 0) {
-        sky_photo = photo_create("sky.pnm");
-        if ( ! sky_photo) {
-            fprintf(stderr, "trying sky.jpeg\n");
-            sky_photo = photo_create("sky.jpeg");
-        }
-        if ( ! sky_photo) fail("could not load sky photo\n");
+    bufstr_256 bs = gs();
+    char * sky_name = bs.buf;
+    if (strcmp(sky_name, "rgb") == 0) {
+        world_.sky = rgb_sky;
+    } else if (strcmp(sky_name, "color") == 0) {
+        color sky = { gr(), gr(), gr() };
+        sky_color = sky;
+        world_.sky = color_sky;
+    } else {
+        sky_photo = photo_create(sky_name);
+        if ( ! sky_photo) fail("could not load sky '%s'\n", sky_name);
         world_.sky = photo_sky;
     }
-    free(sky_name);
 
     const int k = gi();
     world_.spot_count = k;

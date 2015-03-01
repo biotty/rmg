@@ -10,8 +10,8 @@ from rmg.board import Board, Pencil
 from rmg.draw import Drawing, TreeBuilder
 from rmg.ls import Settings, System, OperationsVisitor
 from rmg.color import Optics, Color, white, black
-from rmg.scene import World, WorldPencil, SceneObject, LightSpot
-from rmg.bodies import Sphere, Cylinder, Plane, Inter
+from rmg.scene import World, WorldPencil, SceneObject, LightSpot, RgbSky
+from rmg.bodies import Sphere, Cylinder, Plane, Intersection
 from rmg.space import Point, Direction
 from optparse import OptionParser
 from subprocess import Popen, PIPE
@@ -173,7 +173,7 @@ else:
         LightSpot(Point( 8,-8, 2), Color(.8, .8, .2)),
         LightSpot(Point(-8, 8, 2), Color(.2, .8, .2)),
         LightSpot(Point( 8, 8, 2), Color(.2, .2, .8)),
-    ], sky = "funky")
+    ], sky = RgbSky())
     def factory(p, q, c):
         if p == q: return []
         r = abs(q - p) * .65

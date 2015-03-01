@@ -23,8 +23,8 @@ extern "C" {
 real_pair cone_intersection(const ray *, void * cone_);
 direction cone_normal(point, void * cone_, bool at_second);
 
-real_pair minucone_intersection(const ray *, void * cone_);
-direction minucone_normal(point, void * cone_, bool at_second);
+real_pair _cone_intersection(const ray *, void * cone_);
+direction _cone_normal(point, void * cone_, bool at_second);
 
 #ifdef __cplusplus
 }

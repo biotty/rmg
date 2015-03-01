@@ -2,7 +2,7 @@
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
-from rmg.bodies import Manipulation, Inter, Plane, Sphere, Sphere_, Cylinder, Cylinder_, Cone, Cone_
+from rmg.bodies import Manipulation, Intersection, Plane, Sphere, Sphere_, Cylinder, Cylinder_, Cone, Cone_
 from rmg.space import Point, Direction, mean
 
 g = 1.61803398875  #golden ratio
@@ -111,7 +111,7 @@ icosahedron_faces = [
     mean([P58, P51, P33])]
 
 def polyhedron_body(faces):
-    return Inter([Plane(n.copy(), n.copy()) for n in faces])
+    return Intersection([Plane(n.copy(), n.copy()) for n in faces])
 
 def tetrahedron():
     return polyhedron_body(tetrahedron_faces)
@@ -131,9 +131,9 @@ def icosahedron():
 def intersection(objects):
     a = []
     for e in objects:
-        if isinstance(e, Inter):
+        if isinstance(e, Intersection):
             a.extend(e.objects)
         else:
             a.append(e)
-    return Inter(a)
+    return Intersection(a)
 

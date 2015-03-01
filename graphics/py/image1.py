@@ -10,10 +10,10 @@ from rmg.space import Point, Direction, origo
 from rmg.plane import XY, XYCircle
 from rmg.bodies import (Plane, Sphere,
         Sphere_, Cylinder, Cylinder_, Cone, Cone_,
-        Inter, Manipulation)
+        Intersection, Manipulation)
 from rmg.solids import (intersection,
         tetrahedron, cube, octahedron, dodecahedron, icosahedron)
-from rmg.scene import SceneObject, World, LightSpot, Observer
+from rmg.scene import SceneObject, World, LightSpot, Observer, ColorSky
 from rmg.script import ScriptInvocation
 
 
@@ -30,7 +30,7 @@ def optics_a():
 def optics_b():
     water = Color(.9, .92, 1)
     color = Color.random() * water
-    reflection = color.mix(water) * .5
+    reflection = color.mix(water) * .3
     absorption = black
     refraction = white * .65
     passthrough = water * .65
@@ -48,7 +48,7 @@ def scene_disc(p, r):
     qo = Point(s.x, s.y, 0).rotation(theta, phi)
     po = Point(0, 0, r * .024).rotation(theta, phi)
     dp = Direction(0, 0, 1).rotation(theta, phi)
-    i = Inter([
+    i = Intersection([
         Cylinder(p, dp * r),
         Cylinder_(p, dp * r * .5),
         Plane(p + po, dp),
@@ -73,7 +73,7 @@ def scene_fruit(p, r):
     q1 = Point(s1.x, s1.y, 0).rotation(theta, phi)
     q2 = Point(s2.x, s2.y, 0).rotation(theta, phi)
     q3 = Point(s3.x, s3.y, 0).rotation(theta, phi)
-    i = Inter([
+    i = Intersection([
         Sphere(p, r),
         Plane(p, a),
         Sphere_(p + q1, r * .36),
@@ -95,7 +95,7 @@ def scene_wheel(p, r):
     sphere = Sphere(apex, r)
     sphere_ = Sphere_(apex, sphere.radius - thickness)
     o = optics_a()
-    i = Inter([cone, sphere, sphere_])
+    i = Intersection([cone, sphere, sphere_])
     return [SceneObject(o, i)]
 
 def scene_ring(p, r):
@@ -106,7 +106,7 @@ def scene_ring(p, r):
     sphere = Sphere(apex, r)
     sphere_ = Sphere_(apex, sphere.radius - thickness)
     o = optics_b()
-    i = Inter([cone, sphere, sphere_])
+    i = Intersection([cone, sphere, sphere_])
     return [SceneObject(o, i)]
 
 def rnd_tilted(cls, p, r):
@@ -145,7 +145,7 @@ w = World(scene_objects,
             LightSpot(Point(0, 7, 0), Color(.65, .65, 1)),
             LightSpot(Point(-3, -3, 9), Color(1, 1, .65)),
         ],
-        Observer(Direction.random(2), origo), "funky")
+        Observer(Direction.random(2), origo), ColorSky(Color(.5,.5,1)))
 
 if 1 == len(invocation.positional_args):
     invocation.tee(w)

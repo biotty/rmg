@@ -8,15 +8,16 @@
 #include "photo.h"
 
 typedef color (*scene_sky)(direction d);
-extern photo * sky_photo;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-color white_sky(direction);
+color color_sky(direction);
 color photo_sky(direction);
-color funky_sky(direction);
+color rgb_sky(direction);
+extern photo * sky_photo;
+extern color sky_color;
 
 #ifdef __cplusplus
 }

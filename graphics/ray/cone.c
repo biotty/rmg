@@ -57,7 +57,7 @@ cone_intersection(
 }
 
     real_pair
-minucone_intersection(
+_cone_intersection(
         const ray * ray_,
         void * cone__)
 {
@@ -83,7 +83,7 @@ cone_normal(point p, void * cone__, bool at_second)
 }
 
     direction
-minucone_normal(point p, void * cone__, bool at_second)
+_cone_normal(point p, void * cone__, bool at_second)
 {
     direction d = cone_normal(p, cone__, at_second);
     scale(&d, -1);

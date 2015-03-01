@@ -53,7 +53,7 @@ d = Direction(0, 0, 1)
 def scene_objects(t): return [s(t) for s in param_scene_objects]
 def light_spots(t): return []
 def observer(t): return Observer(d*-2, d, view_opening = 0.65)
-def sky(t): return "funky"
+def sky(t): return "rgb"
 
 
 pw = ParametricWorld(scene_objects, light_spots, observer, sky)

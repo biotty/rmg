@@ -21,8 +21,8 @@ extern "C" {
 real_pair sphere_intersection(const ray *, void * sphere_);
 direction sphere_normal(point, void * sphere_, bool at_second);
 
-real_pair minusphere_intersection(const ray *, void * sphere_);
-direction minusphere_normal(point, void * sphere_, bool at_second);
+real_pair _sphere_intersection(const ray *, void * sphere_);
+direction _sphere_normal(point, void * sphere_, bool at_second);
 
 #ifdef __cplusplus
 }

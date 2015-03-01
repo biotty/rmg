@@ -26,7 +26,7 @@ sphere_intersection(
 }
 
 real_pair
-minusphere_intersection(
+_sphere_intersection(
         const ray * ray_,
         void * sphere__)
 {
@@ -52,7 +52,7 @@ sphere_normal(point p, void * sphere__, bool at_second)
 }
 
     direction
-minusphere_normal(point p, void * sphere__, bool at_second)
+_sphere_normal(point p, void * sphere__, bool at_second)
 {
     direction d = sphere_normal(p, sphere__, at_second);
     scale(&d, -1);

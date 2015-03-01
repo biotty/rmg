@@ -7,21 +7,6 @@ from rmg.space import Point, Direction, origo
 from rmg.plane import XY, XYCircle
 from rmg.color import Color
 
-class SceneObject:
-    def __init__(self, optics, object_arg, precedence = 1):
-        self.optics = optics
-        self.object_arg = object_arg
-        self.precedence = precedence
-    def __str__(self):
-        return "%s\n%s" % (self.object_arg, self.optics)
-
-class LightSpot:
-    def __init__(self, point, color):
-        self.point = Point(*point.xyz())
-        self.color = Color(*color.rgb())
-    def __str__(self):
-        return "%s %s" % (self.point, self.color)
-
 class Observer:
     def __init__(self, eye, view, column_dir = 0, row_dir = None, **kwargs):
         self.eye = eye
@@ -51,23 +36,45 @@ class Observer:
         return "%s %s %s %s" % (self.eye, self.view,
             self.column_direction, self.row_direction)
 
-class WorldPencil:
-    def __init__(self, world, factory):
-        self.world = world
-        self.factory = factory
-        self.at = None
-    def draw(self, p, color):
-        if color and self.at:
-            obs = self.factory(self.at, p, color)
-            self.world.scene_objects.extend(obs)
-        self.at = p.copy()
+class SceneObject:
+    def __init__(self, optics, object_arg, precedence = 1):
+        self.optics = optics
+        self.object_arg = object_arg
+        self.precedence = precedence
+    def __str__(self):
+        return "%s\n%s" % (self.object_arg, self.optics)
+
+class LightSpot:
+    def __init__(self, point, color):
+        self.point = Point(*point.xyz())
+        self.color = Color(*color.rgb())
+    def __str__(self):
+        return "%s %s" % (self.point, self.color)
+
+class RgbSky:
+    def __str__(self):
+        return "rgb"
+
+class ColorSky:
+    def __init__(self, color):
+        assert isinstance(color, Color)
+        self.color = color
+    def __str__(self):
+        return "color %s" % (self.color,)
+
+class PhotoSky:
+    def __init__(self, path):
+        assert type(path) == str
+        self.path = path
+    def __str__(self):
+        return self.path
 
 class World:
     def __init__(self, scene_objects, light_spots = None, observer = None, sky = None):
         self.scene_objects = scene_objects
         self.light_spots = light_spots if light_spots else []
         self.observer = observer or Observer(Point(0, 0, 3), origo, Direction(.65, 0, 0))
-        self.sky = sky or "funky"
+        self.sky = sky or RgbSky()
 
     def __str__(self):
         sorted_objects = sorted(self.scene_objects, key = lambda o: o.precedence)
@@ -80,3 +87,13 @@ class World:
             "\n".join([str(o) for o in self.light_spots]),
             )
 
+class WorldPencil:
+    def __init__(self, world, factory):
+        self.world = world
+        self.factory = factory
+        self.at = None
+    def draw(self, p, color):
+        if color and self.at:
+            obs = self.factory(self.at, p, color)
+            self.world.scene_objects.extend(obs)
+        self.at = p.copy()

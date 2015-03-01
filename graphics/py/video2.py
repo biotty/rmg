@@ -58,7 +58,7 @@ param_scene_objects = [RandomSceneObject(i) for i in range(count)]
 
 
 def scene_objects(t): return [s(t) for s in param_scene_objects]
-def sky(t): return "photo"
+def sky(t): return "sky.pnm"
 
 def observer(t):
     a = unit_angle(t)

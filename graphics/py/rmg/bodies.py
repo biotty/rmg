@@ -32,7 +32,7 @@ class Sphere:
 
 class Sphere_(Sphere):
     def __str__(self):
-        return "minusphere %s %LG" % (self.center, self.radius)
+        return "-sphere %s %LG" % (self.center, self.radius)
 
 class Cylinder:
     def __init__(self, p, axis):
@@ -46,7 +46,7 @@ class Cylinder:
 
 class Cylinder_(Cylinder):
     def __str__(self):
-        return "minucylinder %s %s" % (self.p, self.axis)
+        return "-cylinder %s %s" % (self.p, self.axis)
 
 class Cone:
     def __init__(self, apex, axis):
@@ -60,15 +60,14 @@ class Cone:
 
 class Cone_(Cone):
     def __str__(self):
-        return "minucone %s %s" % (self.apex, self.axis)
+        return "-cone %s %s" % (self.apex, self.axis)
 
-class Inter:
+class Intersection:
     def __init__(self, objects):
         self.objects = objects
     def __str__(self):
-        return "inter %d\n %s" % (len(self.objects),
+        return "x %d\n %s" % (len(self.objects),
                 "\n ".join([str(o) for o in self.objects]))
     def manipulate(self, m):
         for e in self.objects:
             e.manipulate(m)
-

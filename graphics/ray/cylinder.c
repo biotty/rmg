@@ -54,7 +54,7 @@ cylinder_intersection(
 }
 
 real_pair
-minucylinder_intersection(
+_cylinder_intersection(
         const ray * ray_,
         void * cylinder__)
 {
@@ -80,7 +80,7 @@ cylinder_normal(point p, void * cylinder__, bool at_second)
 }
 
     direction
-minucylinder_normal(point p, void * cylinder__, bool at_second)
+_cylinder_normal(point p, void * cylinder__, bool at_second)
 {
     direction d = cylinder_normal(p, cylinder__, at_second);
     scale(&d, -1);

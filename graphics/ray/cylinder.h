@@ -23,8 +23,8 @@ extern "C" {
 real_pair cylinder_intersection(const ray *, void * cylinder_);
 direction cylinder_normal(point, void * cylinder_, bool at_second);
 
-real_pair minucylinder_intersection(const ray *, void * cylinder_);
-direction minucylinder_normal(point, void * cylinder_, bool at_second);
+real_pair _cylinder_intersection(const ray *, void * cylinder_);
+direction _cylinder_normal(point, void * cylinder_, bool at_second);
 
 #ifdef __cplusplus
 }
