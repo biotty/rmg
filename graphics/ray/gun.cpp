@@ -98,10 +98,10 @@ new_object(const char * object_class,
     return object_arg;
 }
 
-    map_application
-get_map_application()
+    texture_application
+get_texture_application()
 {
-    return (map_application){
+    return (texture_application){
         .x_wrap = gr(),
         .y_wrap = gr(),
         .reflection_factor = (color){gr(), gr(), gr()},
@@ -113,36 +113,28 @@ get_map_application()
     void *
 new_decoration(const char * deco_name, object_decoration * df)
 {
-    if (strcmp(deco_name, "map") == 0) {
-        n_map_setup su = {
-            .n = {gr(), gr(), gr()},
-            .path = gs().buf,
-            .a = get_map_application()
-        };
-        return map_decoration(df, &su);
-    } else if (strcmp(deco_name, "pmap") == 0) {
-        n_map_setup su = {
-            .n = {gr(), gr(), gr()},
-            .path = gs().buf,
-            .a = get_map_application()
-        };
-        return pmap_decoration(df, &su);
-    } else if (strcmp(deco_name, "omap") == 0) {
-        n_o_map_setup su = {
-            .n = {gr(), gr(), gr()},
-            .o = {gr(), gr(), gr()},
-            .path = gs().buf,
-            .a = get_map_application()
-        };
-        return omap_decoration(df, &su);
-    } else if (strcmp(deco_name, "lmap") == 0) {
-        n_o_map_setup su = {
-            .n = {gr(), gr(), gr()},
-            .o = {gr(), gr(), gr()},
-            .path = gs().buf,
-            .a = get_map_application()
-        };
-        return lmap_decoration(df, &su);
+    if (strcmp(deco_name, "directional") == 0) {
+        direction n = {gr(), gr(), gr()};
+        bufstr_256 path = gs();
+        texture_application a = get_texture_application();
+        return directional_texture_mapping(df, n, path.buf, a);
+    } else if (strcmp(deco_name, "positional") == 0) {
+        direction n = {gr(), gr(), gr()};
+        bufstr_256 path = gs();
+        texture_application a = get_texture_application();
+        return positional_texture_mapping(df, n, path.buf, a);
+    } else if (strcmp(deco_name, "relative") == 0) {
+        direction n = {gr(), gr(), gr()};
+        point o = {gr(), gr(), gr()};
+        bufstr_256 path = gs();
+        texture_application a = get_texture_application();
+        return relative_texture_mapping(df, n, o, path.buf, a);
+    } else if (strcmp(deco_name, "linear") == 0) {
+        direction n = {gr(), gr(), gr()};
+        point o = {gr(), gr(), gr()};
+        bufstr_256 path = gs();
+        texture_application a = get_texture_application();
+        return linear_texture_mapping(df, n, o, path.buf, a);
     } else {
         fail("decoration \"%s\"?", deco_name);
     }
@@ -258,7 +250,7 @@ main(int argc, char *argv[])
     image_close(out);
 
     for (int q=0; q<c; q++) delete_object_or_inter(args[q]);
-    while (--j>=0) generic_map_delete(decoration_args[j]);
+    while (--j>=0) delete_texture_mapping(decoration_args[j]);
     delete [] args;
     delete [] decoration_args;
     delete [] world_.scene_.objects;

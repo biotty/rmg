@@ -10,42 +10,42 @@
 
 typedef struct {
     photo * photo;
-    map_application a;
+    texture_application a;
     real r;
     real theta;
     real phi;
-} map_arg;
+} positional_decoration_arg;
 
 typedef struct {
     photo * photo;
-    map_application a;
+    texture_application a;
     real r;
     real theta;
     real phi;
-} pmap_arg;
+} planar_decoration_arg;
 
 typedef struct {
     photo * photo;
-    map_application a;
+    texture_application a;
     point o;
     real r;
     real theta;
     real phi;
-} omap_arg;
+} relative_decoration_arg;
 
 typedef struct {
     photo * photo;
-    map_application a;
+    texture_application a;
     point o;
     real r;
     real theta;
     real phi;
-} lmap_arg;
+} linear_decoration_arg;
 
     void
-generic_map_delete(void * decoration_arg)
+delete_texture_mapping(void * decoration_arg)
 {
-    map_arg * da = decoration_arg;
+    positional_decoration_arg * da = decoration_arg;
     photo_delete(da->photo);
     free(da);
 }
@@ -58,7 +58,7 @@ linear(color x, color a, color b)
 }
 
     static void
-map_apply__(const map_application * a, const photo * ph, real x, real y,
+texture_map(const texture_application * a, const photo * ph, real x, real y,
         object_optics * so, const object_optics * adjust)
 {
     so->refraction_index = adjust->refraction_index;
@@ -86,7 +86,7 @@ zoom_(const real r, real * x_, real * y_)
 }
 
     static void
-wrap_(const map_application * a, real * x, real * y)
+wrap_(const texture_application * a, real * x, real * y)
 {
     *x += a->x_wrap;
     if (*x >= 1) *x -= 1;
@@ -95,23 +95,23 @@ wrap_(const map_application * a, real * x, real * y)
 }
 
     static void
-map__(const ray * ray_, void * decoration_arg,
+directional_decoration(const ray * ray_, void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
-    const map_arg * da = decoration_arg;
+    const positional_decoration_arg * da = decoration_arg;
     real x, y;
     direction d = inverse_rotation(ray_->head, da->theta, da->phi);
     direction_to_unitsquare(&d, &x, &y);
     zoom_(da->r, &x, &y);
     wrap_(&da->a, &x, &y);
-    map_apply__(&da->a, da->photo, x, y, so, adjust);
+    texture_map(&da->a, da->photo, x, y, so, adjust);
 }
 
     static void
-pmap__(const ray * ray_, void * decoration_arg,
+positional_decoration(const ray * ray_, void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
-    const pmap_arg * da = decoration_arg;
+    const planar_decoration_arg * da = decoration_arg;
     direction d = inverse_rotation(
             direction_from_origo(ray_->endpoint),
             da->theta, da->phi);
@@ -119,14 +119,14 @@ pmap__(const ray * ray_, void * decoration_arg,
     real y = d.y;
     zoom_(da->r, &x, &y);
     wrap_(&da->a, &x, &y);
-    map_apply__(&da->a, da->photo, x, y, so, adjust);
+    texture_map(&da->a, da->photo, x, y, so, adjust);
 }
 
     static void
-omap__(const ray * ray_, void * decoration_arg,
+relative_decoration(const ray * ray_, void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
-    const omap_arg * da = decoration_arg;
+    const relative_decoration_arg * da = decoration_arg;
     direction d = inverse_rotation(
             distance_vector(da->o, ray_->endpoint),
             da->theta, da->phi);
@@ -134,16 +134,16 @@ omap__(const ray * ray_, void * decoration_arg,
     direction_to_unitsquare(&d, &x, &y);
     zoom_(da->r, &x, &y);
     wrap_(&da->a, &x, &y);
-    map_apply__(&da->a, da->photo, x, y, so, adjust);
+    texture_map(&da->a, da->photo, x, y, so, adjust);
 }
 
     static void
-lmap__(const ray * ray_, void * decoration_arg,
+linear_decoration(const ray * ray_, void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
     static const real pi = REAL_PI;
     static const real two_pi = REAL_PI * 2;
-    const lmap_arg * da = decoration_arg;
+    const linear_decoration_arg * da = decoration_arg;
     direction d = inverse_rotation(
             distance_vector(da->o, ray_->endpoint),
             da->theta, da->phi);
@@ -152,60 +152,64 @@ lmap__(const ray * ray_, void * decoration_arg,
     y -= rfloor(y);
     if (y == 1) y = 0;
     wrap_(&da->a, &x, &y);
-    map_apply__(&da->a, da->photo, x, y, so, adjust);
+    texture_map(&da->a, da->photo, x, y, so, adjust);
 }
 
     void *
-map_decoration(object_decoration * df, const n_map_setup * setup)
+directional_texture_mapping(object_decoration * df, direction n,
+        const char * path, texture_application a)
 {
-    map_arg * da = malloc(sizeof *da);
-    da->a = setup->a;
-    da->photo = photo_create(setup->path);
+    positional_decoration_arg * da = malloc(sizeof *da);
+    da->a = a;
+    da->photo = photo_create(path);
     real r;
-    spherical(setup->n, &r, &da->theta, &da->phi);
+    spherical(n, &r, &da->theta, &da->phi);
     da->r = 1 / r;
-    *df = map__;
+    *df = directional_decoration;
     return da;
 }
 
     void *
-pmap_decoration(object_decoration * df, const n_map_setup * setup)
+positional_texture_mapping(object_decoration * df, direction n,
+        const char * path, texture_application a)
+
 {
-    pmap_arg * da = malloc(sizeof *da);
-    da->a = setup->a;
-    da->photo = photo_create(setup->path);
+    planar_decoration_arg * da = malloc(sizeof *da);
+    da->a = a;
+    da->photo = photo_create(path);
     real r;
-    spherical(setup->n, &r, &da->theta, &da->phi);
+    spherical(n, &r, &da->theta, &da->phi);
     da->r = 1 / r;
-    *df = pmap__;
+    *df = positional_decoration;
     return da;
 }
 
     void *
-omap_decoration(object_decoration * df, const n_o_map_setup * setup)
+relative_texture_mapping(object_decoration * df, direction n,
+        point o, const char * path, texture_application a)
 {
-    omap_arg * da = malloc(sizeof *da);
-    da->a = setup->a;
-    da->photo = photo_create(setup->path);
+    relative_decoration_arg * da = malloc(sizeof *da);
+    da->a = a;
+    da->photo = photo_create(path);
     real r;
-    spherical(setup->n, &r, &da->theta, &da->phi);
+    spherical(n, &r, &da->theta, &da->phi);
     da->r = 1 / r;
-    da->o = setup->o;
-    *df = omap__;
+    da->o = o;
+    *df = relative_decoration;
     return da;
 }
 
     void *
-lmap_decoration(object_decoration * df, const n_o_map_setup * setup)
+linear_texture_mapping(object_decoration * df, direction n,
+        point o, const char * path, texture_application a)
 {
-    lmap_arg * da = malloc(sizeof *da);
-    da->a = setup->a;
-    da->photo = photo_create(setup->path);
+    linear_decoration_arg * da = malloc(sizeof *da);
+    da->a = a;
+    da->photo = photo_create(path);
     real r;
-    spherical(setup->n, &r, &da->theta, &da->phi);
+    spherical(n, &r, &da->theta, &da->phi);
     da->r = 1 / r;
-    da->o = setup->o;
-    *df = lmap__;
+    da->o = o;
+    *df = linear_decoration;
     return da;
 }
-
