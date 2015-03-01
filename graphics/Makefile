@@ -23,10 +23,10 @@ image.jpeg: py/image1.py sky.pnm ray/gun
 	$< -r 1920x1080 -C $(RAY_GUN) 12 $@
 
 example.avi: py/video1.py sky.pnm ray/gun
-	./movie.sh $@ "$< -c 736 -C $(RAY_GUN)"
+	./movie_from_exec.sh $@ "$< -c 736 -C $(RAY_GUN)"
 
 fluid.mp4: img.png flow/fluid
-	./movie.sh $@ "$(FLOW_FLUID)"
+	./movie_from_exec.sh $@ "$(FLOW_FLUID)"
 
 mandelbrot.mp4: py/follow.py
 	$< | ./movie_from_pipe.sh $@

@@ -6,12 +6,12 @@ CFLAGS=-g -Wextra -Werror -std=c11 -I$(GRAPHICS)/rgb
 gun: gun.o tracer.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-tracer.a: map.o inter.o sphere.o plane.o cylinder.o \
+tracer.a: mapping.o inter.o sphere.o plane.o cylinder.o \
 	  cone.o direction.o point.o ray.o observer.o \
       matrix.o bitarray.o stack.o scene.o sky.o trace.o
 	ar rc $@ $^
 
-map.o:      map.h
+mapping.o:  mapping.h
 inter.o:    inter.h
 sphere.o:   sphere.h
 plane.o:    plane.h

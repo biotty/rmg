@@ -1,7 +1,7 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 
-#include "map.h"
+#include "mapping.h"
 #include "xmath.h"
 #include "photo.h"
 #include <stdlib.h>

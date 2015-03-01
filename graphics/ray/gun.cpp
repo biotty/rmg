@@ -1,8 +1,8 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 
-#include "map.h"
 #include "inter.h"
+#include "mapping.h"
 #include "observer.h"
 #include "trace.h"
 #include "image.h"
