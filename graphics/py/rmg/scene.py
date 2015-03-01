@@ -71,7 +71,7 @@ class World:
 
     def __str__(self):
         sorted_objects = sorted(self.scene_objects, key = lambda o: o.precedence)
-        return "%s\n%d:\n%s\n%s\n%d:\n%s" % (
+        return "%s\n%d\n%s\n%s\n%d\n%s" % (
             self.observer,
             len(sorted_objects),
             "\n".join([str(o) for o in sorted_objects]),

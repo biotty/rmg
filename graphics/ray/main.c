@@ -13,12 +13,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-char * strdup(const char * s);
-
-typedef struct {
-    char buf[256];
-} string;
-
     static void
 fail(const char * fmt, ...)
 {
@@ -29,9 +23,14 @@ fail(const char * fmt, ...)
     exit(EXIT_FAILURE);
 }
 
+char * strdup(const char * s); // posix-2001 not c
+
+typedef struct {
+    char buf[256];
+} string;
+
 #define SCAN_DEFINITION(T, N, F, R) static T g ## N (void) \
 { T N; if (1 != scanf(F, R)) fail("%s\n", F); return N; }
-SCAN_DEFINITION(char, c, "%c", &c)
 SCAN_DEFINITION(int, i, "%d", &i)
 SCAN_DEFINITION(real, r, REAL_FMT, &r)
 SCAN_DEFINITION(string, s, "%s", s.buf)
@@ -168,7 +167,6 @@ main(int argc, char *argv[])
         .row_direction = {gr(), gr(), gr()},
         .width = atoi(dim_w), .height = atoi(dim_h)};
     const int n = gi();
-    if (gc() != ':') fail("scene-object-count colon missing\n");
     world world_ = alloc_world(n);
     void * args[n];
     void * decoration_args[n];
@@ -221,7 +219,6 @@ main(int argc, char *argv[])
     }
     free(sky_name);
     const int k = gi();
-    if (gc() != ':') fail("light-spot-count colon missing\n");
     light_spot spots[k];
     for (int x=0; x<k; x++) {
         spots[x] = (light_spot){
