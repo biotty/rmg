@@ -29,7 +29,7 @@ class Map:
         self.path = path
         self.a = MapApplication(wrap, factor, adjust)
     def __str__(self):
-        return "map %s %s %s" % (self.north, self.path, self.a)
+        return "directional %s %s %s" % (self.north, self.path, self.a)
 
 class PlanarMap:
     def __init__(self, normal, path, wrap, factor, adjust):
@@ -37,7 +37,7 @@ class PlanarMap:
         self.path = path
         self.a = MapApplication(wrap, factor, adjust)
     def __str__(self):
-        return "pmap %s %s %s" % (self.normal, self.path, self.a)
+        return "positional %s %s %s" % (self.normal, self.path, self.a)
 
 class OrientMap:
     def __init__(self, north, origo, path, wrap, factor, adjust):
@@ -46,7 +46,7 @@ class OrientMap:
         self.path = path
         self.a = MapApplication(wrap, factor, adjust)
     def __str__(self):
-        return "omap %s %s %s %s" % (self.north, self.origo, self.path, self.a)
+        return "relative %s %s %s %s" % (self.north, self.origo, self.path, self.a)
 
 class AxisMap:
     def __init__(self, north, origo, path, wrap, factor, adjust):
@@ -55,5 +55,4 @@ class AxisMap:
         self.path = path
         self.a = MapApplication(wrap, factor, adjust)
     def __str__(self):
-        return "lmap %s %s %s %s" % (self.north, self.origo, self.path, self.a)
-
+        return "linear %s %s %s %s" % (self.north, self.origo, self.path, self.a)

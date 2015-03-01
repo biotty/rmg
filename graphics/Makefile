@@ -22,7 +22,7 @@ rgb/librgb.a:
 image.jpeg: py/image1.py sky.pnm ray/gun
 	$< -r 1920x1080 -C $(RAY_GUN) 12 $@
 
-example.avi: py/video1.py sky.pnm ray/gun
+example.avi: py/video2.py sky.pnm ray/gun
 	./movie_from_exec.sh $@ "$< -c 736 -C $(RAY_GUN)"
 
 fluid.mp4: img.png flow/fluid

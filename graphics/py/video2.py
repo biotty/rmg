@@ -10,7 +10,7 @@ from rmg.plane import XY
 from rmg.bodies import Sphere
 from rmg.space import Point, Direction, origo, random_orbit
 from rmg.color import Color, Optics, white, black
-from rmg.map import Map, OpticsFactor
+from rmg.mapping import Map, OpticsFactor
 from rmg.scene import SceneObject, LightSpot, Observer
 from rmg.script import ParametricWorld, ScriptInvocation
 from globe import GlobeMapRenderer
