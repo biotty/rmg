@@ -11,6 +11,18 @@
 #include <iostream>
 
 
+//            [i][j]-->
+//             |
+//      North  v
+//    O-----+
+//  W |     | E
+//    |     |
+//    +-----+   (x  -->
+//      South    ,y)
+//                |
+//                v
+
+
 template<typename T>
 struct SideNeighborhood {
     T & c; T & n; T & s; T & w; T & e;
