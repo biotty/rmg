@@ -8,56 +8,6 @@
 #include <string.h>
 #include <assert.h>
 
-typedef struct {
-    scene * scene;
-    scene_sky sky;
-    light_spot * spots;
-    int spot_count;
-} world__;
-
-    world
-alloc_world(int count)
-{
-    assert(count > 0);
-    scene * sc = calloc(1, scene_size(count));
-    sc->object_count = count;
-    world__ * w = malloc(sizeof *w);
-    w->scene = sc;
-    w->sky = white_sky;
-    return w;
-}
-
-    void
-set_object(world world_, int i, scene_object object)
-{
-    world__ * w = world_;
-    assert(i >= 0 && i < w->scene->object_count);
-    w->scene->objects[i] = object;
-}
-
-    void
-set_sky(world world_, scene_sky sky)
-{
-    world__ * w = world_;
-    w->sky = sky;
-}
-
-    void
-set_spots(world world_, light_spot * spots, int count)
-{
-    world__ * w = world_;
-    w->spots = spots;
-    w->spot_count = count;
-
-}
-
-    void
-destroy_world(world world_)
-{
-    world__ * w = world_;
-    free(w->scene);
-    free(w);
-}
 
 typedef struct {
     color lens;
@@ -66,20 +16,20 @@ typedef struct {
     bitarray * inside;
 } detector;
 
-static color trace__(const detector *, world__ *);
+static color trace__(const detector *, world *);
 
     color
-trace(ray t, world world_)
+trace(ray t, world * w)
 {
-    world__ * w = world_;
     detector detector_ = {
         {1, 1, 1},
         .ray = t,
-        .hop = max_hops};
-    const size_t q = w->scene->object_count;
+        .hop = max_hops
+    };
+    const size_t q = w->scene_.object_count;
     detector_.inside = calloc(1, ba_size(q));
     detector_.inside->bit_count = q;
-    init_inside(detector_.inside, w->scene, &t);
+    init_inside(detector_.inside, w->scene_, &t);
     if (debug && ba_firstset(detector_.inside) >= 0)
         fprintf(stderr, "initial detector is at inside of %d\n",
                 ba_firstset(detector_.inside));
@@ -97,7 +47,7 @@ ignorable_color(const color lens)
 
     static color
 trace_hop(ray t, color filter_,
-        const detector * detector_, world__ * w)
+        const detector * detector_, world * w)
 {
     detector t_detector = *detector_;
     t_detector.ray = t;
@@ -132,7 +82,7 @@ passthrough_filter(color * color_, const object_optics * so,
 
     static color
 spot_absorption(const ray * surface, const object_optics * so,
-        const world__ * w, bitarray * inside)
+        const world * w, bitarray * inside)
 {
     color sum_ = {0, 0, 0};
     for (int i=0; i<w->spot_count; i++) {
@@ -145,7 +95,7 @@ spot_absorption(const ray * surface, const object_optics * so,
         const real a = scalar_product(surface->head, to_spot);
         if (a <= 0) continue;
         ray s = { .endpoint = surface->endpoint, .head = to_spot };
-        if (NULL == closest_surface(&s, w->scene, inside, NULL)) {
+        if (NULL == closest_surface(&s, w->scene_, inside, NULL)) {
             const real ua = acos(1 - a) * (2/REAL_PI);
             sum_.r += color_.r * ua;
             sum_.g += color_.g * ua;
@@ -157,16 +107,16 @@ spot_absorption(const ray * surface, const object_optics * so,
 
     static color
 refraction_trace(ray ray_, const scene_object * so,
-        const detector * detector_, world__ * w)
+        const detector * detector_, world * w)
 {
     color detected = {0, 0, 0};
-    const ptrdiff_t i = so - w->scene->objects;
+    const ptrdiff_t i = so - w->scene_.objects;
     int outside_i = ba_firstset(detector_->inside);
     const bool enters = (outside_i != i);
     ba_assign(detector_->inside, i, enters);
     if ( ! enters) outside_i = ba_firstset(detector_->inside);
     real outside_refraction_index = (outside_i >= 0)
-        ? w->scene->objects[outside_i].optics.refraction_index
+        ? w->scene_.objects[outside_i].optics.refraction_index
         : 1;
     if (outside_refraction_index <= 0) {
         if (debug) {
@@ -205,7 +155,7 @@ out:
 }
 
     static color
-trace__(const detector * detector_, world__ * w)
+trace__(const detector * detector_, world * w)
 {
     if (0 == detector_->hop || ignorable_color(detector_->lens))
         return (color){0, 0, 0};
@@ -215,12 +165,12 @@ trace__(const detector * detector_, world__ * w)
     stack toggled = EMPTY_STACK;
     const int detector_inside_i = ba_firstset(detector_->inside);
     const scene_object * closest_object
-        = closest_surface(&surface, w->scene, detector_->inside, &toggled);
+        = closest_surface(&surface, w->scene_, detector_->inside, &toggled);
     if (closest_object == NULL) {
         int rgb_clear = 0;
         const int adinf_i = detector_inside_i;
         if (adinf_i >= 0) {
-            const color * f = &w->scene->objects[adinf_i].optics
+            const color * f = &w->scene_.objects[adinf_i].optics
                 .passthrough_filter;
             if ( ! is_near(f->r, 1)) rgb_clear |= 0x1;
             if ( ! is_near(f->g, 1)) rgb_clear |= 0x2;
@@ -237,8 +187,8 @@ trace__(const detector * detector_, world__ * w)
         }
         return _;
     } else {
-        const ptrdiff_t i = closest_object - w->scene->objects;
-        assert(i >= 0 && i < w->scene->object_count);
+        const ptrdiff_t i = closest_object - w->scene_.objects;
+        assert(i >= 0 && i < w->scene_.object_count);
         const bool exits = 0 < scalar_product(
                 surface.head, detector_->ray.head);
         const object_optics * optics = &closest_object->optics;
@@ -292,7 +242,7 @@ trace__(const detector * detector_, world__ * w)
             detected = optical_sum(detected, refraction_color);
         }
         if (detector_inside_i >= 0) {
-            scene_object * io = w->scene->objects + detector_inside_i;
+            scene_object * io = w->scene_.objects + detector_inside_i;
             passthrough_filter(
                     &detected, &io->optics,
                     distance(detector_->ray.endpoint, surface.endpoint));
@@ -304,4 +254,3 @@ trace__(const detector * detector_, world__ * w)
         return detected;
     }
 }
-

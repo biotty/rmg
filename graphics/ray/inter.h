@@ -30,6 +30,9 @@ extern "C" {
 void * new_inter(object_intersection * fi, object_normal * fn,
         int n, object_generator);
 
+object_arg_union * new_object_arg();
+void delete_object_or_inter(void *);
+
 #ifdef __cplusplus
 }
 #endif

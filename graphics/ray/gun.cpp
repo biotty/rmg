@@ -39,9 +39,7 @@ SCAN_DEFINITION(bufstr_256, s, "%s", s.buf)
 new_object(const char * object_class,
         object_intersection * fi, object_normal * fn)
 {
-    object_arg_union * object_arg
-        = static_cast<object_arg_union *>(malloc(sizeof *object_arg));
-
+    object_arg_union * object_arg = new_object_arg();
     if (0 == strcmp(object_class, "plane")) {
         plane plane_ = {
             .at_surface = {gr(), gr(), gr()},
@@ -172,13 +170,19 @@ main(int argc, char *argv[])
         .view = {gr(), gr(), gr()},
         .column_direction = {gr(), gr(), gr()},
         .row_direction = {gr(), gr(), gr()},
-        .width = atoi(dim_w), .height = atoi(dim_h)};
-    const int n = gi();
-    world world_ = alloc_world(n);
-    void * args[n];
-    void * decoration_args[n];
+        .width = atoi(dim_w), .height = atoi(dim_h)
+    };
+    int c = gi();
+    if (c <= 0) fail("no scene objects\n");
+    world world_ = { white_sky, NULL, 0,
+        {
+            c, new scene_object[c]
+        }
+    };
+    void ** args = new void *[c];
+    void ** decoration_args = new void *[c];
     int j = 0;
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < world_.scene_.object_count; i++) {
         object_intersection fi;
         object_normal fn;
         char * class_name = strdup(gs().buf);
@@ -202,19 +206,21 @@ main(int argc, char *argv[])
             const int n = sscanf(buf, REAL_FMT, &gr_);
             if (n != 1) fail("optics [%d] error\n", i);
         }
-        set_object(world_, i, (scene_object){ fi, fn, a, (object_optics){
-                .reflection_filter = (color){gr_, gr(), gr()},
-                .absorption_filter = (color){gr(), gr(), gr()},
-                .refraction_index = gr(),
-                .refraction_filter = (color){gr(), gr(), gr()},
-                .passthrough_filter = (color){gr(), gr(), gr()},
-                },
-                .decoration = df,
-                .decoration_arg = d,
-                });
+        scene_object o = { fi, fn, a,
+            {
+                {gr_, gr(), gr()},
+                {gr(), gr(), gr()},
+                gr(),
+                {gr(), gr(), gr()},
+                {gr(), gr(), gr()}
+            },
+            df, d
+        };
+        world_.scene_.objects[i] = o;
     }
+
     char * sky_name = strdup(gs().buf);
-    if (strcmp(sky_name, "funky") == 0) set_sky(world_, funky_sky);
+    if (strcmp(sky_name, "funky") == 0) world_.sky = funky_sky;
     if (strcmp(sky_name, "photo") == 0) {
         sky_photo = photo_create("sky.pnm");
         if ( ! sky_photo) {
@@ -222,31 +228,40 @@ main(int argc, char *argv[])
             sky_photo = photo_create("sky.jpeg");
         }
         if ( ! sky_photo) fail("could not load sky photo\n");
-        set_sky(world_, photo_sky);
+        world_.sky = photo_sky;
     }
     free(sky_name);
+
     const int k = gi();
-    light_spot spots[k];
+    world_.spot_count = k;
+    world_.spots = new light_spot[k];
     for (int x=0; x<k; x++) {
-        spots[x] = (light_spot){
-            .spot = {gr(), gr(), gr()},
-            .light = {gr(), gr(), gr()}
+        light_spot s = {
+            {gr(), gr(), gr()},
+            {gr(), gr(), gr()}
         };
+        world_.spots[x] = s;
     }
-    set_spots(world_, spots, k);
+    while (fgetc(stdin) != EOF)
+        ; // wait till we get end-of-file (polite to not break the pipe)
+
     image out = image_create(out_path, o.width, o.height);
     if (report_status)
         fprintf(stderr, "Tracing %dx%d of Observer\ny", o.width, o.height);
     for (int row = 0; row < o.height; row++) {
         for (int column = 0; column < o.width; column++) {
             ray ray_ = observer_ray(&o, column, row);
-            image_write(out, trace(ray_, world_));
+            image_write(out, trace(ray_, &world_));
         }
         if (report_status) fprintf(stderr, "\r%d", row);
     }
-    for (int q=0; q<n; q++) free(args[q]);
+    image_close(out);
+
+    for (int q=0; q<c; q++) delete_object_or_inter(args[q]);
     while (--j>=0) generic_map_delete(decoration_args[j]);
-    destroy_world(world_);
+    delete [] args;
+    delete [] decoration_args;
+    delete [] world_.scene_.objects;
+    delete [] world_.spots;
     if (report_status) fprintf(stderr, "\n");
 }
-

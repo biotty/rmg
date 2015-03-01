@@ -139,13 +139,15 @@ scene_objects = []
 for c in range(int(invocation.positional_args[0])):
     scene_objects.extend(rnd_scene_cluster())
 
-
-invocation.image(World(
-        scene_objects,
+w = World(scene_objects,
         [
             LightSpot(Point(7, 0, 0), Color(1, .65, .65)),
             LightSpot(Point(0, 7, 0), Color(.65, .65, 1)),
             LightSpot(Point(-3, -3, 9), Color(1, 1, .65)),
         ],
-        Observer(Direction.random(2), origo), "funky"),
-    invocation.positional_args[1])
+        Observer(Direction.random(2), origo), "funky")
+
+if 1 == len(invocation.positional_args):
+    invocation.tee(w)
+else:
+    invocation.image(w, invocation.positional_args[1])

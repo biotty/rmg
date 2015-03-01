@@ -19,23 +19,23 @@ struct light_spot {
     color light;
 };
 
+struct world {
+    scene_sky sky;
+    struct light_spot * spots;
+    int spot_count;
+    scene scene_;
+};
+
 #ifndef __cplusplus
 typedef struct light_spot light_spot;
+typedef struct world world;
 #endif
-
-typedef void * world;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-world alloc_world(int object_count);
-void set_object(world, int, scene_object);
-void set_sky(world, scene_sky sky);
-void set_spots(world world_, light_spot * spots, int count);
-void destroy_world(world);
-
-color trace(ray t, world);
+color trace(ray t, world *);
 
 #ifdef __cplusplus
 }

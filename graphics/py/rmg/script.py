@@ -3,7 +3,7 @@
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
 
-from sys import argv, stderr
+from sys import argv, stderr, stdout
 from optparse import OptionParser
 from subprocess import Popen, PIPE
 from rmg.scene import World
@@ -42,6 +42,9 @@ class ScriptInvocation:
         o, a = opts.parse_args()
         return cls(o.resolution, o.frame_count,
                 o.trace_command, o.path_prefix, a)
+
+    def tee(self, world):
+        stdout.write("%s\n" % (world,))
 
     def image(self, world, path):
         data = str(world)

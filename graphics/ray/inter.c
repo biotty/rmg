@@ -134,3 +134,14 @@ new_inter(object_intersection * fi, object_normal * fn,
     return inter_;
 }
 
+    object_arg_union *
+new_object_arg()
+{
+    return malloc(sizeof (object_arg_union));
+}
+
+    void
+delete_object_or_inter(void * p)
+{
+    free(p);
+}

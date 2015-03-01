@@ -1,7 +1,7 @@
 GRAPHICS=..
 LDFLAGS=-L$(GRAPHICS)/rgb -lrgb -lm
-CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -I$(GRAPHICS)/rgb
-CFLAGS=-Wextra -Werror -std=c11 -I$(GRAPHICS)/rgb
+CXXFLAGS=-g -Wall -Wextra -Werror -std=c++11 -I$(GRAPHICS)/rgb
+CFLAGS=-g -Wextra -Werror -std=c11 -I$(GRAPHICS)/rgb
 
 gun: gun.o tracer.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
