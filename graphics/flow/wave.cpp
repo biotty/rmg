@@ -35,7 +35,7 @@ struct SqueezeIndicator : WaveIndicator
         for (PositionIterator it(h, w); it.more(); ++it) {
             const Position & p = it.position;
             const double sq = squeezes.cell(p.i * h_m, p.j * w_m);
-            Color c = picture.color(XY(p.j/(double)it.w, p.i/(double)it.h));
+            color c = picture.color_at(XY(p.j/(double)it.w, p.i/(double)it.h));
             image_write(out, shaded_color(c, sq * s_m));
         }
         image_close(out);
@@ -49,7 +49,7 @@ private:
             + (q.n.displacement.y - q.s.displacement.y);
     }
 
-    Color shaded_color(Color c, double sq)
+    color shaded_color(color c, double sq)
     {
         double v = 1;
         double u = sq;
@@ -114,7 +114,7 @@ struct PictureParameters : WaveFlowParameters
     double density_inv(const Position & p)
     {
         XY u(p.j/(double)w, p.i/(double)h);
-        return intensity(picture.color(u)) * 1.9 + 0.1;
+        return intensity(picture.color_at(u)) * 1.9 + 0.1;
     }
 };
 

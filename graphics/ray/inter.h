@@ -9,18 +9,29 @@
 #include "cylinder.h"
 #include "scene.h"
 
-typedef union {
-    sphere sphere;
-    plane plane;
-    cone cone;
-    cylinder cylinder;
-} object_arg_union;
-
 typedef void * (*object_generator)
     (object_intersection * fi, object_normal * fn);
+
+union object_arg_union {
+    sphere sphere_;
+    plane plane_;
+    cone cone_;
+    cylinder cylinder_;
+};
+
+#ifndef __cplusplus
+typedef union object_arg_union object_arg_union;
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void * new_inter(object_intersection * fi, object_normal * fn,
         int n, object_generator);
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

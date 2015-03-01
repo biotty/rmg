@@ -5,18 +5,29 @@
 
 #include "ray.h"
 
-typedef struct {
+struct cone {
 	direction translate;
 	real r;
     real theta;
     real phi;
-} cone;
+};
 
-pair cone_intersection(const ray *, void * cone_);
-direction cone_normal(point, void * cone_, bool at_second);
-
-pair minucone_intersection(const ray *, void * cone_);
-direction minucone_normal(point, void * cone_, bool at_second);
-
+#ifndef __cplusplus
+typedef struct cone cone;
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+real_pair cone_intersection(const ray *, void * cone_);
+direction cone_normal(point, void * cone_, bool at_second);
+
+real_pair minucone_intersection(const ray *, void * cone_);
+direction minucone_normal(point, void * cone_, bool at_second);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

@@ -18,5 +18,5 @@ void image_close(image);
 #ifdef __cplusplus
 }
 #endif
-#endif
 
+#endif

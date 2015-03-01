@@ -7,8 +7,15 @@
 
 typedef xyz point;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 real distance(point a, point b);
 real distance_to_origo(point p);
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

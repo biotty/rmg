@@ -124,7 +124,7 @@ def rnd_intersection_of_two(p, r):
                 rnd_tilted(fig(), p, r)]))]
 
 def rnd_scene_cluster():
-    p = Point(*(Direction.random(rnd(.3, 1.8)).xyz()))
+    p = Point(*(Direction.random(rnd(.3, 2.1)).xyz()))
     dice = rnd(1)
     if dice < .65:
         return rnd_intersection_of_two(p, .1)

@@ -11,10 +11,10 @@
 
 struct ColorTracer : FluidIndicator
 {
-    Tracer<color_type> * tracer;
+    Tracer<palette_index_type> * tracer;
     Colorizer * colorizer;
 
-    ColorTracer(Tracer<color_type> * tracer, Colorizer * colorizer)
+    ColorTracer(Tracer<palette_index_type> * tracer, Colorizer * colorizer)
             : tracer(tracer), colorizer(colorizer)
     {
         colorizer->initialize(tracer->trace);
@@ -22,7 +22,7 @@ struct ColorTracer : FluidIndicator
 
     void lapse(double delta_t, Fluid & flow, size_t i) {
         tracer->follow(flow.field, delta_t);
-        colorizer->image(tracer->trace, i);
+        colorizer->render_image(tracer->trace, i);
     }
 };
 
@@ -30,11 +30,11 @@ struct ColorTracer : FluidIndicator
 struct ColorMatch
 {
     double e;
-    Color c;
+    color c;
 
-    ColorMatch(double e, Color c) : e(e), c(c) {}
+    ColorMatch(double e, color c) : e(e), c(c) {}
 
-    bool operator()(Color m) {
+    bool operator()(color m) {
         return similar(e, &c, &m);
     }
 };
@@ -42,7 +42,7 @@ struct ColorMatch
 
 struct FeedbackParameters : FluidParameters
 {
-    typedef std::map<color_type, float> map_type;
+    typedef std::map<palette_index_type, float> map_type;
     map_type densities;
     map_type viscosities;
 
@@ -52,10 +52,10 @@ struct FeedbackParameters : FluidParameters
             std::vector<ColorMatch> density_cms, double density_e,
             std::vector<ColorMatch> viscosity_cms, double viscosity_e)
     {
-        const std::vector<Color> & palette = color_tracer.colorizer->palette;
+        const std::vector<color> & palette = color_tracer.colorizer->palette;
         tracer = color_tracer.tracer;
         for (size_t i = 0; i < palette.size(); ++i) {
-            const Color & c = palette[i];
+            const color & c = palette[i];
             double d = density;
             double v = viscosity;
             for (size_t j = 0; j < density_cms.size(); ++j)
@@ -79,7 +79,7 @@ struct FeedbackParameters : FluidParameters
     void setup(double /*t*/, double /*u*/)
     {
         if ( ! quantized) {
-            quantized = new Grid<color_type>(h, w);
+            quantized = new Grid<palette_index_type>(h, w);
         }
         quantize(*quantized, *tracer->trace);
     }
@@ -87,8 +87,8 @@ struct FeedbackParameters : FluidParameters
 private:
     size_t h;
     size_t w;
-    Tracer<color_type> * tracer;
-    Grid<color_type> * quantized;
+    Tracer<palette_index_type> * tracer;
+    Grid<palette_index_type> * quantized;
 };
 
 
@@ -232,7 +232,7 @@ int main(int argc, char **argv)
     FluidAnimation a(h, w, p, f);
 
     PhotoColorizer c(photo_filename, image_prefix);
-    Tracer<color_type> tracer(h * m, w * m);
+    Tracer<palette_index_type> tracer(h * m, w * m);
     ColorTracer color_tracer(&tracer, &c);
 
     p.configure(color_tracer, d, v, d_exc, D, v_exc, V);

@@ -12,24 +12,24 @@
 #include <iostream>
 
 
-typedef unsigned char color_type;
+typedef unsigned char palette_index_type;
 
 
 struct Colorizer
 {
     std::string filename_prefix;
-    std::vector<Color> palette;
+    std::vector<color> palette;
 
     virtual ~Colorizer() {}
-    virtual void initialize(Grid<color_type> * grid) = 0;
+    virtual void initialize(Grid<palette_index_type> * grid) = 0;
     Colorizer(std::string fp) : filename_prefix(fp) {}
-    void image(Grid<color_type> * colors, size_t i)
+    void render_image(Grid<palette_index_type> * indices, size_t i)
     {
         std::ostringstream oss;
         oss << filename_prefix << i << ".jpeg";
-        ::image out = image_create(oss.str().c_str(), colors->w, colors->h);
-        for (PositionIterator it = colors->positions(); it.more(); ++it) {
-            color_type & c = colors->cell(it);
+        image out = image_create(oss.str().c_str(), indices->w, indices->h);
+        for (PositionIterator it = indices->positions(); it.more(); ++it) {
+            palette_index_type & c = indices->cell(it);
             assert(c <= palette.size());
             image_write(out, palette[c]);
         }
@@ -60,36 +60,40 @@ struct Painting
         std::remove(qpath.c_str());  // unlink, but we still have file open
     }
 
-    std::vector<Color> print(Grid<color_type> * board)
+    std::vector<color> print(Grid<palette_index_type> * board)
     {
-        std::vector<Color> palette(n, {0, 0, 0});
+        std::vector<color> palette(n, {0, 0, 0});
         if ( ! ph) return palette;
         double h_m = ph->height /(double) board->h;
         double w_m = ph->width /(double) board->w;
-        std::map<unsigned, color_type> colors;
+        std::map<unsigned, palette_index_type> indices;
         for (PositionIterator it = board->positions(); it.more(); ++it) {
             const Position & pos = it.position;
             size_t x = pos.j * w_m;
             size_t y = pos.i * h_m;
             unsigned rgb = photo_rgb(ph, x, y);
-            if (colors.find(rgb) == colors.end()) {
-                color_type c = colors.size();
+            if (indices.find(rgb) == indices.end()) {
+                palette_index_type c = indices.size();
                 assert(c < n);
-                colors[rgb] = c;
+                indices[rgb] = c;
             }
-            board->cell(it) = colors[rgb];
+            board->cell(it) = indices[rgb];
         }
-        for (std::map<unsigned, color_type>::iterator me = colors.begin();
-                me != colors.end(); ++me) {
+        for (std::map<unsigned, palette_index_type>::iterator me = indices.begin();
+                me != indices.end(); ++me) {
             unsigned rgb = me->first;
-            palette[me->second] = (Color){ (rgb & 0xff) / 255.0,
-                    ((rgb >> 8) & 0xff) / 255.0, (rgb >> 16) / 255.0 };
+            const color c = {
+                (rgb & 0xff) / 255.0,
+                ((rgb >> 8) & 0xff) / 255.0,
+                (rgb >> 16) / 255.0
+            };
+            palette[me->second] = c;
         }
         return palette;
     }
 
 private:
-    Photo * ph;
+    photo * ph;
     const size_t n;
 };
 
@@ -105,7 +109,7 @@ struct PhotoColorizer : Colorizer
         , path(path)
         , n(n)
     {}
-    void initialize(Grid<color_type> * grid)
+    void initialize(Grid<palette_index_type> * grid)
     {
         palette = Painting(path, n).print(grid);
     }
@@ -113,4 +117,3 @@ struct PhotoColorizer : Colorizer
 
 
 #endif
-

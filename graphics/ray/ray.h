@@ -6,10 +6,14 @@
 #include "point.h"
 #include "direction.h"
 
-typedef struct {
+struct ray {
 	point endpoint;
 	direction head;
-} ray;
+};
+
+#ifndef __cplusplus
+typedef struct ray ray;
+#endif
 
 void advance(ray * ray_, real r);
 

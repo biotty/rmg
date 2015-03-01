@@ -9,7 +9,7 @@
 #include "stack.h"
 #include "stddef.h"
 
-typedef pair (* object_intersection)(const ray *, void * object_arg);
+typedef real_pair (* object_intersection)(const ray *, void * object_arg);
 typedef direction (* object_normal)(point, void * object_arg, bool at_second);
 
 struct object_optics__;

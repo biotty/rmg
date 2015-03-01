@@ -1,9 +1,10 @@
 GRAPHICS=..
-CFLAGS=-Wextra -Werror -std=c11 -I$(GRAPHICS)/rgb
 LDFLAGS=-L$(GRAPHICS)/rgb -lrgb -lm
+CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -I$(GRAPHICS)/rgb
+CFLAGS=-Wextra -Werror -std=c11 -I$(GRAPHICS)/rgb
 
-gun: main.o tracer.a
-	$(CC) -o $@ $^ $(LDFLAGS)
+gun: gun.o tracer.a
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 tracer.a: map.o inter.o sphere.o plane.o cylinder.o \
 	  cone.o direction.o point.o ray.o observer.o \

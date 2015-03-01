@@ -5,11 +5,15 @@
 
 #include "real.h"
 
-typedef struct {
+struct xyz {
 	real x;
 	real y;
 	real z;
-} xyz;
+};
+
+#ifndef __cplusplus
+typedef struct xyz xyz;
+#endif
 
 #endif
 

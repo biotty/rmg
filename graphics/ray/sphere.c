@@ -6,7 +6,7 @@
 #include <math.h>
 #include <assert.h>
 
-pair
+real_pair
 sphere_intersection(
         const ray * ray_,
         void * sphere__)
@@ -17,25 +17,25 @@ sphere_intersection(
     const real c = square(d.x) + square(d.y) + square(d.z)
                    - square(sphere_->radius);
     const real det = square(b) - 4 * c;
-    if (det <= 0) return (pair){-1, -1};
+    if (det <= 0) return (real_pair){-1, -1};
     const real sqrt_= sqroot(det);
-    return (pair){
+    return (real_pair){
         0.5 * (-b - sqrt_),
         0.5 * (-b + sqrt_)
     };
 }
 
-pair
+real_pair
 minusphere_intersection(
         const ray * ray_,
         void * sphere__)
 {
-    pair p = sphere_intersection(ray_, sphere__);
+    real_pair p = sphere_intersection(ray_, sphere__);
     if (p.first >= 0) {
         assert(p.second >= 0);
-        return (pair){p.second, p.first};
+        return (real_pair){p.second, p.first};
     } else
-        return (pair){p.second, HUGE_REAL};
+        return (real_pair){p.second, HUGE_REAL};
 }
 
     direction

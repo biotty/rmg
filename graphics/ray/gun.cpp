@@ -27,26 +27,27 @@ char * strdup(const char * s); // posix-2001 not c
 
 typedef struct {
     char buf[256];
-} string;
+} bufstr_256;
 
 #define SCAN_DEFINITION(T, N, F, R) static T g ## N (void) \
 { T N; if (1 != scanf(F, R)) fail("%s\n", F); return N; }
 SCAN_DEFINITION(int, i, "%d", &i)
 SCAN_DEFINITION(real, r, REAL_FMT, &r)
-SCAN_DEFINITION(string, s, "%s", s.buf)
+SCAN_DEFINITION(bufstr_256, s, "%s", s.buf)
 
     void *
 new_object(const char * object_class,
         object_intersection * fi, object_normal * fn)
 {
-    object_arg_union * object_arg = NULL;
+    object_arg_union * object_arg
+        = static_cast<object_arg_union *>(malloc(sizeof *object_arg));
+
     if (0 == strcmp(object_class, "plane")) {
         plane plane_ = {
-            .point = {gr(), gr(), gr()},
+            .at_surface = {gr(), gr(), gr()},
             .normal = {gr(), gr(), gr()}};
         normalize(&plane_.normal);
-        object_arg = malloc(sizeof *object_arg);
-        object_arg->plane = plane_;
+        object_arg->plane_ = plane_;
         *fi = plane_intersection;
         *fn = plane_normal;
     } else if (0 == strcmp(object_class, "sphere")
@@ -54,8 +55,7 @@ new_object(const char * object_class,
         sphere sphere_ = {
             .center = {gr(), gr(), gr()},
             .radius = gr()};
-        object_arg = malloc(sizeof *object_arg);
-        object_arg->sphere = sphere_;
+        object_arg->sphere_ = sphere_;
         if (memcmp(object_class, "minu", 4) != 0) {
             *fi = sphere_intersection;
             *fn = sphere_normal;
@@ -70,8 +70,7 @@ new_object(const char * object_class,
         direction axis = {gr(), gr(), gr()};
         spherical(axis, &r, &theta, &phi);
         cylinder cylinder_ = {{-p.x, -p.y, -p.z}, square(r), theta, phi};
-        object_arg = malloc(sizeof *object_arg);
-        object_arg->cylinder = cylinder_;
+        object_arg->cylinder_ = cylinder_;
         if (memcmp(object_class, "minu", 4) != 0) {
             *fi = cylinder_intersection;
             *fn = cylinder_normal;
@@ -86,8 +85,7 @@ new_object(const char * object_class,
         direction axis = {gr(), gr(), gr()};
         spherical(axis, &r, &theta, &phi);
         cone cone_ = {{-apex.x, -apex.y, -apex.z}, 1/r, theta, phi};
-        object_arg = malloc(sizeof *object_arg);
-        object_arg->cone = cone_;
+        object_arg->cone_ = cone_;
         if (memcmp(object_class, "minu", 4) != 0) {
             *fi = cone_intersection;
             *fn = cone_normal;
@@ -96,6 +94,7 @@ new_object(const char * object_class,
             *fn = minucone_normal;
         }
     } else {
+        free(object_arg);
         fail("object class \"%s\"?\n", object_class);
     }
     return object_arg;
@@ -117,27 +116,35 @@ get_map_application()
 new_decoration(const char * deco_name, object_decoration * df)
 {
     if (strcmp(deco_name, "map") == 0) {
-        return map_decoration(df, & (n_map_setup){
+        n_map_setup su = {
             .n = {gr(), gr(), gr()},
             .path = gs().buf,
-            .a = get_map_application()});
+            .a = get_map_application()
+        };
+        return map_decoration(df, &su);
     } else if (strcmp(deco_name, "pmap") == 0) {
-        return pmap_decoration(df, & (n_map_setup){
+        n_map_setup su = {
             .n = {gr(), gr(), gr()},
             .path = gs().buf,
-            .a = get_map_application()});
+            .a = get_map_application()
+        };
+        return pmap_decoration(df, &su);
     } else if (strcmp(deco_name, "omap") == 0) {
-        return omap_decoration(df, & (n_o_map_setup){
+        n_o_map_setup su = {
             .n = {gr(), gr(), gr()},
             .o = {gr(), gr(), gr()},
             .path = gs().buf,
-            .a = get_map_application()});
+            .a = get_map_application()
+        };
+        return omap_decoration(df, &su);
     } else if (strcmp(deco_name, "lmap") == 0) {
-        return lmap_decoration(df, & (n_o_map_setup){
+        n_o_map_setup su = {
             .n = {gr(), gr(), gr()},
             .o = {gr(), gr(), gr()},
             .path = gs().buf,
-            .a = get_map_application()});
+            .a = get_map_application()
+        };
+        return lmap_decoration(df, &su);
     } else {
         fail("decoration \"%s\"?", deco_name);
     }
@@ -222,8 +229,8 @@ main(int argc, char *argv[])
     light_spot spots[k];
     for (int x=0; x<k; x++) {
         spots[x] = (light_spot){
-            .point = {gr(), gr(), gr()},
-            .color = {gr(), gr(), gr()}
+            .spot = {gr(), gr(), gr()},
+            .light = {gr(), gr(), gr()}
         };
     }
     set_spots(world_, spots, k);

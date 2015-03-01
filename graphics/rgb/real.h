@@ -6,15 +6,14 @@
 #include <math.h>
 #include <float.h>
 
+#ifdef REAL_FLT
 
-#ifdef CRAY_FLT
-
-#ifdef CRAY_LDBL
-#error "Both CRAY_FLT and CRAY_LDBL defined"
+#ifdef REAL_LDBL
+#error "Both REAL_FLT and REAL_LDBL defined"
 #endif
 
-#define RMG_REAL float
-typedef RMG_REAL real;
+#define REAL_TYPE float
+typedef REAL_TYPE real;
 #define REAL_FMT "%f"
 #define REAL_EPSILON FLT_EPSILON
 #define HUGE_REAL HUGE_VALF
@@ -30,11 +29,10 @@ static inline real sqroot(real r) { return sqrtf(r); }
 
 #endif
 
+#ifdef REAL_LDBL
 
-#ifdef CRAY_LDBL
-
-#define RMG_REAL long double
-typedef RMG_REAL real;
+#define REAL_TYPE long double
+typedef REAL_TYPE real;
 #define REAL_FMT "%Lf"
 #define REAL_EPSILON LDBL_EPSILON
 #define HUGE_REAL HUGE_VALL
@@ -50,11 +48,10 @@ static inline real sqroot(real r) { return sqrtl(r); }
 
 #endif
 
+#ifndef REAL_TYPE
 
-#ifndef RMG_REAL
-
-#define RMG_REAL double
-typedef RMG_REAL real;
+#define REAL_TYPE double
+typedef REAL_TYPE real;
 #define REAL_FMT "%lf"
 #define REAL_EPSILON DBL_EPSILON
 #define HUGE_REAL HUGE_VAL
@@ -70,11 +67,13 @@ static inline real sqroot(real r) { return sqrt(r); }
 
 #endif
 
-
-typedef struct {
+struct real_pair {
     real first;
     real second;
-} pair;
+};
 
+#ifndef __cplusplus
+typedef struct real_pair real_pair;
 #endif
 
+#endif

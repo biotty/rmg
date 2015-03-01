@@ -16,7 +16,7 @@ init_inside(bitarray * inside, scene * scene_, const ray * ray_)
     for (int i = 0; i < scene_->object_count; i++) {
         void * arg = scene_->objects[i].object_arg;
         object_intersection oi = scene_->objects[i].intersection;
-        pair p = oi(ray_, arg);
+        real_pair p = oi(ray_, arg);
         ba_assign(inside, i, p.first <= 0 && p.second >= 0);
     }
 }
@@ -25,7 +25,7 @@ init_inside(bitarray * inside, scene * scene_, const ray * ray_)
 intersect(const ray * ray_, scene_object * so, bool is_inside)
 {
         void * intersection_arg = so->object_arg;
-        const pair p = so->intersection(ray_, intersection_arg);
+        const real_pair p = so->intersection(ray_, intersection_arg);
         //if (is_inside != (p.first <= 0 && p.second >= 0)) {
         //    fprintf(stderr, "inside-tracking error.  correcting\n");
         //    is_inside = ! is_inside; //ba_toggle(inside, i);

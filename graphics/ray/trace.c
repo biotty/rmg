@@ -136,11 +136,11 @@ spot_absorption(const ray * surface, const object_optics * so,
 {
     color sum_ = {0, 0, 0};
     for (int i=0; i<w->spot_count; i++) {
-        const light_spot * spot = &w->spots[i];
-        color color_ = spot->color;
+        const light_spot * lamp = &w->spots[i];
+        color color_ = lamp->light;
         filter(&color_, so->absorption_filter);
         if (ignorable_color(color_)) continue;
-        direction to_spot = distance_vector(surface->endpoint, spot->point);
+        direction to_spot = distance_vector(surface->endpoint, lamp->spot);
         normalize(&to_spot);
         const real a = scalar_product(surface->head, to_spot);
         if (a <= 0) continue;

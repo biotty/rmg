@@ -20,7 +20,7 @@ typedef struct {
 } inter;
 
 typedef struct {
-    pair p;
+    real_pair p;
     int i, /*j is index of intersection-member hit at p.second*/
         j; /*invariant: when i >= 0 then j >= 0 as well*/
 } partition;
@@ -33,7 +33,7 @@ partition_substract(partition part, const partition * subs, int n_subs)
     assert(part.p.first < part.p.second);
     for (int x = 0; x < n_subs; x++) {
         const int i = subs[x].i;
-        const pair p = subs[x].p;
+        const real_pair p = subs[x].p;
         assert(p.second < p.first);
         if ((p.second < 2*TINY_REAL && part.p.first < 0)
                 || (p.second < part.p.first && p.first > part.p.first)) {
@@ -65,7 +65,7 @@ partition_substract(partition part, const partition * subs, int n_subs)
     return part;
 }
 
-    pair
+    real_pair
 inter_intersection(const ray * ray_, void * inter__)
 {
     inter * inter_ = inter__;
@@ -73,9 +73,9 @@ inter_intersection(const ray * ray_, void * inter__)
     int n_subs = 0;
     for (int i = 0; i < inter_->count; i++) {
         void * a = &inter_->objects[i].arg;
-        const pair p = inter_->objects[i].intersection(ray_, a);
+        const real_pair p = inter_->objects[i].intersection(ray_, a);
         if (p.first < 0 && p.second < 0)
-            return (pair){-1, -1};
+            return (real_pair){-1, -1};
         if (p.second < p.first) {
             subs[n_subs++] = (partition){p, i, 123456789/*unused*/};
             continue;
@@ -91,7 +91,7 @@ inter_intersection(const ray * ray_, void * inter__)
         if (       part.p.first >= 0
                 && part.p.second >= 0
                 && part.p.second <= part.p.first)
-            return (pair){-1, -1};
+            return (real_pair){-1, -1};
     }
     const partition _ = partition_substract(part, subs, n_subs);
     inter_->hit_i = _.i;

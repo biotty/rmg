@@ -4,17 +4,16 @@
 #define COLOR_H
 
 #include "real.h"
+#include <stdbool.h>
 
-typedef struct Color {
+struct color {
 	real r;
 	real g;
 	real b;
-} color;
+};
 
-#ifdef __cplusplus
-extern "C" {
-#else
-#include <stdbool.h>
+#ifndef __cplusplus
+typedef struct color color;
 #endif
 
 static inline bool similar(double e, const color * a, const color * b)
@@ -23,6 +22,10 @@ static inline bool similar(double e, const color * a, const color * b)
     return e * e > d.r * d.r + d.g * d.g + d.b * d.b;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void filter(color * light, color surface);
 color optical_sum(color q, color w);
 real intensity(color);
@@ -30,5 +33,5 @@ real intensity(color);
 #ifdef __cplusplus
 }
 #endif
-#endif
 
+#endif

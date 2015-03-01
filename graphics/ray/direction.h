@@ -13,6 +13,11 @@ typedef xyz direction;
 
 #define point_from_origo(xyz) (xyz)
 #define direction_from_origo(xyz) (xyz)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 real length(direction);
 void scale(direction *, real r);
 void normalize(direction *);
@@ -26,5 +31,8 @@ void direction_to_unitsquare(const direction * d, real * x, real * y);
 direction rotation(direction d, real phi, real theta);
 direction inverse_rotation(direction d, real phi, real theta);
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

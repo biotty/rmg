@@ -48,7 +48,7 @@ struct Picture
             ph = photo_create(filename().c_str());
         }
     }
-    Color color(XY u) const { return photo_color(ph, u.x * ph->width, u.y * ph->height); }
+    color color_at(XY u) const { return photo_color(ph, u.x * ph->width, u.y * ph->height); }
 
 private:
     std::string filename() const
@@ -63,7 +63,7 @@ private:
     std::string prefix;
     size_t i;
     size_t n;
-    Photo * ph;
+    photo * ph;
 };
 
 

@@ -6,17 +6,21 @@
 #include "color.h"
 #include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct Photo {
+struct photo {
     int width;
     int height;
     bool grey;
     int ref_count_;
     char data[];
-} photo;
+};
+
+#ifndef __cplusplus
+typedef struct photo photo;
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 photo * photo_create(const char * path);
 unsigned photo_rgb(const photo *, int x, int y);
@@ -26,5 +30,5 @@ void photo_delete(photo *);
 #ifdef __cplusplus
 }
 #endif
-#endif
 
+#endif

@@ -4,25 +4,25 @@
 #include "plane.h"
 #include "xmath.h"
 
-pair
+real_pair
 plane_intersection(
         const ray * ray_,
         void * plane__)
 {
     const plane * plane_ = plane__;
     const real b = scalar_product(plane_->normal, ray_->head);
-    const direction v = distance_vector(ray_->endpoint, plane_->point);
+    const direction v = distance_vector(ray_->endpoint, plane_->at_surface);
     const real a = scalar_product(plane_->normal, v);
     if (is_near(b, 0)) {
-        return (pair){-1, (a >= 0) ? HUGE_REAL : -1};
+        return (real_pair){-1, (a >= 0) ? HUGE_REAL : -1};
     }
-    if (b < 0 && a >= 0) return (pair){-1, HUGE_REAL};
-    if (b > 0 && a <= 0) return (pair){-1, -1};
+    if (b < 0 && a >= 0) return (real_pair){-1, HUGE_REAL};
+    if (b > 0 && a <= 0) return (real_pair){-1, -1};
     const real r = a / b;
     if (b < 0)
-        return (pair){r, HUGE_REAL};
+        return (real_pair){r, HUGE_REAL};
     else
-        return (pair){-1, r};
+        return (real_pair){-1, r};
 }
 
 direction
