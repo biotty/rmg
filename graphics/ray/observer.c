@@ -4,13 +4,13 @@
 #include "observer.h"
 
     ray
-observer_ray(const observer * o, int column, int row)
+observer_ray(const observer * o, real aspect_ratio,
+        real unit_column, real unit_row)
 {
-    const real ratio = o->width /(real) o->height;
     direction x = o->column_direction;
     direction y = o->row_direction;
-    scale(&x, ratio * (column - o->width/2) / (real)o->width);
-    scale(&y, (row - o->height/2) / (real)o->height);
+    scale(&x, aspect_ratio * (unit_column - .5));
+    scale(&y, unit_row - .5);
     point v = o->view;
     move(&v, x);
     move(&v, y);
@@ -21,4 +21,3 @@ observer_ray(const observer * o, int column, int row)
     normalize(&ray_.head);
     return ray_;
 }
-

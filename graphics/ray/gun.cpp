@@ -33,8 +33,20 @@ SCAN_DEFINITION(int, i, "%d", &i)
 SCAN_DEFINITION(real, r, REAL_FMT, &r)
 SCAN_DEFINITION(bufstr_256, s, "%s", s.buf)
 
+    observer
+get_observer()
+{
+    observer r = {
+        .eye = {gr(), gr(), gr()},
+        .view = {gr(), gr(), gr()},
+        .column_direction = {gr(), gr(), gr()},
+        .row_direction = {gr(), gr(), gr()},
+    };
+    return r;
+}
+
     void *
-new_object(const char * object_class,
+get_object(const char * object_class,
         object_intersection * fi, object_normal * fn)
 {
     object_arg_union * object_arg = new_object_arg();
@@ -96,6 +108,25 @@ new_object(const char * object_class,
     return object_arg;
 }
 
+    void *
+get_member(object_intersection * fi, object_normal * fn)
+{
+    return get_object(gs().buf, fi, fn);
+}
+
+    object_optics
+get_object_optics(real alt_gr)
+{
+    object_optics r = {
+        {alt_gr, gr(), gr()},
+        {gr(), gr(), gr()},
+        gr(),
+        {gr(), gr(), gr()},
+        {gr(), gr(), gr()}
+    };
+    return r;
+}
+
     texture_application
 get_texture_application()
 {
@@ -109,7 +140,7 @@ get_texture_application()
 }
 
     void *
-new_decoration(const char * deco_name, object_decoration * df)
+get_decoration(const char * deco_name, object_decoration * df)
 {
     if (strcmp(deco_name, "directional") == 0) {
         direction n = {gr(), gr(), gr()};
@@ -139,10 +170,57 @@ new_decoration(const char * deco_name, object_decoration * df)
     return NULL;
 }
 
-    void *
-new_member(object_intersection * fi, object_normal * fn)
+    scene_sky
+get_scene_sky()
 {
-    return new_object(gs().buf, fi, fn);
+    bufstr_256 sky_bs = gs();
+    char * sky_name = sky_bs.buf;
+    if (strcmp(sky_name, "rgb") == 0) {
+        return rgb_sky;
+    } else if (strcmp(sky_name, "color") == 0) {
+        color sky = { gr(), gr(), gr() };
+        sky_color = sky;
+        return color_sky;
+    }
+
+    sky_photo = photo_create(sky_name);
+    if ( ! sky_photo) fail("could not load sky '%s'\n", sky_name);
+    return photo_sky;
+}
+
+    void
+get_spots(world * w)
+{
+    const int k = gi();
+    w->spot_count = k;
+    w->spots = new light_spot[k];
+    for (int x=0; x<k; x++) {
+        light_spot s = {
+            {gr(), gr(), gr()},
+            {gr(), gr(), gr()}
+        };
+        w->spots[x] = s;
+    }
+}
+
+    void
+produce_trace(world * w, observer * o, int width, int height,
+        const char * out_path, bool report_status)
+{
+    image out = image_create(out_path, width, height);
+    if (report_status)
+        fprintf(stderr, "Tracing %dx%d of Observer\ny", width, height);
+    const real aspect_ratio = width /(real) height;
+    for (int row = 0; row < height; row++) {
+        for (int column = 0; column < width; column++) {
+            ray ray_ = observer_ray(o, aspect_ratio,
+                    column /(real) width,
+                    row /(real) height);
+            image_write(out, trace(ray_, w));
+        }
+        if (report_status) fprintf(stderr, "\r%d", row);
+    }
+    image_close(out);
 }
 
     int
@@ -154,14 +232,10 @@ main(int argc, char *argv[])
     const char * dim_h = strchr(dim_w, 'x');
     if ( ! dim_h) fail("dimention argument 'x' separator missing\n");
     ++dim_h;
+    int width = atoi(dim_w);
+    int height = atoi(dim_h);
     const char * const out_path = (argc == 2) ? NULL : argv[2];
-    observer o = {
-        .eye = {gr(), gr(), gr()},
-        .view = {gr(), gr(), gr()},
-        .column_direction = {gr(), gr(), gr()},
-        .row_direction = {gr(), gr(), gr()},
-        .width = atoi(dim_w), .height = atoi(dim_h)
-    };
+    observer obs = get_observer();
     int c = gi();
     if (c <= 0) fail("no scene objects\n");
     world world_ = { color_sky, NULL, 0, { c, new scene_object[c] } };
@@ -169,81 +243,44 @@ main(int argc, char *argv[])
     void ** args = new void *[c];
     void ** decoration_args = new void *[c];
     int j = 0;
+
     for (int i = 0; i < world_.scene_.object_count; i++) {
         object_intersection fi;
         object_normal fn;
-        bufstr_256 bs = gs();
-        char * class_name = bs.buf;
-        void * a = (strcmp(class_name, "x"))
-            ? new_object(class_name, &fi, &fn)
-            : new_inter(&fi, &fn, gi(), new_member);
+        bufstr_256 name_bs = gs();
+        char * name = name_bs.buf;
+        void * a = (strcmp(name, "x"))
+            ? get_object(name, &fi, &fn)
+            : new_inter(&fi, &fn, gi(), get_member);
         if (!a) fail("object [%d] error\n", i);
         args[i] = a;
 
         object_decoration df = NULL;
         void * d = NULL;
-        const char * buf = gs().buf;
+        bufstr_256 alt_bs = gs();
+        const char * alt = alt_bs.buf;
         real gr_;
-        if (isalpha(buf[0])) {
-            d = new_decoration(buf, &df);
+        if (isalpha(alt[0])) {
+            d = get_decoration(alt, &df);
             if ( ! d) fail("decoration [%d] error\n", i);
             decoration_args[j++] = d;
             gr_ = gr();
         } else {
-            const int n = sscanf(buf, REAL_FMT, &gr_);
+            const int n = sscanf(alt, REAL_FMT, &gr_);
             if (n != 1) fail("optics [%d] error\n", i);
         }
-        scene_object o = { fi, fn, a,
-            {
-                {gr_, gr(), gr()},
-                {gr(), gr(), gr()},
-                gr(),
-                {gr(), gr(), gr()},
-                {gr(), gr(), gr()}
-            },
-            df, d
-        };
+        scene_object o = { fi, fn, a, get_object_optics(gr_), df, d };
         world_.scene_.objects[i] = o;
     }
 
-    bufstr_256 bs = gs();
-    char * sky_name = bs.buf;
-    if (strcmp(sky_name, "rgb") == 0) {
-        world_.sky = rgb_sky;
-    } else if (strcmp(sky_name, "color") == 0) {
-        color sky = { gr(), gr(), gr() };
-        sky_color = sky;
-        world_.sky = color_sky;
-    } else {
-        sky_photo = photo_create(sky_name);
-        if ( ! sky_photo) fail("could not load sky '%s'\n", sky_name);
-        world_.sky = photo_sky;
-    }
-
-    const int k = gi();
-    world_.spot_count = k;
-    world_.spots = new light_spot[k];
-    for (int x=0; x<k; x++) {
-        light_spot s = {
-            {gr(), gr(), gr()},
-            {gr(), gr(), gr()}
-        };
-        world_.spots[x] = s;
-    }
+    world_.sky = get_scene_sky();
+    
+    get_spots(&world_);
+    
     while (fgetc(stdin) != EOF)
         ; // wait till we get end-of-file (polite to not break the pipe)
-
-    image out = image_create(out_path, o.width, o.height);
-    if (report_status)
-        fprintf(stderr, "Tracing %dx%d of Observer\ny", o.width, o.height);
-    for (int row = 0; row < o.height; row++) {
-        for (int column = 0; column < o.width; column++) {
-            ray ray_ = observer_ray(&o, column, row);
-            image_write(out, trace(ray_, &world_));
-        }
-        if (report_status) fprintf(stderr, "\r%d", row);
-    }
-    image_close(out);
+    
+    produce_trace(&world_, &obs, width, height, out_path, report_status);
 
     for (int q=0; q<c; q++) delete_object_or_inter(args[q]);
     while (--j>=0) delete_texture_mapping(decoration_args[j]);

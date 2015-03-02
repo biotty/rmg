@@ -280,8 +280,8 @@ class Fluid:
         self.t += t
 
 
-trac = Tracer(1024, 1024)
-fluid = Fluid(64, 64)
+trac = Tracer(512, 512)
+fluid = Fluid(16, 16)
 
 
 viscosity = 0.1

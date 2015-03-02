@@ -16,7 +16,7 @@ typedef struct {
     bitarray * inside;
 } detector;
 
-static color trace__(const detector *, world *);
+static color ray_trace(const detector *, world *);
 
     color
 trace(ray t, world * w)
@@ -33,7 +33,7 @@ trace(ray t, world * w)
     if (debug && ba_firstset(detector_.inside) >= 0)
         fprintf(stderr, "initial detector is at inside of %d\n",
                 ba_firstset(detector_.inside));
-    const color detected = trace__(&detector_, w);
+    const color detected = ray_trace(&detector_, w);
     free(detector_.inside);
     return detected;
 }
@@ -53,7 +53,7 @@ trace_hop(ray t, color filter_,
     t_detector.ray = t;
     t_detector.hop --;
     filter(&t_detector.lens, filter_);
-    color detected = trace__(&t_detector, w);
+    color detected = ray_trace(&t_detector, w);
     filter(&detected, filter_);
     return detected;
 }
@@ -155,7 +155,7 @@ out:
 }
 
     static color
-trace__(const detector * detector_, world * w)
+ray_trace(const detector * detector_, world * w)
 {
     if (0 == detector_->hop || ignorable_color(detector_->lens))
         return (color){0, 0, 0};
