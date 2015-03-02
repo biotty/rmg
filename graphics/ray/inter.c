@@ -110,24 +110,16 @@ inter_normal(point p, void * inter__, bool at_second)
 
     void *
 new_inter(object_intersection * fi, object_normal * fn,
-        int n, object_generator g)
+        int n, object_generator get)
 {
     const int count = n;
     inter * inter_ = malloc((sizeof *inter_)
             + count * (sizeof inter_->objects[0]));
     inter_->count = count;
     for (int i=0; i<count; i++) {
-        object member;
-        object_arg_union * a = g(
-                &member.intersection,
-                &member.normal);
-        if ( ! a) {
-            fprintf(stderr, "inter member [%d] error\n", i);
-            return NULL;
-        }
-        member.arg = *a;
-        free(a);
-        inter_->objects[i] = member;
+        object o;
+        o.arg = get(&o.intersection, &o.normal);
+        inter_->objects[i] = o;
     }
     *fi = inter_intersection;
     *fn = inter_normal;

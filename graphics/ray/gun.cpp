@@ -45,17 +45,17 @@ get_observer()
     return r;
 }
 
-    void *
+    object_arg_union
 get_object(const char * object_class,
         object_intersection * fi, object_normal * fn)
 {
-    object_arg_union * object_arg = new_object_arg();
+    object_arg_union a;
     if (0 == strcmp(object_class, "plane")) {
         plane plane_ = {
             .at_surface = {gr(), gr(), gr()},
             .normal = {gr(), gr(), gr()}};
         normalize(&plane_.normal);
-        object_arg->plane_ = plane_;
+        a.plane_ = plane_;
         *fi = plane_intersection;
         *fn = plane_normal;
     } else if (0 == strcmp(object_class, "sphere")
@@ -63,7 +63,7 @@ get_object(const char * object_class,
         sphere sphere_ = {
             .center = {gr(), gr(), gr()},
             .radius = gr()};
-        object_arg->sphere_ = sphere_;
+        a.sphere_ = sphere_;
         if (*object_class != '-') {
             *fi = sphere_intersection;
             *fn = sphere_normal;
@@ -78,7 +78,7 @@ get_object(const char * object_class,
         direction axis = {gr(), gr(), gr()};
         spherical(axis, &r, &theta, &phi);
         cylinder cylinder_ = {{-p.x, -p.y, -p.z}, square(r), theta, phi};
-        object_arg->cylinder_ = cylinder_;
+        a.cylinder_ = cylinder_;
         if (*object_class != '-') {
             *fi = cylinder_intersection;
             *fn = cylinder_normal;
@@ -93,7 +93,7 @@ get_object(const char * object_class,
         direction axis = {gr(), gr(), gr()};
         spherical(axis, &r, &theta, &phi);
         cone cone_ = {{-apex.x, -apex.y, -apex.z}, 1/r, theta, phi};
-        object_arg->cone_ = cone_;
+        a.cone_ = cone_;
         if (*object_class != '-') {
             *fi = cone_intersection;
             *fn = cone_normal;
@@ -102,13 +102,22 @@ get_object(const char * object_class,
             *fn = _cone_normal;
         }
     } else {
-        free(object_arg);
         fail("object class \"%s\"?\n", object_class);
     }
-    return object_arg;
+
+    return a;
 }
 
-    void *
+    object_arg_union *
+new_object(const char * object_class,
+        object_intersection * fi, object_normal * fn)
+{
+    object_arg_union * arg = new_object_arg();
+    *arg = get_object(object_class, fi, fn);
+    return arg;
+}
+
+    object_arg_union
 get_member(object_intersection * fi, object_normal * fn)
 {
     return get_object(gs().buf, fi, fn);
@@ -250,7 +259,7 @@ main(int argc, char *argv[])
         bufstr_256 name_bs = gs();
         char * name = name_bs.buf;
         void * a = (strcmp(name, "x"))
-            ? get_object(name, &fi, &fn)
+            ? new_object(name, &fi, &fn)
             : new_inter(&fi, &fn, gi(), get_member);
         if (!a) fail("object [%d] error\n", i);
         args[i] = a;

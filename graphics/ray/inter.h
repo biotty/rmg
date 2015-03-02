@@ -9,15 +9,15 @@
 #include "cylinder.h"
 #include "scene.h"
 
-typedef void * (*object_generator)
-    (object_intersection * fi, object_normal * fn);
-
 union object_arg_union {
     sphere sphere_;
     plane plane_;
     cone cone_;
     cylinder cylinder_;
 };
+
+typedef union object_arg_union (*object_generator)
+    (object_intersection * fi, object_normal * fn);
 
 #ifndef __cplusplus
 typedef union object_arg_union object_arg_union;
