@@ -13,7 +13,7 @@ from rmg.bodies import (Plane, Sphere,
         Intersection, Manipulation)
 from rmg.solids import (intersection,
         tetrahedron, cube, octahedron, dodecahedron, icosahedron)
-from rmg.scene import SceneObject, World, LightSpot, Observer, ColorSky
+from rmg.scene import SceneObject, World, LightSpot, Observer, PhotoSky
 from rmg.script import ScriptInvocation
 
 
@@ -145,7 +145,8 @@ w = World(scene_objects,
             LightSpot(Point(0, 7, 0), Color(.65, .65, 1)),
             LightSpot(Point(-3, -3, 9), Color(1, 1, .65)),
         ],
-        Observer(Direction.random(2), origo), ColorSky(Color(.5,.5,1)))
+        Observer(Direction.random(2), origo),
+        PhotoSky("sky.pnm"))
 
 if 1 == len(invocation.positional_args):
     invocation.tee(w)

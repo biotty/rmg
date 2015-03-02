@@ -112,7 +112,8 @@ get_object(const char * object_class,
 new_object(const char * object_class,
         object_intersection * fi, object_normal * fn)
 {
-    object_arg_union * arg = new_object_arg();
+    object_arg_union * arg
+        = static_cast<object_arg_union *>(arg_alloc(sizeof *arg));
     *arg = get_object(object_class, fi, fn);
     return arg;
 }
@@ -182,6 +183,7 @@ get_decoration(const char * deco_name, object_decoration * df)
     scene_sky
 get_scene_sky()
 {
+    sky_color = {1, 1, 1};
     bufstr_256 sky_bs = gs();
     char * sky_name = sky_bs.buf;
     if (strcmp(sky_name, "rgb") == 0) {
@@ -244,14 +246,21 @@ main(int argc, char *argv[])
     int width = atoi(dim_w);
     int height = atoi(dim_h);
     const char * const out_path = (argc == 2) ? NULL : argv[2];
+
     observer obs = get_observer();
-    int c = gi();
-    if (c <= 0) fail("no scene objects\n");
-    world world_ = { color_sky, NULL, 0, { c, new scene_object[c] } };
-    sky_color = {1, 1, 1};
-    void ** args = new void *[c];
-    void ** decoration_args = new void *[c];
-    int j = 0;
+    int scene_object_count = gi();
+    int inter_count = gi();
+    int member_count = gi();
+    if (scene_object_count <= 0) fail("no scene objects\n");
+    if (inter_count > scene_object_count) fail("intersecions count overflow\n");
+
+    world world_ = { color_sky, NULL, 0,
+        { scene_object_count, new scene_object[scene_object_count] }
+    };
+    int non_inter_count = scene_object_count - inter_count;
+    init_arg_pool(non_inter_count, inter_count, member_count);
+    void ** decoration_args = new void *[scene_object_count];
+    int decoration_index = 0;
 
     for (int i = 0; i < world_.scene_.object_count; i++) {
         object_intersection fi;
@@ -262,7 +271,6 @@ main(int argc, char *argv[])
             ? new_object(name, &fi, &fn)
             : new_inter(&fi, &fn, gi(), get_member);
         if (!a) fail("object [%d] error\n", i);
-        args[i] = a;
 
         object_decoration df = NULL;
         void * d = NULL;
@@ -272,7 +280,7 @@ main(int argc, char *argv[])
         if (isalpha(alt[0])) {
             d = get_decoration(alt, &df);
             if ( ! d) fail("decoration [%d] error\n", i);
-            decoration_args[j++] = d;
+            decoration_args[decoration_index ++ ] = d;
             gr_ = gr();
         } else {
             const int n = sscanf(alt, REAL_FMT, &gr_);
@@ -291,9 +299,9 @@ main(int argc, char *argv[])
     
     produce_trace(&world_, &obs, width, height, out_path, report_status);
 
-    for (int q=0; q<c; q++) delete_object_or_inter(args[q]);
-    while (--j>=0) delete_texture_mapping(decoration_args[j]);
-    delete [] args;
+    fini_arg_pool();
+    while ( -- decoration_index >= 0)
+        delete_texture_mapping(decoration_args[decoration_index]);
     delete [] decoration_args;
     delete [] world_.scene_.objects;
     delete [] world_.spots;

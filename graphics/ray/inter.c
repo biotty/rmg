@@ -13,11 +13,41 @@ typedef struct {
 } object;
 
 typedef struct {
-    int count;
+    union {
+        direction align_as_object_arg_union;
+        int count;
+    };
     int hit_i;
     int hit_j;
     object objects[];
 } inter;
+
+struct {
+    char * buf;
+    size_t used;
+} arg_pool;
+
+    void
+init_arg_pool(int n, int i, int m)
+{
+    arg_pool.buf = malloc(n * sizeof (object_arg_union)
+        + i * sizeof (inter) + m * sizeof (object));
+    arg_pool.used = 0;
+}
+
+    void
+fini_arg_pool(void * p)
+{
+    free(arg_pool.buf);
+}
+
+    void *
+arg_alloc(size_t s)
+{
+    void * p = &arg_pool.buf[arg_pool.used];
+    arg_pool.used += s;
+    return p;
+}
 
 typedef struct {
     real_pair p;
@@ -110,13 +140,11 @@ inter_normal(point p, void * inter__, bool at_second)
 
     void *
 new_inter(object_intersection * fi, object_normal * fn,
-        int n, object_generator get)
+        int m, object_generator get)
 {
-    const int count = n;
-    inter * inter_ = malloc((sizeof *inter_)
-            + count * (sizeof inter_->objects[0]));
-    inter_->count = count;
-    for (int i=0; i<count; i++) {
+    inter * inter_ = arg_alloc(sizeof (inter) + m * sizeof (object));
+    inter_->count = m;
+    for (int i=0; i<m; i++) {
         object o;
         o.arg = get(&o.intersection, &o.normal);
         inter_->objects[i] = o;
@@ -124,16 +152,4 @@ new_inter(object_intersection * fi, object_normal * fn,
     *fi = inter_intersection;
     *fn = inter_normal;
     return inter_;
-}
-
-    object_arg_union *
-new_object_arg()
-{
-    return malloc(sizeof (object_arg_union));
-}
-
-    void
-delete_object_or_inter(void * p)
-{
-    free(p);
 }

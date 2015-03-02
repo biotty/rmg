@@ -4,6 +4,7 @@
 #       All rights reserved
 
 from rmg.space import Point, Direction, origo
+from rmg.bodies import Intersection
 from rmg.plane import XY, XYCircle
 from rmg.color import Color
 
@@ -77,10 +78,15 @@ class World:
         self.sky = sky or RgbSky()
 
     def __str__(self):
+        n = len(self.scene_objects)
+        inter_counts = [len(so.object_arg.objects) for so in self.scene_objects
+            if isinstance(so.object_arg, Intersection)]
+        i = len(inter_counts)
+        m = sum(inter_counts)
         sorted_objects = sorted(self.scene_objects, key = lambda o: o.precedence)
-        return "%s\n%d\n%s\n%s\n%d\n%s" % (
+        return "%s\n%d %d %d\n%s\n%s\n%d\n%s" % (
             self.observer,
-            len(sorted_objects),
+            n, i, m,
             "\n".join([str(o) for o in sorted_objects]),
             self.sky,
             len(self.light_spots),
