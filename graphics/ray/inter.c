@@ -14,7 +14,7 @@ typedef struct {
 
 typedef struct {
     union {
-        direction align_as_object_arg_union;
+        real align_as_object_arg_union;
         int count;
     };
     int hit_i;
