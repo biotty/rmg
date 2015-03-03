@@ -124,29 +124,35 @@ get_member(object_intersection * fi, object_normal * fn)
     return get_object(gs().buf, fi, fn);
 }
 
+    compact_color
+make_compact_color(real r, real g, real b)
+{
+    color c = { r, g, b };
+    return z_color(c);
+}
+
     object_optics
 get_object_optics(real alt_gr)
 {
-    object_optics r = {
-        {alt_gr, gr(), gr()},
-        {gr(), gr(), gr()},
-        gr(),
-        {gr(), gr(), gr()},
-        {gr(), gr(), gr()}
-    };
-    return r;
+    object_optics ret;
+    ret.reflection_filter = make_compact_color(alt_gr, gr(), gr());
+    ret.absorption_filter = make_compact_color(gr(), gr(), gr());
+    ret.refraction_index_micro = static_cast<unsigned>(gr() * 1000000);
+    ret.refraction_filter = make_compact_color(gr(), gr(), gr());
+    ret.passthrough_filter = make_compact_color(gr(), gr(), gr());
+    return ret;
 }
 
     texture_application
 get_texture_application()
 {
-    return (texture_application){
-        .x_wrap = gr(),
-        .y_wrap = gr(),
-        .reflection_factor = (color){gr(), gr(), gr()},
-        .absorption_factor = (color){gr(), gr(), gr()},
-        .refraction_factor = (color){gr(), gr(), gr()},
-    };
+    texture_application ret;
+    ret.x_wrap = gr();
+    ret.y_wrap = gr();
+    ret.reflection_factor = (color){gr(), gr(), gr()};
+    ret.absorption_factor = (color){gr(), gr(), gr()};
+    ret.refraction_factor = (color){gr(), gr(), gr()};
+    return ret;
 }
 
     void *

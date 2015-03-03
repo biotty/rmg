@@ -23,7 +23,8 @@ photo_sky(direction d)
     direction_to_unitsquare(&d, &x, &y);
     real col = (x == 0) ? sky_photo->width - 1 : (1 - x) * sky_photo->width;
     // horizontally flip as we see the "sphere" from the "inside"
-    return photo_color(sky_photo, col, y * sky_photo->height);
+    compact_color cc = photo_color(sky_photo, col, y * sky_photo->height);
+    return x_color(cc);
 }
 
     color

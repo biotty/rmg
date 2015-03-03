@@ -56,9 +56,9 @@ image_write(image image_, color color_)
 {
     FILE * file = image_;
     intensity_cap(&color_);
-    putc(nearest(color_.r * 255), file);
-    putc(nearest(color_.g * 255), file);
-    putc(nearest(color_.b * 255), file);
+    compact_color cc = z_color(color_);
+    unsigned char rgb[] = { cc.r, cc.g, cc.b };
+    fwrite(rgb, 1, 3, file);
 }
 
     void

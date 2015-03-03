@@ -19,10 +19,10 @@ flow/fluid: rgb/librgb.a
 rgb/librgb.a:
 	@$(MAKE) -C rgb
 
-image.jpeg: py/image1.py sky.pnm ray/gun
+image.jpeg: py/image1.py ray/gun
 	$< -r 1920x1080 -C $(RAY_GUN) 12 $@
 
-example.avi: py/video1.py sky.pnm ray/gun
+example.avi: py/video1.py ray/gun
 	./movie_from_exec.sh $@ "$< -c 736 -C $(RAY_GUN)"
 
 fluid.mp4: img.png flow/fluid
@@ -30,9 +30,6 @@ fluid.mp4: img.png flow/fluid
 
 mandelbrot.mp4: py/follow.py
 	$< | ./movie_from_pipe.sh $@
-
-sky.pnm: py/lindo.py py/rmg/ls.py
-	$< -b128 -c12 -e "f x()x()x+y f()y()f x-y" -o $@
 
 img.png: py/globe.py
 	$< 1920x1080

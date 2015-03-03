@@ -162,20 +162,21 @@ photo_rgb(const photo * ph, int x, int y)
 {
     unsigned char * v = photo_pixel(ph, x, y);
     if (v == NULL) return 0;
-    else return v[0]
-         | v[ph->grey ? 0 : 1] << 8
-         | v[ph->grey ? 0 : 2] << 16;
+    else if (ph->grey) {
+        unsigned w = *v;
+        return w | w << 8 | w << 16;
+    } else
+        return v[0] | v[1] << 8 | v[2] << 16;
 }
 
-    color
+    compact_color
 photo_color(const photo * ph, int x, int y)
 {
     unsigned char * v = photo_pixel(ph, x, y);
-    if (v == NULL) return (color){0, 0, 0};
-    else return (color){
-        v[0] / 255.0,
-        v[ph->grey ? 0 : 1] / 255.0,
-        v[ph->grey ? 0 : 2] / 255.0
-    };
+    if (v == NULL)
+        return (compact_color){0, 0, 0};
+    else if (ph->grey)
+        return (compact_color){*v, *v, *v};
+    else
+        return str_color(v);
 }
-

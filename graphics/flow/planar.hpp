@@ -48,7 +48,11 @@ struct Picture
             ph = photo_create(filename().c_str());
         }
     }
-    color color_at(XY u) const { return photo_color(ph, u.x * ph->width, u.y * ph->height); }
+    color color_at(XY u) const
+    {
+        compact_color cc = photo_color(ph, u.x * ph->width, u.y * ph->height);
+        return x_color(cc);
+    }
 
 private:
     std::string filename() const

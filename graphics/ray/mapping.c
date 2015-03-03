@@ -50,18 +50,22 @@ delete_texture_mapping(void * decoration_arg)
     free(da);
 }
 
-    static color
-linear(color x, color a, color b)
+    static compact_color
+linear(compact_color x, color a, compact_color b)
 {
-    filter(&x, a);
-    return optical_sum(x, b);
+    compact_color ret = {
+        x.r * a.r + b.r,
+        x.g * a.g + b.g,
+        x.b * a.b + b.b
+    };
+    return ret;
 }
 
     static void
 texture_map(const texture_application * a, const photo * ph, real x, real y,
         object_optics * so, const object_optics * adjust)
 {
-    so->refraction_index = adjust->refraction_index;
+    so->refraction_index_micro = adjust->refraction_index_micro;
     so->passthrough_filter = adjust->passthrough_filter;
     if ( ! ph) {
         so->reflection_filter = adjust->reflection_filter;
@@ -69,7 +73,7 @@ texture_map(const texture_application * a, const photo * ph, real x, real y,
         so->refraction_filter = adjust->refraction_filter;
         return;
     }
-    const color c = photo_color(ph, x * ph->width, y * ph->height);
+    const compact_color c = photo_color(ph, x * ph->width, y * ph->height);
     so->reflection_filter = linear(
             c, a->reflection_factor, adjust->reflection_filter);
     so->absorption_filter = linear(

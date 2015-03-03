@@ -46,7 +46,7 @@ ignorable_color(const color lens)
 }
 
     static color
-trace_hop(ray t, color filter_,
+trace_hop(ray t, compact_color filter_,
         const detector * detector_, world * w)
 {
     detector t_detector = *detector_;
@@ -62,21 +62,12 @@ trace_hop(ray t, color filter_,
 passthrough_filter(color * color_, const object_optics * so,
         real distance_)
 {
-    const color so_filter = so->passthrough_filter;
-    color filter_;
-    if (distance_ >= HUGE_REAL / 2) {
-        color f = so_filter;
-        if ( ! is_near(f.r, 1)) f.r = 0;
-        if ( ! is_near(f.g, 1)) f.g = 0;
-        if ( ! is_near(f.b, 1)) f.b = 0;
-        filter_ = f;
-    } else {
-        filter_ = (color){
-            rpow(so_filter.r, distance_),
-            rpow(so_filter.g, distance_),
-            rpow(so_filter.b, distance_)
-        };
-    }
+    const compact_color so_filter = so->passthrough_filter;
+    const compact_color filter_ = {
+        255 * rpow(so_filter.r/(real)255, distance_),
+        255 * rpow(so_filter.g/(real)255, distance_),
+        255 * rpow(so_filter.b/(real)255, distance_)
+    };
     filter(color_, filter_);
 }
 
@@ -115,9 +106,10 @@ refraction_trace(ray ray_, const scene_object * so,
     const bool enters = (outside_i != i);
     ba_assign(detector_->inside, i, enters);
     if ( ! enters) outside_i = ba_firstset(detector_->inside);
-    real outside_refraction_index = (outside_i >= 0)
-        ? w->scene_.objects[outside_i].optics.refraction_index
-        : 1;
+    real outside_refraction_index = 1;
+    if (outside_i >= 0)
+        outside_refraction_index = w->scene_.objects[outside_i]
+            .optics.refraction_index_micro /(real) 1000000;
     if (outside_refraction_index <= 0) {
         if (debug) {
             if (detector_->hop != max_hops) /* (view _can_ happen to be inside) */
@@ -126,7 +118,7 @@ refraction_trace(ray ray_, const scene_object * so,
         goto out;
     }
     real refraction_index = outside_refraction_index
-            / so->optics.refraction_index;
+            * 1000000 /(real) so->optics.refraction_index_micro;
     if ( ! enters) {
         refraction_index = 1 / refraction_index;
         scale(&ray_.head, -1);
@@ -137,10 +129,10 @@ refraction_trace(ray ray_, const scene_object * so,
         goto out;
     }
     if (verbose) fprintf(stderr, "refraction\n");
-    const color refraction_filter =
-        (transparent_refraction_on_equal_index && is_near(refraction_index, 1))
-        ? (color){1, 1, 1}
-        : so->optics.refraction_filter;
+    compact_color refraction_filter = {255, 255, 255};
+    if ( ! transparent_refraction_on_equal_index
+            || ! is_near(refraction_index, 1))
+        refraction_filter = so->optics.refraction_filter;
     detected = trace_hop(ray_, refraction_filter, detector_, w);
 out:
     ba_assign(detector_->inside, i, ( ! enters));
@@ -163,22 +155,23 @@ ray_trace(const detector * detector_, world * w)
         int rgb_clear = 0;
         const int adinf_i = detector_inside_i;
         if (adinf_i >= 0) {
-            const color * f = &w->scene_.objects[adinf_i].optics
-                .passthrough_filter;
-            if ( ! is_near(f->r, 1)) rgb_clear |= 0x1;
-            if ( ! is_near(f->g, 1)) rgb_clear |= 0x2;
-            if ( ! is_near(f->b, 1)) rgb_clear |= 0x4;
+            compact_color f
+                = w->scene_.objects[adinf_i].optics.passthrough_filter;
+            if (f.r != 255) rgb_clear |= 0x1;
+            if (f.g != 255) rgb_clear |= 0x2;
+            if (f.b != 255) rgb_clear |= 0x4;
             if (rgb_clear == 0x7) return (color){0, 0, 0};
         }
-        color _ = (eliminate_direct_sky && detector_->hop == max_hops)
-            ? DIRECT_SKY
-            : w->sky(detector_->ray.head);
+        color ret = DIRECT_SKY;
+        if ( ! eliminate_direct_sky
+                || detector_->hop != max_hops)
+            ret = w->sky(detector_->ray.head);
         if (rgb_clear) {
-            if (rgb_clear & 0x1) _.r = 0;
-            if (rgb_clear & 0x2) _.g = 0;
-            if (rgb_clear & 0x4) _.b = 0;
+            if (rgb_clear & 0x1) ret.r = 0;
+            if (rgb_clear & 0x2) ret.g = 0;
+            if (rgb_clear & 0x4) ret.b = 0;
         }
-        return _;
+        return ret;
     } else {
         const ptrdiff_t i = closest_object - w->scene_.objects;
         assert(i >= 0 && i < w->scene_.object_count);
@@ -200,7 +193,7 @@ ray_trace(const detector * detector_, world * w)
             if (reflection_on_inside > 0) {
                 direction normal_ = surface.head;
                 scale(&normal_, -1);
-                color filter_ = optics->reflection_filter;
+                compact_color filter_ = optics->reflection_filter;
                 filter_.r *= reflection_on_inside;
                 filter_.g *= reflection_on_inside;
                 filter_.b *= reflection_on_inside;
@@ -229,7 +222,7 @@ ray_trace(const detector * detector_, world * w)
                     &surface, optics, w, detector_->inside);
             detected = optical_sum(detected, absorbed);
         }
-        if (optics->refraction_index > 0) {
+        if (optics->refraction_index_micro) {
             const color refraction_color = refraction_trace(
                     surface, closest_object, detector_, w);
             detected = optical_sum(detected, refraction_color);

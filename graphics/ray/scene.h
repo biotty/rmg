@@ -18,11 +18,11 @@ typedef void (* object_decoration)(const ray *, void * arg,
 typedef void (* decoration_delete)(void *);
 
 struct object_optics {
-    color reflection_filter;
-    color absorption_filter;
-    real refraction_index;
-    color refraction_filter;
-    color passthrough_filter;
+    unsigned refraction_index_micro;
+    compact_color reflection_filter;
+    compact_color absorption_filter;
+    compact_color refraction_filter;
+    compact_color passthrough_filter;
 };
 
 struct scene_object {

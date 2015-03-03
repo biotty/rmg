@@ -4,11 +4,11 @@
 #include "color.h"
 
     void
-filter(color * light, color surface)
+filter(color * light, compact_color surface)
 {
-    light->r *= surface.r;
-    light->g *= surface.g;
-    light->b *= surface.b;
+    light->r *= surface.r /(real) 255;
+    light->g *= surface.g /(real) 255;
+    light->b *= surface.b /(real) 255;
 }
 
     color
@@ -25,4 +25,3 @@ intensity(color c)
 {
     return (c.r + c.g + c.b) / 3;
 }
-

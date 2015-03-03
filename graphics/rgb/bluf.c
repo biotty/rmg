@@ -47,10 +47,12 @@ main(int argc, char **argv)
     image * i = image_create(NULL, orig->width, orig->height);
     for (int y=0; y<orig->height; y++) {
         for (int x=0; x<orig->width; x++) {
-            color c = photo_color(orig, x, y);
+            compact_color cc = photo_color(orig, x, y);
+            color c = x_color(cc);
             for (int k=0; k<n; k++)
                 if (similar(.065, &c, &fillins[k].c)) {
-                    c = photo_color(fillins[k].p, x, y);
+                    cc = photo_color(fillins[k].p, x, y);
+                    c = x_color(cc);
                     break;
                 }
             image_write(i, c);
