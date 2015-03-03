@@ -127,13 +127,6 @@ refraction_trace(ray ray_, const scene_object * so,
     }
     real refraction_index = outside_refraction_index
             / so->optics.refraction_index;
-    if (refraction_index <= 0) {
-        if (debug && ! enters && detector_->hop != max_hops) {
-            fprintf(stderr, "hit objects[%d] from inside of surface"
-                    ", and has no refraction.  how did we enter it?\n", (int)i);
-        }
-        goto out;
-    }
     if ( ! enters) {
         refraction_index = 1 / refraction_index;
         scale(&ray_.head, -1);
