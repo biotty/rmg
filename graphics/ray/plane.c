@@ -11,7 +11,8 @@ plane_intersection(
 {
     const plane * plane_ = plane__;
     const real b = scalar_product(plane_->normal, ray_->head);
-    const direction v = distance_vector(ray_->endpoint, plane_->at_surface);
+    const point at_surface = { plane_->at_x, plane_->at_y, plane_->at_z };
+    const direction v = distance_vector(ray_->endpoint, at_surface);
     const real a = scalar_product(plane_->normal, v);
     if (is_near(b, 0)) {
         return (real_pair){-1, (a >= 0) ? HUGE_REAL : -1};

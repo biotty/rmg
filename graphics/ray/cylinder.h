@@ -6,10 +6,10 @@
 #include "ray.h"
 
 struct cylinder {
-	direction translate;
-    real r;
-    real theta;
-    real phi;
+    direction translate;
+    float r;
+    float theta;
+    float phi;
 };
 
 #ifndef __cplusplus

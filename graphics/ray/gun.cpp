@@ -52,8 +52,8 @@ get_object(const char * object_class,
     object_arg_union a;
     if (0 == strcmp(object_class, "plane")) {
         plane plane_ = {
-            .at_surface = {gr(), gr(), gr()},
-            .normal = {gr(), gr(), gr()}};
+            (float)gr(), (float)gr(), (float)gr(),
+            {gr(), gr(), gr()}};
         normalize(&plane_.normal);
         a.plane_ = plane_;
         *fi = plane_intersection;
@@ -61,8 +61,8 @@ get_object(const char * object_class,
     } else if (0 == strcmp(object_class, "sphere")
             || 0 == strcmp(object_class, "-sphere")) {
         sphere sphere_ = {
-            .center = {gr(), gr(), gr()},
-            .radius = gr()};
+            {gr(), gr(), gr()},
+            gr()};
         a.sphere_ = sphere_;
         if (*object_class != '-') {
             *fi = sphere_intersection;
@@ -77,7 +77,8 @@ get_object(const char * object_class,
         direction p = {gr(), gr(), gr()};
         direction axis = {gr(), gr(), gr()};
         spherical(axis, &r, &theta, &phi);
-        cylinder cylinder_ = {{-p.x, -p.y, -p.z}, square(r), theta, phi};
+        cylinder cylinder_ = {{-p.x, -p.y, -p.z},
+            (float)square(r), (float)theta, (float)phi};
         a.cylinder_ = cylinder_;
         if (*object_class != '-') {
             *fi = cylinder_intersection;
@@ -92,7 +93,8 @@ get_object(const char * object_class,
         direction apex = {gr(), gr(), gr()};
         direction axis = {gr(), gr(), gr()};
         spherical(axis, &r, &theta, &phi);
-        cone cone_ = {{-apex.x, -apex.y, -apex.z}, 1/r, theta, phi};
+        cone cone_ = {{-apex.x, -apex.y, -apex.z},
+            1/(float)r, (float)theta, (float)phi};
         a.cone_ = cone_;
         if (*object_class != '-') {
             *fi = cone_intersection;
@@ -243,6 +245,8 @@ produce_trace(world * w, observer * o, int width, int height,
     int
 main(int argc, char *argv[])
 {
+    printf("%zu %zu %zu %zu \n",
+            sizeof (sphere), sizeof (plane), sizeof (cylinder), sizeof (cone));
     const bool report_status = getenv("GUN_RS") != NULL;
     if (argc < 2) fail("dimention argument missing\n");
     const char * dim_w = argv[1];

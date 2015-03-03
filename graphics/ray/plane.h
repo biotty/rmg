@@ -6,7 +6,9 @@
 #include "ray.h"
 
 struct plane {
-    point at_surface;
+    float at_x;
+    float at_y;
+    float at_z;
     direction normal;
 };
 
