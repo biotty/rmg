@@ -54,23 +54,23 @@ Ugen_call(PyObject * self, PyObject * args, PyObject * kw)
     } else {
         z = 0;
     }
-    return PyString_FromStringAndSize((char *)e, z);
+    return PyBytes_FromStringAndSize((char *)e, z);
 }
 
 PyTypeObject UgenType = {
-    PyObject_HEAD_INIT(NULL)
-    0, "fuge.Ugen", sizeof (UgenObject), 0, Ugen_dealloc,
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "fuge.Ugen", sizeof (UgenObject), 0, Ugen_dealloc,
     0, 0, 0, 0, 0, 0, 0, 0, 0, Ugen_call,
     0, 0, 0, 0, Py_TPFLAGS_DEFAULT, "encoded-unit generator",
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Ugen_new,
-    0, 0, 0, 0, 0, 0, 0, 0, 0
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 long
 parse_int(PyObject * n)
 {
-    PyObject * i = PyNumber_Int(n);
-    const long x = PyInt_AsLong(i);
+    PyObject * i = PyNumber_Long(n);
+    const long x = PyLong_AsLong(i);
     Py_DECREF(i);
     return x;
 }
@@ -190,10 +190,13 @@ std::map<std::string, std::unique_ptr<instrument>> orchestra;
 std::string
 parse_string(PyObject * s)
 {
-    if (char * p = PyString_AsString(s))
-        return p;
-    else
+    if (PyObject * o = PyUnicode_AsLatin1String(s)) {
+        std::string r = PyBytes_AsString(o);
+        Py_DECREF(o);
+        return r;
+    } else {
         return "";
+    }
 }
 
 void
@@ -352,23 +355,33 @@ just(PyObject * self, PyObject * args)
     return PyFloat_FromDouble(f);
 }
 
-PyMethodDef FugeMethods[] = {
+PyMethodDef methoddef[] = {
     { "render", render, METH_VARARGS, "render." },
     { "just", just, METH_VARARGS, "just." },
     { NULL, NULL, 0, NULL }, /* Sentinel */
 };
 
+struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "fuge",
+    "doc",
+    -1,
+    methoddef,
+    NULL, NULL, NULL, NULL
+};
+
 } //namespace
 
 PyMODINIT_FUNC
-initfuge(void)
+PyInit_fuge(void)
 {
     UgenType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&UgenType) < 0) return;
-    PyObject * m = Py_InitModule("fuge", FugeMethods);
-    if (m == NULL) return;
+    if (PyType_Ready(&UgenType) < 0) return NULL;
+    PyObject * m = PyModule_Create(&moduledef);
+    if (m == NULL) return NULL;
     Py_INCREF(&UgenType);
     PyModule_AddObject(m, "Ugen", (PyObject *)&UgenType);
     init_orchestra();
     init_effects();
+    return m;
 }

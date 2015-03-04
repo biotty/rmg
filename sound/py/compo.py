@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 #       © Christian Sommerfeldt Øien
@@ -66,4 +66,4 @@ ug = ox.render(compo())
 while True:
     b = ug()
     if not b: break
-    sys.stdout.write(b)
+    sys.stdout.buffer.write(b)

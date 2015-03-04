@@ -1,4 +1,4 @@
-MOD_INCS=`python-config --includes` -Isynth
+MOD_INCS=`python3-config --includes` -Isynth
 CXXFLAGS=-Wextra -Werror -std=c++11
 LAME_S16=-mm -r -s 44.1 --signed --bitwidth 16 --little-endian
 
