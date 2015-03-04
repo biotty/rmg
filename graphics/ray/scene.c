@@ -4,12 +4,6 @@
 #include "scene.h"
 #include <stdio.h>
 
-    size_t
-scene_size(int object_count)
-{
-    return (sizeof (scene)) + object_count * (sizeof (scene_object));
-}
-
     void
 init_inside(bitarray * inside, scene s, const ray * ray_)
 {
@@ -72,4 +66,3 @@ closest_surface(ray * ray_, const scene s, bitarray * inside, stack * toggled)
         return NULL;
     }
 }
-

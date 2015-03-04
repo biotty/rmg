@@ -60,7 +60,7 @@ extern "C" {
 #endif
 
 void filter(color * light, compact_color surface);
-color optical_sum(color q, color w);
+void color_add(color * q, color w);
 real intensity(color);
 
 #ifdef __cplusplus
