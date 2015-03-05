@@ -65,7 +65,7 @@ linear(compact_color x, color a, compact_color b)
 texture_map(const texture_application * a, const photo * ph, real x, real y,
         object_optics * so, const object_optics * adjust)
 {
-    so->refraction_index_micro = adjust->refraction_index_micro;
+    so->refraction_index_nano = adjust->refraction_index_nano;
     so->passthrough_filter = adjust->passthrough_filter;
     if ( ! ph) {
         so->reflection_filter = adjust->reflection_filter;

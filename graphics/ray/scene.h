@@ -18,7 +18,7 @@ typedef void (* object_decoration)(const ray *, void * arg,
 typedef void (* decoration_delete)(void *);
 
 struct object_optics {
-    unsigned refraction_index_micro;
+    unsigned long refraction_index_nano;
     compact_color reflection_filter;
     compact_color absorption_filter;
     compact_color refraction_filter;

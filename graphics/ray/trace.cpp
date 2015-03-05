@@ -108,11 +108,11 @@ refraction_trace(ray ray_, const scene_object * so,
     };
     scoped_bit_toggler sbt(detector_->inside, i, enters);
     if ( ! enters) outside_i = ba_firstset(detector_->inside);
-    unsigned outside_refraction_index_micro = 1000000;
+    unsigned long outside_refraction_index_nano = 1000000000;
     if (outside_i >= 0) {
-        outside_refraction_index_micro
-            = w->scene_.objects[outside_i].optics.refraction_index_micro;
-        if (0 == outside_refraction_index_micro) {
+        outside_refraction_index_nano
+            = w->scene_.objects[outside_i].optics.refraction_index_nano;
+        if (0 == outside_refraction_index_nano) {
             if (debug) {
                 if (detector_->hop != max_hops) /* (view _can_ happen to be inside) */
                     std::cerr << "we got inside opaque object " << i << std::endl;
@@ -120,8 +120,8 @@ refraction_trace(ray ray_, const scene_object * so,
             return detected;
         }
     }
-    real refraction_index = outside_refraction_index_micro
-            /(real) so->optics.refraction_index_micro;
+    real refraction_index = outside_refraction_index_nano
+            /(real) so->optics.refraction_index_nano;
     if ( ! enters) {
         refraction_index = 1 / refraction_index;
         scale(&ray_.head, -1);
@@ -216,7 +216,7 @@ ray_trace(const detector * detector_, world * w)
                     &surface, optics, w, detector_->inside);
             color_add(&detected, absorbed);
         }
-        if (optics->refraction_index_micro) {
+        if (optics->refraction_index_nano) {
             const color refraction_color = refraction_trace(
                     surface, closest_object, detector_, w);
             color_add(&detected, refraction_color);

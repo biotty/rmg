@@ -162,7 +162,8 @@ get_object_optics(real first)
     std::cin >> ret.absorption_filter;
     real r;
     std::cin >> r;
-    ret.refraction_index_micro = static_cast<unsigned>(r * 1000000);
+    if (r >= ULONG_MAX / 1e9) fail("refraction index overflow\n");
+    ret.refraction_index_nano = static_cast<unsigned long>(r * 1e9);
     std::cin >> ret.refraction_filter;
     std::cin >> ret.passthrough_filter;
     return ret;
