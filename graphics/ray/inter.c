@@ -139,7 +139,7 @@ inter_normal(point p, void * inter__, bool at_second)
 }
 
     void *
-new_inter(object_intersection * fi, object_normal * fn,
+make_inter(object_intersection * fi, object_normal * fn,
         int m, object_generator get)
 {
     inter * inter_ = arg_alloc(sizeof (inter) + m * sizeof (object));

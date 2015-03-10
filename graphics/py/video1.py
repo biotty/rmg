@@ -7,8 +7,7 @@
 from rmg.math_ import rnd, unit_angle, rnd_weighted
 from rmg.plane import XY
 from rmg.bodies import Manipulation
-from rmg.solids import (intersection,
-        tetrahedron, cube, octahedron, dodecahedron, icosahedron)
+from rmg.solids import intersect_regulars, sole_regular
 from rmg.space import Point, Direction, origo, random_orbit
 from rmg.color import Color, Optics, white, black
 from rmg.scene import SceneObject, LightSpot, Observer
@@ -34,16 +33,15 @@ class RandomSceneObject:
     def __init__(self):
         self.optics = random_optics()
         self.orbit = random_orbit()
-        self.body_cls = rnd_weighted([tetrahedron, cube,
-                octahedron, dodecahedron, icosahedron])
+        self.n = rnd_weighted([4, 6, 8, 12, 30])
         _, self.theta, self.phi = Direction.random().spherical()
 
     def __call__(self, t):
-        size = .1
         position = self.orbit(t)
-        s = self.body_cls()
-        s.manipulate(Manipulation(size, self.theta, self.phi, position))
-        return SceneObject(self.optics, s)
+        i = sole_regular(self.n)
+        m = Manipulation(.1, self.theta, self.phi, position)
+        i.manipulate(m)
+        return SceneObject(self.optics, i)
 
 
 param_scene_objects = [RandomSceneObject() for _ in range(8)]

@@ -31,11 +31,8 @@ void init_arg_pool(int n, int i, int m);
 void fini_arg_pool();
 void * arg_alloc(size_t s);
 
-void * new_inter(object_intersection * fi, object_normal * fn,
-        int n, object_generator);
-
-object_arg_union * new_object_arg();
-void delete_object_or_inter(void *);
+void * make_inter(object_intersection * fi, object_normal * fn,
+        int m, object_generator get);
 
 #ifdef __cplusplus
 }

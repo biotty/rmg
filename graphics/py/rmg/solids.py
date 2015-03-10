@@ -2,15 +2,13 @@
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
-from rmg.bodies import Manipulation, Intersection, Plane, Sphere, Sphere_, Cylinder, Cylinder_, Cone, Cone_
-from rmg.space import Point, Direction, mean
-
-g = 1.61803398875  #golden ratio
+from rmg.bodies import Intersection, Sphere, Plane, Manipulation
+from rmg.space import Point, origo, mean
+from rmg.math_ import golden_ratio as g
 g2 = g ** 2
 g3 = g ** 3
 
-# the points from the "120 polyhedron" vertices-table
-# needed to make the five platonic polyhedrons
+# selection of vertices in 120-polyhedron
 P2  = Point( g2, 0 , g3)
 P4  = Point( 0 , g , g3)
 P6  = Point(-g2, 0 , g3)
@@ -50,11 +48,17 @@ P56 = Point( 0 , g ,-g3)
 P58 = Point(-g2, 0 ,-g3)
 P60 = Point( 0 ,-g ,-g3)
 
+
 tetrahedron_faces = [
         mean([P4, P34, P47]),
         mean([P4, P38, P34]),
         mean([P4, P47, P38]),
         mean([P34, P38, P47])]
+
+tetrahedron_inradius = abs(tetrahedron_faces[0])
+tetrahedron_midradius = 1.7321 * tetrahedron_inradius
+tetrahedron_circumradius = 3 * tetrahedron_inradius
+
 
 cube_faces = [
     mean([P4, P18, P28, P38]),
@@ -63,6 +67,11 @@ cube_faces = [
     mean([P28, P38, P47, P60]),
     mean([P23, P34, P47, P60]),
     mean([P18, P34, P38, P60])]
+
+cube_inradius = abs(cube_faces[0])
+cube_midradius = 1.41422 * cube_inradius
+cube_circumradius = 1.7321 * cube_inradius
+
 
 octahedron_faces = [
     mean([P7, P10, P43]),
@@ -73,6 +82,11 @@ octahedron_faces = [
     mean([P55, P22, P10]),
     mean([P55, P43, P49]),
     mean([P55, P49, P22])]
+
+octahedron_inradius = abs(octahedron_faces[0])
+octahedron_midradius = 1.2248 * octahedron_inradius
+octahedron_circumradius = 1.7321 * octahedron_inradius
+
 
 dodecahedron_faces = [
     mean([P4, P8, P11, P18, P20]), 
@@ -87,6 +101,11 @@ dodecahedron_faces = [
     mean([P34, P36, P50, P52, P60]),
     mean([P38, P45, P52, P56, P60]),
     mean([P41, P47, P50, P56, P60])]
+
+dodecahedron_inradius = abs(dodecahedron_faces[0])
+dodecahedron_midradius = 1.17557 * dodecahedron_inradius
+dodecahedron_circumradius = 1.25841 * dodecahedron_inradius
+
 
 icosahedron_faces = [
     mean([P2, P6, P17]),
@@ -110,30 +129,55 @@ icosahedron_faces = [
     mean([P58, P33, P31]),
     mean([P58, P51, P33])]
 
-def polyhedron_body(faces):
-    return Intersection([Plane(n.copy(), n.copy()) for n in faces])
+icosahedron_inradius = abs(icosahedron_faces[0])
+icosahedron_midradius = 1.07047 * icosahedron_inradius
+icosahedron_circumradius = 1.25841 * icosahedron_inradius
 
-def tetrahedron():
-    return polyhedron_body(tetrahedron_faces)
 
-def cube():
-    return polyhedron_body(cube_faces)
+regular_solids_data = {
+        4: (tetrahedron_faces, tetrahedron_midradius, tetrahedron_circumradius),
+        6: (cube_faces, cube_midradius, cube_circumradius),
+        8: (octahedron_faces, octahedron_midradius, octahedron_circumradius),
+        12: (dodecahedron_faces, dodecahedron_midradius, dodecahedron_circumradius),
+        30: (icosahedron_faces, icosahedron_midradius, icosahedron_circumradius),
+}
 
-def octahedron():
-    return polyhedron_body(octahedron_faces)
 
-def dodecahedron():
-    return polyhedron_body(dodecahedron_faces)
+class RegularSolid:
 
-def icosahedron():
-    return polyhedron_body(icosahedron_faces)
+    def __init__(self, n, mid_r, theta, phi):
+        self.n = n
+        self.mid_r = mid_r
+        self.theta = theta
+        self.phi = phi
 
-def intersection(objects):
-    a = []
-    for e in objects:
-        if isinstance(e, Intersection):
-            a.extend(e.objects)
-        else:
-            a.append(e)
-    return Intersection(a)
+    def inscribed_at_origo(self):
+        faces, mid_r, circum_r = regular_solids_data[self.n]
+        resize = self.mid_r / mid_r
+        r = circum_r * resize
+        m = Manipulation(resize, self.theta, self.phi, origo)
+        planes = [Plane(n.copy(), n.copy()) for n in faces]
+        for p in planes:
+            p.manipulate(m)
+        return planes, r
 
+
+def sole_regular(n):
+    solid = RegularSolid(n, 1, 0, 0)
+    planes, r = solid.inscribed_at_origo()
+    objects = [Sphere(origo, r)]
+    objects.extend(planes)
+    return Intersection(objects)
+
+
+def intersect_regulars(regular_solids):
+    max_r = 0
+    planes = []
+    for solid in regular_solids:
+        p, r = solid.inscribed_at_origo()
+        planes.extend(p)
+        if r > max_r:
+            max_r = r
+    objects = [Sphere(origo, max_r)]
+    objects.extend(planes)
+    return Intersection(objects)

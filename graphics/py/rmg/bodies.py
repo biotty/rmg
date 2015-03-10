@@ -9,6 +9,11 @@ class Manipulation:
         self.theta = theta
         self.phi = phi
         self.delta = delta
+    def manipulate(self, m):
+        self.r *= m.r
+        self.theta += m.theta
+        self.phi += m.phi
+        self.delta += m.delta
 
 class Plane:
     def __init__(self, point, normal):

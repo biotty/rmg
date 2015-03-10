@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cctype>
 #include <cstdarg>
+#include <climits>
 #include <iostream>
 
 
@@ -133,7 +134,7 @@ get_object(std::string name,
 }
 
     object_arg_union *
-new_object(std::string name,
+make_object(std::string name,
         object_intersection * fi, object_normal * fn)
 {
     object_arg_union * arg
@@ -302,9 +303,9 @@ main(int argc, char *argv[])
         if (name == "x") {
             int n_members;
             std::cin >> n_members;
-            a = new_inter(&fi, &fn, n_members, get_member);
+            a = make_inter(&fi, &fn, n_members, get_member);
         } else {
-            a = new_object(name, &fi, &fn);
+            a = make_object(name, &fi, &fn);
         }
         if (a == NULL) fail("object [%d] error\n", i);
 

@@ -209,8 +209,6 @@ int main(int argc, char **argv)
             break;
     }
 
-    if (seed == 0)
-        std::time(&seed);
     if (d_exc.empty()) {
         d_exc.push_back(ColorMatch(0.3, {0, 0, 0}));
         std::cerr << "using dark colors as exceptional density\n";
@@ -218,6 +216,9 @@ int main(int argc, char **argv)
     if (v_exc.empty()) {
         v_exc.push_back(ColorMatch(0.2, {0, 1, 1}));
         std::cerr << "using cyan colors as exceptional viscosity\n";
+    }
+    if (seed == 0) {
+        std::time(&seed);
     }
     std::srand(seed);
     FeedbackParameters p(h, w);
@@ -239,4 +240,3 @@ int main(int argc, char **argv)
     a.run(n, color_tracer);
     for (size_t k = 0; k <=/*counting edge-function*/ q; ++k) delete functions[k];
 }
-

@@ -1,7 +1,9 @@
 CXXFLAGS=-Wextra -Werror -std=c++11 -fPIC
 
-GTEST_I=-I$(HOME)/gtest/include
-GTEST_L=$(HOME)/gtest/lib/gtest_main.a -lpthread
+GTEST_DIR=$(HOME)/gtest
+GTEST_LIB=$(GTEST_DIR)/src
+GTEST_CXXFLAGS=-I$(GTEST_DIR)/include
+GTEST_LDFLAGS=-lpthread
 
 sizr.a: builders.o envelopes.o filters.o generators.o musicm.o unit.o
 	$(AR) cr $@ $^
@@ -15,19 +17,21 @@ unit.cpp:      unit.hpp
 
 .PHONY:
 clean:
-	@rm -f *.o
+	@rm -f *.o test.a
 
 .PHONY:
 sweep: clean
-	@rm -f sizr.a
+	@rm -f *.a *_test
+
+test.a: $(GTEST_LIB)/gtest-all.o $(GTEST_LIB)/gtest_main.o
+	$(AR) cr $@ $^
 
 .PHONY: test
 test: ringbuf_test
 	./ringbuf_test
 
-ringbuf_test: ringbuf_test.o
-	$(CXX) -o $@ $^ $(GTEST_L) $(LDFLAGS)
+ringbuf_test: ringbuf_test.o test.a
+	$(CXX) -o $@ $^ $(GTEST_LDFLAGS)
 
 ringbuf_test.o: ringbuf_test.cpp
-	$(CXX) -c $(GTEST_I) $^
-
+	$(CXX) -c $(GTEST_CXXFLAGS) $^

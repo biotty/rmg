@@ -11,8 +11,7 @@ from rmg.plane import XY, XYCircle
 from rmg.bodies import (Plane, Sphere,
         Sphere_, Cylinder, Cylinder_, Cone, Cone_,
         Intersection, Manipulation)
-from rmg.solids import (intersection,
-        tetrahedron, cube, octahedron, dodecahedron, icosahedron)
+from rmg.solids import intersect_regulars, RegularSolid
 from rmg.scene import SceneObject, World, LightSpot, Observer, RgbSky
 from rmg.script import ScriptInvocation
 
@@ -109,29 +108,29 @@ def scene_ring(p, r):
     i = Intersection([cone, sphere, sphere_])
     return [SceneObject(o, i)]
 
-def rnd_tilted(cls, p, r):
+def rnd_tilted(n):
     _, theta, phi = Direction.random().spherical()
-    i = cls()
-    i.manipulate(Manipulation(r, theta, phi, p))
-    return i
+    mid_r = rnd(.98, 1.02)
+    return RegularSolid(n, mid_r, theta, phi)
 
 def rnd_intersection_of_two(p, r):
-    fig = lambda: rnd_weighted([tetrahedron, cube,
-            octahedron, dodecahedron, icosahedron])
-    return [SceneObject(rnd_optics(p),
-            intersection([
-                rnd_tilted(fig(), p, r),
-                rnd_tilted(fig(), p, r)]))]
+    fig = lambda: rnd_weighted([4, 6, 8, 12, 30])
+    i = intersect_regulars([
+                rnd_tilted(fig()),
+                rnd_tilted(fig())])
+    m = Manipulation(r, 0, 0, p)
+    i.manipulate(m)
+    return [SceneObject(rnd_optics(p), i)]
 
 def rnd_scene_cluster():
     p = Point(*(Direction.random(rnd(.3, 2.1)).xyz()))
     dice = rnd(1)
-    if dice < .65:
-        return rnd_intersection_of_two(p, .1)
+    if dice < .7:
+        return rnd_intersection_of_two(p, 1)
     else:
         return rnd_weighted(
                 [scene_disc, scene_fruit, scene_wheel, scene_ring],
-                [1, 3, 1, 2])(p, 1)
+                [1, 3, 2, 2])(p, 1)
 
 
 invocation = ScriptInvocation.from_sys()
