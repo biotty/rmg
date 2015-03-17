@@ -40,7 +40,7 @@ unsigned wat(const unsigned char * s, unsigned i) { return s[i] * 256 + s[i + 1]
 
 namespace midi {
 
-instrument::instrument() : p(), n() {}
+codepoint::codepoint() : is_percussion(), n() {}
 note::note() : t(), p(), d(), l(), o(), i() {}
 
 event::event(double t, unsigned s) : t(t), c(s >> 4), h(s & 15), o() {}
@@ -91,7 +91,7 @@ void channel::compile(std::vector<note> & s)
                 n.o = o + 6.283 * (r / 256.0 + ek.t / 60) * hrtf_rpm;
                 if (i == 9) {
                     n.i.n = ek.o;
-                    n.i.p = true;
+                    n.i.is_percussion = true;
                     n.p = 33;
                 } else {
                     n.i.n = r;

@@ -438,12 +438,12 @@ public:
     bool operator<(const sound & other) const { return t < other.t; }
 };
 
-struct instr
+struct instrument
 {
     virtual void play(midi::note n, std::multiset<sound> & r) = 0;
 };
 
-struct hihat : instr
+struct hihat : instrument
 {
     void play(midi::note n, std::multiset<sound> & p)
     {
@@ -458,7 +458,7 @@ struct hihat : instr
     }
 };
 
-struct drum : instr
+struct drum : instrument
 {
     void play(midi::note n, std::multiset<sound> & p)
     {
@@ -475,7 +475,7 @@ struct drum : instr
     }
 };
 
-class synth : public instr
+class synth : public instrument
 {
     wavefunptr w() { return wavefunptr(new qwshapefun(rnd(-.5, .5), rnd(-.5, .5))); }
 public:
@@ -500,7 +500,7 @@ public:
     }
 };
 
-class vowel : public instr
+class vowel : public instrument
 {
 public:
     void play(midi::note n, std::multiset<sound> & p)
@@ -520,7 +520,7 @@ public:
     }
 };
 
-class wind : public instr
+class wind : public instrument
 {
 public:
     void play(midi::note n, std::multiset<sound> & p)
@@ -536,7 +536,7 @@ public:
     }
 };
 
-class string : public instr
+class string : public instrument
 {
     wavefunptr w() { return wavefunptr(new whitenoisefun); }
 public:
@@ -560,8 +560,8 @@ struct orchestra
     drum d;
     wind w;
     string g;
-    instr * get_program(midi::instrument i) {
-        if (i.p)
+    instrument * get_program(midi::codepoint i) {
+        if (i.is_percussion)
             switch (i.n) {    
             case 35: case 36: case 51: return &d;
             case 39: case 44: return &w;
@@ -676,7 +676,7 @@ int main(int argc, char **argv)
             std::vector<midi::note> n;
             m.t[i].c[j].compile(n);
             for (unsigned k=0; k<n.size(); k++) {
-                instr * u = h.get_program(n[k].i);
+                instrument * u = h.get_program(n[k].i);
                 if (u) u->play(n[k], s);
             }
         }

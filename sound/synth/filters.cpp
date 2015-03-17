@@ -85,3 +85,29 @@ feedback::feedback(fl_ptr l, mv_ptr f, en_ptr s) : feed(l, f, s)
 {
     back = true;
 }
+
+biquad::biquad(biquad::control c)
+    : fc(c), w1(), w2(), b0(), b1(), b2(), a1(), a2()
+{}
+
+double biquad::shift(double x)
+{
+    cc.tick(
+        [this](double x)
+        {
+            const double s = this->fc.b0->s;
+            if (x >= s) return;
+            this->b0 = this->fc.b0->z(x);
+            const double z = x / s;
+            this->b1 = this->fc.b1->y(z);
+            this->b2 = this->fc.b2->y(z);
+            this->a1 = this->fc.a1->y(z);
+            this->a2 = this->fc.a2->y(z);
+        }
+    );
+    const double w0 = x - a1 * w1 - a2 * w2;
+    const double y = b0 * w0 + b1 * w1 + b2 * w2;
+    w2 = w1;
+    w1 = w0;
+    return y;
+}

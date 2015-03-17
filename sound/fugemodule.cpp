@@ -249,6 +249,23 @@ struct comb : fuge::filter
     }
 };
 
+struct biqd : fuge::filter
+{
+    bu_ptr apply(double span, bu_ptr && input, params const & p)
+    {
+        if (p.size() != 5) throw std::runtime_error(
+                "comb requires 5 params");
+        biquad::control c;
+        c.b0 = P<movement>(mk_envelope(p[0]), span);
+        c.b1 = mk_envelope(p[1]);
+        c.b2 = mk_envelope(p[2]);
+        c.a1 = mk_envelope(p[3]);
+        c.a2 = mk_envelope(p[4]);
+        fl_ptr f = P<biquad>(c);
+        return U<timed_filter>(std::move(input), f, span);
+    }
+};
+
 std::map<std::string, std::unique_ptr<fuge::filter>> effects;
 
 void
@@ -256,6 +273,7 @@ init_effects()
 {
     effects.emplace("comb", std::unique_ptr<fuge::filter>(new comb));
     effects.emplace("echo", std::unique_ptr<fuge::filter>(new echo));
+    effects.emplace("biqd", std::unique_ptr<fuge::filter>(new biqd));
 }
 
 bu_ptr

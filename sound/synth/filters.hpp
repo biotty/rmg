@@ -77,4 +77,23 @@ struct feed : filter
 
 struct feedback : feed { feedback(fl_ptr l, mv_ptr f, en_ptr s); };
 
+struct biquad : filter
+{
+    double w1, w2;
+    control_clock cc;
+    double b0, b1, b2, a1, a2;
+    struct control
+    {
+        mv_ptr b0;
+        en_ptr b1;
+        en_ptr b2;
+        en_ptr a1;
+        en_ptr a2;
+    };
+    control fc;
+
+    biquad(control fc);
+    double shift(double y);
+};
+
 #endif

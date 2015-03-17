@@ -9,17 +9,17 @@
 
 namespace midi {
 
-struct instrument // codepoint
+struct codepoint
 {
-    bool p; // is percussion
+    bool is_percussion;
     int n;
-    instrument();
+    codepoint();
 };
 
 struct note // api users desire is to get these
 {
     double t, p, d, l, o; // time pitch duration loudness orientation
-    instrument i;
+    codepoint i;
     note();
 };
 

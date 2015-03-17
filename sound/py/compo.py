@@ -5,6 +5,7 @@
 #       All rights reserved
 from orchestra import Orchestra
 from music import Composition, Instruction
+from biquad import Biquad, frequency_of
 import random
 import sys
 
@@ -62,6 +63,13 @@ for _ in range(64):
     cs.add_row(xc)
     row.append(cs)
 compo.add_row(row)
+a = []
+for _ in range(4):
+    f = frequency_of(rnd(48, 72))
+    a.append(Biquad.highpass(f, 1).args())
+    a.append(Biquad.lowpass(f, 1).args())
+p = [list(z) for z in zip(*a)]
+compo.add_filter(Instruction("biqd", *p), 10)
 ug = ox.render(compo())
 while True:
     b = ug()
