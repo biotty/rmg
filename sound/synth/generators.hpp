@@ -231,4 +231,25 @@ struct filtration : infinite
     void generate(unit & u);
 };
 
+struct ncopy : generator
+{
+    int i;
+    int n;
+    unit v;
+    ug_ptr g;
+
+    ncopy(int n, ug_ptr && g);
+    void generate(unit & u);
+    bool more();
+};
+
+struct wrapshared : generator
+{
+    std::shared_ptr<generator> g;
+
+    wrapshared(std::shared_ptr<generator> g);
+    void generate(unit & u);
+    bool more();
+};
+
 #endif

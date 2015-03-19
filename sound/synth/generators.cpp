@@ -436,3 +436,20 @@ void timed::generate(unit & u)
 }
 
 bool timed::more() { return units_generated_ < units_to_generate_; }
+
+ncopy::ncopy(int n, ug_ptr && g) : i(), n(n), g(std::move(g)) {}
+
+void ncopy::generate(unit & u)
+{
+    if (i == 0) g->generate(v);
+
+    u = v;
+
+    if (++i >= n) i = 0;
+}
+
+bool ncopy::more() { return g->more(); }
+
+wrapshared::wrapshared(std::shared_ptr<generator> g) : g(g) {}
+void wrapshared::generate(unit & u) { g->generate(u); }
+bool wrapshared::more() { g->more(); }

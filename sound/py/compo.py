@@ -35,7 +35,9 @@ compo.add_filter(Instruction("comb", rndlist(0, .2, 19), rndlist(0, .2, 19)), .2
 row = []
 for _ in range(64):
     cs = Composition()
-    cs.add_filter(Instruction("echo", [rnd(.2, .4)], [rnd(.1, .5)]), 10)
+    p = [(("echo", [rnd(.2, .4), rnd(.1, .5)])),
+         (("echo", [rnd(.2, .4), rnd(.1, .5)]))]
+    cs.add_filter(Instruction("fmix", *p), .5)
     xa = [ps(compo.span)]
     xb = [ps(compo.span + 2)]
     xc = [ps(compo.span + 4)]
@@ -69,7 +71,8 @@ for _ in range(4):
     a.append(Biquad.highpass(f, 1).args())
     a.append(Biquad.lowpass(f, 1).args())
 p = [list(z) for z in zip(*a)]
-compo.add_filter(Instruction("biqd", *p), 10)
+compo.add_filter(Instruction("biqd", *p), .1)
+
 ug = ox.render(compo())
 while True:
     b = ug()

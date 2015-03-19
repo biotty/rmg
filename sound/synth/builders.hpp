@@ -133,4 +133,27 @@ struct adder : builder
     ug_ptr build();
 };
 
+struct trunk
+{
+    bu_ptr input;
+    std::shared_ptr<generator> g;
+    adder * a;
+    int n;
+    ug_ptr build_leaf();
+
+    trunk(bu_ptr && input);
+    void branch(bu_ptr && b);
+    bu_ptr conclude();
+};
+
+typedef std::shared_ptr<trunk> ts_ptr;
+
+struct leaf : builder
+{
+    ts_ptr t;
+
+    leaf(ts_ptr trunk_);
+    ug_ptr build();
+};
+
 #endif

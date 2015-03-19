@@ -165,3 +165,30 @@ ug_ptr adder::build()
     for (auto & p : v) s->c(p->build(), w);
     return std::move(s);
 }
+
+trunk::trunk(bu_ptr && input)
+    : input(std::move(input))
+    , a(new adder), n()
+{}
+
+void trunk::branch(bu_ptr && b) { a->v.push_back(std::move(b)); }
+
+ug_ptr trunk::build_leaf()
+{
+    if (a) throw "build leaf on non-concluded trunk";
+
+    if ( ! g) g = P<ncopy>(n, input->build());
+    return U<wrapshared>(g);
+}
+
+bu_ptr trunk::conclude()
+{
+    n = a->v.size();
+    a->w = 1 / log2(n);
+    bu_ptr r = bu_ptr(a);
+    a = nullptr;
+    return r;
+}
+
+leaf::leaf(ts_ptr trunk_) : t(trunk_) {}
+ug_ptr leaf::build() { return t->build_leaf(); }

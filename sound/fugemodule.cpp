@@ -211,11 +211,7 @@ namespace fuge { // because ::filter exists
 
 struct filter
 {
-    bu_ptr  operator()(double span, bu_ptr && input, PyObject * list)
-    {
-        return apply(span, std::move(input), parse_params(list));
-    }
-    virtual bu_ptr apply(double span, bu_ptr && input, params const &) = 0;
+    virtual bu_ptr operator()(double span, bu_ptr && input, PyObject * list) = 0;
     virtual ~filter() {}
 };
 
@@ -223,8 +219,9 @@ struct filter
 
 struct echo : fuge::filter
 {
-    bu_ptr apply(double span, bu_ptr && input, params const & p)
+    bu_ptr operator()(double span, bu_ptr && input, PyObject * list)
     {
+        const params p = parse_params(list);
         if (p.size() != 2) throw std::runtime_error(
                 "echo requires 2 params");
         en_ptr mix = mk_envelope(p[0]);
@@ -237,8 +234,9 @@ struct echo : fuge::filter
 
 struct comb : fuge::filter
 {
-    bu_ptr apply(double span, bu_ptr && input, params const & p)
+    bu_ptr operator()(double span, bu_ptr && input, PyObject * list)
     {
+        const params p = parse_params(list);
         if (p.size() != 2) throw std::runtime_error(
                 "comb requires 2 params");
         en_ptr mix = mk_envelope(p[0]);
@@ -251,10 +249,11 @@ struct comb : fuge::filter
 
 struct biqd : fuge::filter
 {
-    bu_ptr apply(double span, bu_ptr && input, params const & p)
+    bu_ptr operator()(double span, bu_ptr && input, PyObject * list)
     {
+        const params p = parse_params(list);
         if (p.size() != 5) throw std::runtime_error(
-                "comb requires 5 params");
+                "biqd requires 5 params");
         biquad::control c;
         c.b0 = P<movement>(mk_envelope(p[0]), span);
         c.b1 = mk_envelope(p[1]);
@@ -266,6 +265,23 @@ struct biqd : fuge::filter
     }
 };
 
+bu_ptr parse_filter(bu_ptr && input, PyObject * seq, bool no_span = false);
+
+struct fmix : fuge::filter
+{
+    bu_ptr operator()(double span, bu_ptr && input, PyObject * list)
+    {
+        const int n = PyList_Size(list);
+        if (n == 0) throw std::runtime_error("empty fmix-list");
+        ts_ptr t = P<trunk>(std::move(input));
+        for (int i=0; i!=n; ++i) {
+            PyObject * f = PyList_GetItem(list, i);
+            t->branch(parse_filter(U<leaf>(t), f, true));
+        }
+        return U<timed_filter>(t->conclude(), P<as_is>(), span);
+    }
+};
+
 std::map<std::string, std::unique_ptr<fuge::filter>> effects;
 
 void
@@ -274,6 +290,7 @@ init_effects()
     effects.emplace("comb", std::unique_ptr<fuge::filter>(new comb));
     effects.emplace("echo", std::unique_ptr<fuge::filter>(new echo));
     effects.emplace("biqd", std::unique_ptr<fuge::filter>(new biqd));
+    effects.emplace("fmix", std::unique_ptr<fuge::filter>(new fmix));
 }
 
 bu_ptr
@@ -315,13 +332,15 @@ parse_entry(PyObject * seq)
 }
 
 bu_ptr
-parse_filter(bu_ptr && input, PyObject * seq)
+parse_filter(bu_ptr && input, PyObject * seq, bool no_span)
 {
     const int n = PyTuple_Size(seq);
-    if (n != 3) throw std::runtime_error("effect isn't tripple");
-    const double span = parse_float(PyTuple_GetItem(seq, 0));
-    std::string label = parse_string(PyTuple_GetItem(seq, 1));
-    return (*effects.at(label))(span, std::move(input), PyTuple_GetItem(seq, 2));
+    int i = 0;
+    const double span = no_span ? 1e9
+        : parse_float(PyTuple_GetItem(seq, i++));
+    if (n != i + 2) throw std::runtime_error("effect Tuple has invalid size");
+    std::string label = parse_string(PyTuple_GetItem(seq, i++));
+    return (*effects.at(label))(span, std::move(input), PyTuple_GetItem(seq, i++));
 }
 
 bu_ptr
