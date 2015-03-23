@@ -9,24 +9,32 @@ class Pause:
         self.span = d
 
 
-class Instruction:
-
-    def __init__(self, label, *args):
-        self.label = label
-        self.params = list(args)
-
-    def __call__(self, span):
-        return (span, self.label, self.params)
-
-
 class Note(Pause):
 
-    def __init__(self, d, s):
+    def __init__(self, d, i, *p):
         Pause.__init__(self, d)
-        self.instruction = s
+        self.duration = self.span
+        self.label = i
+        self.params = list(p)
 
     def __call__(self):
-        return self.instruction(self.span)
+        return (self.duration, self.label, self.params)
+
+
+class ImpliedDurationNote(Note):
+
+    def __call__(self):
+        return (self.label, self.params)
+
+
+class FilterNote:
+
+    def __init__(self, i, *p):
+        self.label = i
+        self.params = list(p)
+
+    def __call__(self, duration):
+        return (duration, self.label, self.params)
 
 
 class Composition(Note):

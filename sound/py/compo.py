@@ -4,7 +4,7 @@
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
 from orchestra import Orchestra
-from music import Composition, Instruction, Note
+from music import Composition, Pause, Note, ImpliedDurationNote, FilterNote
 from biquad import Biquad, frequency_of
 import random
 import sys
@@ -21,24 +21,28 @@ def rndharmonics():
 
 
 ox = Orchestra(.11)
-ts = lambda d, p: ox.play(d, "tense_string", 1.5, .65, 3,
-    ox.just(p), .5, 0)
-mt = lambda d, p: ox.play(d, "mouth", 1, .65, 10,
-    ox.just(p), *(rndharmonics() + rndharmonics()))
-fm = lambda d, m, i, c: ox.play(d, "fqm",
-        ("beep", [1, 0, ox.just(m)]),
-        1, .65, 1, i, ox.just(c))
+
+mt = lambda d, p: Note(d, "mouth", .65, 10,
+        ox.just(p), *(rndharmonics() + rndharmonics()))
+
+fm = lambda d, m, i, c: Note(d, "fqm",
+        ("beep", [1, 0, ox.just(m)]), .65, 1, i, ox.just(c))
+
+def ts(d, p):
+    r = Note(d, "tense_string", .65, 3, ox.just(p), .5, 0)
+    r.duration *= 1.5  # note: .span (logical duration) unaltered
+    return r
 
 
-ps = ox.pause
+ps = Pause
 compo = Composition()
-compo.add_filter(Instruction("comb", rndlist(0, .2, 19), rndlist(0, .2, 19)), .2)
+compo.add_filter(FilterNote("comb", rndlist(0, .2, 19), rndlist(0, .2, 19)), .2)
 row = []
-for _ in range(16):
+for _ in range(32):
     cs = Composition()
     p = [(("echo", [rnd(.2, .4), rnd(.1, .5)])),
          (("echo", [rnd(.2, .4), rnd(.1, .5)]))]
-    cs.add_filter(Instruction("fmix", *p), .5)
+    cs.add_filter(FilterNote("fmix", *p), 2)
     xa = [ps(compo.span)]
     xb = [ps(compo.span + 2)]
     xc = [ps(compo.span + 4)]
@@ -48,7 +52,7 @@ for _ in range(16):
     i = [rnd(1, 9), 0]
     x.add_row([fm(8, m, i, 48)])
     x.add_row([ps(5), fm(3, m, i, 48)])
-    n = ox.play(0, "amm",  #note: zero, as implicit duration not handled in ox
+    n = ImpliedDurationNote(1, "amm",
         (1, "beep", [.9, 0, [440, 220]]),
         (1, "beep", [.9, 0, [660, 880]]))
     x.add_row([ps(4), n])
@@ -76,7 +80,7 @@ for _ in range(4):
     a.append(Biquad.highpass(f, 1).args())
     a.append(Biquad.lowpass(f, 1).args())
 p = [list(z) for z in zip(*a)]
-compo.add_filter(Instruction("biqd", *p), .1)
+compo.add_filter(FilterNote("biqd", *p), .1)
 
 ug = ox.render(compo())
 while True:
