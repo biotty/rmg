@@ -4,7 +4,7 @@
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
 from orchestra import Orchestra
-from music import Composition, Instruction
+from music import Composition, Instruction, Note
 from biquad import Biquad, frequency_of
 import random
 import sys
@@ -25,15 +25,16 @@ ts = lambda d, p: ox.play(d, "tense_string", 1.5, .65, 3,
     ox.just(p), .5, 0)
 mt = lambda d, p: ox.play(d, "mouth", 1, .65, 10,
     ox.just(p), *(rndharmonics() + rndharmonics()))
-fm = lambda d, m, i, c: ox.play(d, "fqm", 1, .65, 1,
-    ox.just(m), i, ox.just(c))
+fm = lambda d, m, i, c: ox.play(d, "fqm",
+        ("beep", [1, 0, ox.just(m)]),
+        1, .65, 1, i, ox.just(c))
 
 
 ps = ox.pause
 compo = Composition()
 compo.add_filter(Instruction("comb", rndlist(0, .2, 19), rndlist(0, .2, 19)), .2)
 row = []
-for _ in range(64):
+for _ in range(16):
     cs = Composition()
     p = [(("echo", [rnd(.2, .4), rnd(.1, .5)])),
          (("echo", [rnd(.2, .4), rnd(.1, .5)]))]
@@ -47,6 +48,10 @@ for _ in range(64):
     i = [rnd(1, 9), 0]
     x.add_row([fm(8, m, i, 48)])
     x.add_row([ps(5), fm(3, m, i, 48)])
+    n = ox.play(0, "amm",  #note: zero, as implicit duration not handled in ox
+        (1, "beep", [.9, 0, [440, 220]]),
+        (1, "beep", [.9, 0, [660, 880]]))
+    x.add_row([ps(4), n])
     xa.append(x)
 
     x = Composition()

@@ -94,12 +94,12 @@ struct param
 typedef std::vector<param> params;
 
 params
-parse_params(PyObject * seq)
+parse_params(PyObject * seq, int i=0)
 {
     params r;
     if ( ! PyList_Check(seq)) throw std::runtime_error("params isn't List");
     const int n = PyList_Size(seq);
-    for (int i=0; i<n; i++) {
+    for (; i<n; i++) {
         PyObject * o = PyList_GetItem(seq, i);
         param s;
         if ( ! PyList_Check(o)) {
@@ -116,11 +116,7 @@ parse_params(PyObject * seq)
 
 struct instrument
 {
-    bu_ptr operator()(double span, PyObject * list)
-    {
-        return play(span, parse_params(list));
-    }
-    virtual bu_ptr play(double span, params const &) = 0;
+    virtual bu_ptr operator()(double span, PyObject * list) = 0;
     virtual ~instrument() {}
 };
 
@@ -139,8 +135,9 @@ mk_envelope(param const & p)
 
 struct tense_string : instrument
 {
-    bu_ptr play(double span, params const & p)
+    bu_ptr operator()(double span, PyObject * list)
     {
+        const params p = parse_params(list);
         if (p.size() != 6) throw std::runtime_error(
                 "tense_string requires 6 params");
         const double d = span * p[0].get();
@@ -153,8 +150,9 @@ struct tense_string : instrument
 
 struct mouth : instrument
 {
-    bu_ptr play(double span, params const & p)
+    bu_ptr operator()(double span, PyObject * list)
     {
+        const params p = parse_params(list);
         if (p.size() != 8) throw std::runtime_error(
                 "mouth requires 8 params");
         const double d = span * p[0].get();
@@ -167,21 +165,51 @@ struct mouth : instrument
     }
 };
 
+struct beep : instrument
+{
+    bu_ptr operator()(double span, PyObject * list)
+    {
+        const params p = parse_params(list);
+        if (p.size() != 3) throw std::runtime_error(
+                "beep requires 3 params");
+        mv_ptr f = P<movement>(mk_envelope(p[2]), span);
+        return U<trapesoid>(p[1].get() / p[2].get(), p[0].get(), span,
+                U<wave>(f, P<sine>(0)));
+    }
+};
+
+bu_ptr parse_note(PyObject * seq, double span = 0);
+
 struct fqm : instrument
 {
-    bu_ptr play(double span, params const & p)
+    bu_ptr operator()(double span, PyObject * list)
     {
-        if (p.size() != 6) throw std::runtime_error(
-                "fm requires 6 params");
+        if (span == 0) throw std::runtime_error("fqm misses span");
+        PyObject * head = PyList_GetItem(list, 0);
+        bu_ptr m = parse_note(head, span);
+        const params p = parse_params(list, 1);
+        if (p.size() != 5) throw std::runtime_error(
+                "fqm requires 6 params");
         const double d = span * p[0].get();
-        en_ptr modulator = mk_envelope(p[3]);
-        en_ptr index = mk_envelope(p[4]);
-        en_ptr carrier = mk_envelope(p[5]);
-        bu_ptr m = U<wave>(P<movement>(modulator, d), P<sine>(0));
+        en_ptr index = mk_envelope(p[3]);
+        en_ptr carrier = mk_envelope(p[4]);
         mv_ptr i = P<movement>(index, d);
         mv_ptr c = P<movement>(carrier, d); 
-        return U<attack>(p[2].get() / p[3].get(), p[1].get(), d,
+        return U<attack>(p[2].get() / p[4].get(), p[1].get(), d,
                 U<fm>(std::move(m), i, c));
+    }
+};
+
+struct amm : instrument
+{
+    bu_ptr operator()(double span, PyObject * list)
+    {
+        if (span != 0) throw std::runtime_error("amm with explicit span");
+        const int n = PyList_Size(list);
+        if (n != 2) throw std::runtime_error("amm requires 2 notes");
+        return U<am>(
+                parse_note(PyList_GetItem(list, 0)),
+                parse_note(PyList_GetItem(list, 1)));
     }
 };
 
@@ -204,7 +232,9 @@ init_orchestra()
 {
     orchestra.emplace("tense_string", std::unique_ptr<instrument>(new tense_string));
     orchestra.emplace("mouth", std::unique_ptr<instrument>(new mouth));
+    orchestra.emplace("beep", std::unique_ptr<instrument>(new beep));
     orchestra.emplace("fqm", std::unique_ptr<instrument>(new fqm));
+    orchestra.emplace("amm", std::unique_ptr<instrument>(new amm));
 }
 
 namespace fuge { // because ::filter exists
@@ -273,10 +303,10 @@ struct fmix : fuge::filter
     {
         const int n = PyList_Size(list);
         if (n == 0) throw std::runtime_error("empty fmix-list");
-        ts_ptr t = P<trunk>(std::move(input));
+        trunk::ptr t = P<trunk>(std::move(input));
         for (int i=0; i!=n; ++i) {
             PyObject * f = PyList_GetItem(list, i);
-            t->branch(parse_filter(U<leaf>(t), f, true));
+            t->branch(parse_filter(U<trunk::leaf>(t), f, true));
         }
         return U<timed_filter>(t->conclude(), P<as_is>(), span);
     }
@@ -294,14 +324,21 @@ init_effects()
 }
 
 bu_ptr
-parse_note(PyObject * seq)
+parse_note(PyObject * seq, double span)
 {
     if ( ! PyTuple_Check(seq)) throw std::runtime_error("note isn't Tuple");
     const int n = PyTuple_Size(seq);
-    if (n != 3) throw std::runtime_error("note Tuple isn't size 3");
-    const double span = parse_float(PyTuple_GetItem(seq, 0));
-    std::string label = parse_string(PyTuple_GetItem(seq, 1));
-    return (*orchestra.at(label))(span, PyTuple_GetItem(seq, 2));
+    int i = 0;
+    if (n == 0) throw std::runtime_error("note Tuple empty");
+    PyObject * head = PyTuple_GetItem(seq, 0);
+    if (PyNumber_Check(head)) {
+        if (span != 0) throw std::runtime_error("span over-ridden");
+        span = parse_float(head);
+        ++i;
+    }
+    if (i + 2 != n) throw std::runtime_error("note Tuple size invalid");
+    std::string label = parse_string(PyTuple_GetItem(seq, i++));
+    return (*orchestra.at(label))(span, PyTuple_GetItem(seq, i++));
 }
 
 bu_ptr

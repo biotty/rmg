@@ -100,8 +100,8 @@ unsigned record::size() { return buffer_.w.size(); }
 
 void record::reset()
 {
-    const double t = samples_generated_ /(double) SR;
-    buffer_.cycle(duration_->z(t) * SR);
+    t_reset += samples_generated_ /(double) SR;
+    buffer_.cycle(duration_->z(t_reset) * SR);
     samples_generated_ = 0;
 }
 
@@ -109,6 +109,7 @@ record::record(generator & g, mv_ptr duration)
     : buffer_(duration->z(0) * SR)
     , duration_(duration)
     , samples_generated_()
+    , t_reset()
 {
     ::fill(g, buffer_.w.begin(), buffer_.w.size());
 }
@@ -362,7 +363,7 @@ void limiter::out(unit & u, double target)
             std::begin(u.y),
             [&a, d](double x){
             const double y = x * (a += d);
-            if (std::fabs(y > 1)) throw 1;
+            if (std::fabs(y > 1)) throw y;
             return y;
             });
 }

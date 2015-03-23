@@ -51,6 +51,7 @@ struct record : period
     period_buffer buffer_;
     mv_ptr duration_;
     unsigned samples_generated_;
+    double t_reset;
     bool more();
     unsigned size();
     void reset();

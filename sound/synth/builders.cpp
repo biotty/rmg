@@ -19,6 +19,14 @@ attack::attack(double h, double y1, double t, bu_ptr && w)
 
 ug_ptr attack::build() { return w->build(); }
 
+trapesoid::trapesoid(double h, double y1, double t, bu_ptr && w)
+    : attack(h, y1, t, std::move(w))
+{
+    a->p(t - h, y1);
+}
+
+ug_ptr trapesoid::build() { return w->build(); }
+
 wave::wave(mv_ptr f, en_ptr e) : f(f), e(e) {}
 
 ug_ptr wave::build()
@@ -26,6 +34,20 @@ ug_ptr wave::build()
     mv_ptr p = P<movement>(P<inverted>(f->e), f->s);
     pulse w(P<movement>(e, p->z(0)));
     return U<periodic>(U<record>(w, p));
+}
+
+cross::cross(bu_ptr && a, bu_ptr && b, mv_ptr c)
+    : a(std::move(a)), b(std::move(b)), c(c)
+{}
+
+ug_ptr cross::build()
+{
+    ug_ptr wa = U<hung>(c);
+    ug_ptr wb = U<hung>(P<movement>(P<subtracted>(P<constant>(1), c->e), c->s));
+    mg_ptr mx = U<sum>();
+    mx->c(U<multiply>(std::move(wa), a->build()), 1);
+    mx->c(U<multiply>(std::move(wb), b->build()), 1);
+    return std::move(mx);
 }
 
 harmonics::harmonics(mv_ptr f, en_ptr e, unsigned n, double ow)
@@ -63,7 +85,7 @@ ug_ptr harmonics::build()
     sum s;
     for (unsigned i=0; i<n; i++) {
         const double f = b * (i + 1);
-        if (f * 3 > SR) break;
+        if (f * 2 >= SR) break;
         en_ptr w = P<sine>(rnd(0, 1));
         s.c(wave(P<still>(f), w).build(), a(i) * k);
     }
@@ -92,19 +114,9 @@ ug_ptr chorus::build()
     return std::move(s);
 }
 
-cross::cross(bu_ptr && a, bu_ptr && b, mv_ptr c)
-    : a(std::move(a)), b(std::move(b)), c(c)
-{}
+am::am(bu_ptr && a, bu_ptr && b) : a(std::move(a)), b(std::move(b)) {}
 
-ug_ptr cross::build()
-{
-    ug_ptr wa = U<hung>(c);
-    ug_ptr wb = U<hung>(P<movement>(P<subtracted>(P<constant>(1), c->e), c->s));
-    mg_ptr mx = U<sum>();
-    mx->c(U<multiply>(std::move(wa), a->build()), 1);
-    mx->c(U<multiply>(std::move(wb), b->build()), 1);
-    return std::move(mx);
-}
+ug_ptr am::build() { return U<multiply>(a->build(), b->build()); }
 
 fm::fm(bu_ptr && m, mv_ptr i, mv_ptr f) : m(std::move(m)), i(i), f(f) {}
 
@@ -190,5 +202,6 @@ bu_ptr trunk::conclude()
     return r;
 }
 
-leaf::leaf(ts_ptr trunk_) : t(trunk_) {}
-ug_ptr leaf::build() { return t->build_leaf(); }
+trunk::leaf::leaf(trunk::ptr trunk_) : t(trunk_) {}
+
+ug_ptr trunk::leaf::build() { return t->build_leaf(); }

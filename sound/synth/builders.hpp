@@ -26,6 +26,12 @@ struct attack : builder
     ug_ptr build();
 };
 
+struct trapesoid : attack
+{   //(isosceles)
+    trapesoid(double h, double y1, double t, bu_ptr && w);
+    ug_ptr build();
+};
+
 typedef std::unique_ptr<attack> at_ptr;
 
 struct wave : builder
@@ -34,6 +40,16 @@ struct wave : builder
     en_ptr e;
 
     wave(mv_ptr f, en_ptr e);
+    ug_ptr build();
+};
+
+struct cross : builder
+{
+    bu_ptr a;
+    bu_ptr b;
+    mv_ptr c;
+
+    cross(bu_ptr && a, bu_ptr && b, mv_ptr c);
     ug_ptr build();
 };
 
@@ -63,13 +79,12 @@ struct chorus : builder
     ug_ptr build();
 };
 
-struct cross : builder
+struct am : builder
 {
     bu_ptr a;
     bu_ptr b;
-    mv_ptr c;
 
-    cross(bu_ptr && a, bu_ptr && b, mv_ptr c);
+    am(bu_ptr && a, bu_ptr && b);
     ug_ptr build();
 };
 
@@ -144,16 +159,16 @@ struct trunk
     trunk(bu_ptr && input);
     void branch(bu_ptr && b);
     bu_ptr conclude();
-};
 
-typedef std::shared_ptr<trunk> ts_ptr;
+    typedef std::shared_ptr<trunk> ptr;
 
-struct leaf : builder
-{
-    ts_ptr t;
+    struct leaf : builder
+    {
+        ptr t;
 
-    leaf(ts_ptr trunk_);
-    ug_ptr build();
+        leaf(ptr trunk_);
+        ug_ptr build();
+    };
 };
 
 #endif
