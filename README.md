@@ -5,7 +5,7 @@
 ### To Compile
 
 * **nothing** for the graphics tools
-* **python-dev** to build the **fuge** module
+* **python3-dev** to build the **fuge** module
 * **python-pygame** available to python for **icons**
 * **libsdl2-dev** and **libncurses-dev** for **amuse**
 
@@ -14,7 +14,7 @@
 * **netpbm** used with a unix pipe in graphic tools internals
 * **pngquant** for **cfluid** which operates on a limited palette
 * **lame** for adding sound to videos like done with **karaoke**
-* **avconv** for generating video from images of f.ex  **border**
+* **libav-tools** for generating video from images of f.ex  **border**
 
 ## Provided Tools
 
