@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
@@ -55,7 +54,7 @@ class Expression:
 class Statement(Expression):
 
     def __call__(self, locals):
-        try: exec self.source in locals
+        try: exec(self.source, locals)
         except Exception as e: raise EvalError(trimmed_exc())
 
 
@@ -371,7 +370,7 @@ class Writer:
             if isinstance(m, Icon):
                 assert t[j] == "\v"
                 self.put_icon(m)
-            else: print "%r?" % (m,)
+            else: print("%r?" % (m,))
             self.put_text(a[j + 1])
 
     def render(self):

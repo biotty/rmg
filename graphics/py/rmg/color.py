@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
 
 from math import floor, pi, cos, sin
-from math_ import rnd, matrix_multiply
+from rmg.math_ import rnd, matrix_multiply
 
 
 class Color:
@@ -64,15 +63,15 @@ class Color:
     @staticmethod
     def from_binary_rgb(data):
         return Color(
-                ord(data[0]) / 255.0,
-                ord(data[1]) / 255.0,
-                ord(data[2]) / 255.0)
+                data[0] / 255.0,
+                data[1] / 255.0,
+                data[2] / 255.0)
     
     def binary_rgb(self):
-        return "%c%c%c" % (
+        return bytes([
                int(round(self.r * 255)),
                int(round(self.g * 255)),
-               int(round(self.b * 255)))
+               int(round(self.b * 255))])
     
     @staticmethod
     def from_int_rgb(i):

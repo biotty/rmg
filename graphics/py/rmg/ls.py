@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
@@ -612,9 +611,9 @@ if __name__ == "__main__":
         c = int(argv[1])
         for n in range(1, c+1):
             ls.derive()
-            print "%d:  %s" % (n, ls.axiom)
+            print("%d:  %s" % (n, ls.axiom))
     else:
-        print "selftest:",
+        print("selftest:", end=' ')
         ls = System("a () a () a [b] (a[) b ([c]) B [d] e [f X [z z][z]] " \
                          "(a[) b () b [c] (B [] e [f) X ([z][z]) Y")
         for n in range(4):
@@ -644,5 +643,5 @@ if __name__ == "__main__":
             "/": lambda k=0: r.append(k),
             "^": lambda p, q: r.extend([p, q])}))
         assert r == [3, 2, 1, '[', 0, ']']
-        print "done"
+        print("done")
 

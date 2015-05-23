@@ -32,7 +32,7 @@ mandelbrot.mp4: py/follow.py
 	$< | ./movie_from_pipe.sh $@
 
 img.png: py/globe.py
-	$< 1920x1080
+	$< 192x108
 	pnmtopng globe.pnm > $@
 
 .PHONY:

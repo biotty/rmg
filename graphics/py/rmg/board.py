@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
@@ -43,31 +42,19 @@ class Photo:
 
     @staticmethod
     def from_stream(ins = sys.stdin):
-        buf = ins.read(128)  #note: will block on tiny photos
+        buf = ins.buffer.read(128)  #note: will block on tiny photos
         if len(buf) == 0:
             return None #eof
-        i = buf.find("\n#")
-        if i >= 0 and i < 8:  #strip comment
-            j = buf.find("\n", i)
-            if j < 96 and j > 4:
-                istext = True
-                for c in buf[i+1:j]:
-                    if ord(c) <= 31 or ord(c) >= 128:
-                        istext = False
-                        break
-                if istext:
-                    buf = buf[:i] + buf[j:]
-                    sys.stderr.write("Trimming PNM comment\n")
         tokens = buf.split(None, 4)
         some_data = tokens[4]
-        if tokens[0] not in ("P5", "P6") or tokens[3] != "255":
+        if tokens[0] not in (b"P5", b"P6") or tokens[3] != b"255":
             sys.stderr.write("stdin PNM not okay; P5 or P6, with max 255\n")
             return Nono
-        gray = tokens[0] == "P5"
+        gray = tokens[0] == b"P5"
         width = int(tokens[1])
         height = int(tokens[2])
         size = width * height * (1 if gray else 3) - len(some_data)
-        data = some_data + ins.read(size)
+        data = some_data + ins.buffer.read(size)
         return Photo(width, height, data, gray)
 
     @staticmethod
@@ -114,13 +101,16 @@ class Image:
             self.outs = os.popen("pnmtojpeg >" + path, "w")
         else:
             self.outs = open(path, "w")
-        self.outs.write("%s\n%d %d 255\n" % ("P5" if gray else "P6", width, height))
+        s = "%s\n%d %d 255\n" % ("P5" if gray else "P6", width, height)
+        b = bytes(s, 'ascii')
+        self.outs.buffer.write(b)
 
     def put(self, color):
         if self.quality.gray:
-            self.outs.write(chr(int(round(color.intensity() * 255))))
+            b = bytes([int(round(color.intensity() * 255))])
+            self.outs.buffer.write(b)
         else:
-            self.outs.write(color.binary_rgb())
+            self.outs.buffer.write(color.binary_rgb())
         
     def close(self):
         if self.outs != sys.stdout: self.outs.close()

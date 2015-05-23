@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
@@ -22,7 +21,7 @@ class Recorder:
         self.frames_saved = 0
         self.tmp = "/tmp/R%d" % (randrange(0, 10**9),)
         os.mkdir(self.tmp)
-        print self.tmp  #hack: practical data to user
+        print(self.tmp)  #hack: practical data to user
 
     def savename(self):
         n = "%s/%d.jpeg" % (self.tmp, self.frames_saved)

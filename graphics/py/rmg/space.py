@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
 
 from math import pi, acos, asin
 from rmg.plane import XY, XYEllipse
-from math_ import matrix_multiply, Rx, Ry, Rz, rnd, unit_angle
+from rmg.math_ import matrix_multiply, Rx, Ry, Rz, rnd, unit_angle
 
 
 def sphere_uniform(u, v):

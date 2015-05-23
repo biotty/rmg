@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
@@ -47,7 +46,7 @@ class ScriptInvocation:
         stdout.write("%s\n" % (world,))
 
     def image(self, world, path):
-        data = str(world)
+        data = bytes(str(world), 'ascii')
         comm = "%s %s %s" % (self.trace_command, self.frame_resolution, path)
         p = Popen(comm, stdin=PIPE, shell=True, close_fds=True)
         p.stdin.write(data)

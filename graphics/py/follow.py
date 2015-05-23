@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
@@ -40,7 +39,7 @@ class Fractal:
         self.b = b   # max
 
     def value(self, p):
-        print 'abstract'
+        print('abstract')
         #note: p must be in unit-square
         #       and an integer is returned
 
@@ -102,8 +101,8 @@ class Grid:
         self.f = f   # subject (fractal)
         self.r = r   # resolution
         self.s = s   # side (step), in pixels
-        self.xa = range(0, r.x, s) + [r.x]
-        self.ya = range(0, r.y, s) + [r.y]
+        self.xa = list(range(0, r.x, s)) + [r.x]
+        self.ya = list(range(0, r.y, s)) + [r.y]
         self.n_rows = len(self.ya) - 1
         self.n_columns = len(self.xa) - 1
         self.rows = []   # the grid of blocks
@@ -145,8 +144,7 @@ class Grid:
     def similar_to(self, other, similarity = 0.9965):
         n = len(self.interest) + len(other.interest)
         c = len(set(self.interest) & set(other.interest))
-        #stderr.write("(%d:%d)\n"%(c, n))
-        return n == 0 or c > n / float(3 - similarity)
+        return n == 0 or c > n / (3 - similarity)
 
     def points_check(self, neighbor, reference_value, points):
         for point in points:
@@ -204,7 +202,7 @@ class Grid:
             row = self.rows[i]
             for y in range(self.ya[i], self.ya[i + 1]):
                 for x in range(self.r.x):
-                    j = x / self.s
+                    j = x // self.s
                     block = row[j]
                     if not block.of_interest:
                         w = block.a_value
@@ -224,7 +222,7 @@ class Frame:
         self.setup(n, s)
 
     def orient(self, c, z):
-        w = z * float(self.r.x) / self.r.y
+        w = z * self.r.x / self.r.y
         h = z
         self.a = c - XY(w, h) * 0.5
         self.b = self.a + XY(w, h)
@@ -279,11 +277,13 @@ class NullImage:
 
 class Image:
     def __init__(self, r):
-        stdout.write("P5\n%d %d\n255\n" % (r.x, r.y))
+        s = "P5\n%d %d\n255\n" % (r.x, r.y)
+        b = bytes(s, 'ascii')
+        stdout.buffer.write(b)
         self.r = r
 
     def put(self, v):
-        stdout.write(chr(v))
+        stdout.buffer.write(bytes([v]))
 
 
 class Tee:
@@ -391,7 +391,7 @@ class FractalMovie:
             n = self.counts[i]
             h = self.counts[i + 1] - n
             for j in range(k):
-                d = j / float(k)
+                d = j / k
                 x = i + d
                 z = self.zi * 0.5 ** x
                 count = n + int(h * d)

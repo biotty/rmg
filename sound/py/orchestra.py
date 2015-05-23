@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
-#
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
+
 import music
 import fuge
 

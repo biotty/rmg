@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
@@ -75,9 +74,9 @@ def examples():
     plant = System(r"f ()f() f f-[-f+f+f]+[+f-f-f]")
     plant.derive(2)
     assert str(plant.axiom) == "f f - [- f + f + f] + [+ f - f - f] f f - " \
-            "[- f + f + f] + [+ f - f - f] - [- f f - [- f + f + f] + [+ f" \
-            "- f - f] + f f - [- f + f + f] + [+ f - f - f] + f f - [- f +" \
-            "f + f] + [+ f - f - f]] + [+ f f - [- f + f + f] + [+ f - f -" \
+            "[- f + f + f] + [+ f - f - f] - [- f f - [- f + f + f] + [+ f "\
+            "- f - f] + f f - [- f + f + f] + [+ f - f - f] + f f - [- f + "\
+            "f + f] + [+ f - f - f]] + [+ f f - [- f + f + f] + [+ f - f - "\
             "f] - f f - [- f + f + f] + [+ f - f - f] - f f - [- f + f + f" \
             "] + [+ f - f - f]]"
     hesper = System(r"""~0~1~1
@@ -85,8 +84,8 @@ def examples():
             (0[)0(0) 1 (0[)1(0) 0 (0[)1(1) 1~1 (1[)0(1) 1[+~1~1] (1[)1(1) 0
             ()+()-()-()+""")
     hesper.derive(11)
-    assert str(hesper.axiom) == "~ 0 ~ 1 ~ 1 ~ 1 ~ 1 [+ ~ 1 ~ 1] ~ 1 ~ 1 ~" \
-            "0 [- ~ 0 ~ 1] ~ 0 ~ 1 ~ 0 [+ ~ 1 ~ 1 [- ~ 0 ~ 1] ~ 1] ~ 1 ~ 1" \
+    assert str(hesper.axiom) == "~ 0 ~ 1 ~ 1 ~ 1 ~ 1 [+ ~ 1 ~ 1] ~ 1 ~ 1 ~ "\
+            "0 [- ~ 0 ~ 1] ~ 0 ~ 1 ~ 0 [+ ~ 1 ~ 1 [- ~ 0 ~ 1] ~ 1] ~ 1 ~ 1 "\
             "~ 1 [- ~ 1 ~ 0 [- ~ 1 ~ 1 [- ~ 0 ~ 1] ~ 1] ~ 1] ~ 0 [+ ~ 1 ~ " \
             "1 [- ~ 0 ~ 1] ~ 1] ~ 1 ~ 1 ~ 0 [- ~ 0 ~ 1] [- ~ 0 ~ 1 ~ 1 [+ " \
             "~ 1 ~ 1] [- ~ 1 ~ 1 [- ~ 0 ~ 1] ~ 1] ~ 1] [+ ~ 1 [+ ~ 1 ~ 1] " \
@@ -120,19 +119,18 @@ opts.add_option("-r", "--resolution", type="string", default="512x512")
 opts.add_option("-s", "--random-seed", type="int")
 opts.add_option("-t", "--ray-trace-mode", action="store_true", default=False)
 opts.add_option("-u", "--unit-turn-degrees", type="float", default=360)
-opts.add_option("-C", "--trace-command", type="string", default="gun")
+opts.add_option("-C", "--trace-command", type="string", default="ray/gun")
 opts.add_option("-H", "--expression-help", action="store_true", default=False)
 (options, args) = opts.parse_args()
 if options.expression_help:
     stderr.write("See examples() in this file\n")
     exit()
-if not options.l_system_expression:
-    stderr.write("Please specify expression with -e.  For help use -h\n")
-    exit()
 if len(args):
     stderr.write("Positional arguments triggers self-test mode\n")
     examples()
-    stderr.write("Done\n")
+    exit()
+if not options.l_system_expression:
+    stderr.write("Please specify expression with -e.  For help use -h\n")
     exit()
 
 param_globals = {"rnd": rnd}
@@ -193,6 +191,6 @@ else:
     stderr.write("Piping world to '%s'\n" % (comm,))
     environ["GUN_RS"] = "Yes"
     p = Popen(comm, stdin=PIPE, shell=True, close_fds=True)
-    p.stdin.write(str(world))
+    p.stdin.write(bytes(str(world), 'ascii'))
     p.stdin.close()
     exit(p.wait())

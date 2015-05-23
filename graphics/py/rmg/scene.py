@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
@@ -18,11 +17,11 @@ class Observer:
         d = Direction(*(self.view - self.eye).xyz())
         if not isinstance(column_dir, Direction):
             assert not row_dir
-            assert type(column_dir) in (float, int, long), "be unit angle"
+            assert type(column_dir) in (float, int), "be unit angle"
             r, theta, phi = d.spherical()
-            if kwargs.has_key("view_opening"):
+            if "view_opening" in kwargs:
                 r = kwargs["view_opening"]
-            elif kwargs.has_key("opening"):
+            elif "opening" in kwargs:
                 r *= kwargs["opening"]
             s = XYCircle(XY(0, 0), r)(column_dir)
             column_dir = Direction(s.x, s.y, 0).rotation(theta, phi)
