@@ -4,7 +4,7 @@
 #       All rights reserved
 from orchestra import Orchestra
 from music import Composition, Pause, Note, ImpliedDurationNote, FilterNote
-from biquad import Biquad, frequency_of
+from biquad import Biquad
 import random
 import sys
 
@@ -32,6 +32,8 @@ def ts(d, p):
     r.duration *= 1.5  # note: .span (logical duration) unaltered
     return r
 
+
+frequency_of = ox.just
 
 ps = Pause
 compo = Composition()
@@ -74,7 +76,7 @@ for _ in range(32):
     row.append(cs)
 compo.add_row(row)
 a = []
-for _ in range(4):
+for _ in range(2):
     f = frequency_of(rnd(48, 72))
     a.append(Biquad.highpass(f, 1).args())
     a.append(Biquad.lowpass(f, 1).args())

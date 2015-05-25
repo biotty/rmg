@@ -165,6 +165,13 @@ struct mouth : instrument
     }
 };
 
+static bu_ptr wavetrapesoid(en_ptr e, double duration, const params & p)
+{
+    mv_ptr f = P<movement>(mk_envelope(p[2]), duration);
+    return U<trapesoid>(p[1].get() / p[2].get(), p[0].get(), duration,
+            U<wave>(f, P<sine>(0)));
+}
+
 struct beep : instrument
 {
     bu_ptr operator()(double duration, PyObject * list)
@@ -172,9 +179,32 @@ struct beep : instrument
         const params p = parse_params(list);
         if (p.size() != 3) throw std::runtime_error(
                 "beep requires 3 params");
-        mv_ptr f = P<movement>(mk_envelope(p[2]), duration);
-        return U<trapesoid>(p[1].get() / p[2].get(), p[0].get(), duration,
-                U<wave>(f, P<sine>(0)));
+        return wavetrapesoid(P<sine>(0), duration, p);
+    }
+};
+
+struct sawtooth : instrument
+{
+    bu_ptr operator()(double duration, PyObject * list)
+    {
+        const params p = parse_params(list);
+        if (p.size() != 3) throw std::runtime_error(
+                "sawtooth requires 3 params");
+        return wavetrapesoid(P<punctual>(0, 1), duration, p);
+    }
+};
+
+struct square : instrument
+{
+    bu_ptr operator()(double duration, PyObject * list)
+    {
+        const params p = parse_params(list);
+        if (p.size() != 3) throw std::runtime_error(
+                "square requires 3 params");
+        tabular * t = new tabular();
+        t->values.push_back(0);
+        t->values.push_back(1);
+        return wavetrapesoid(en_ptr(t), duration, p);
     }
 };
 
@@ -232,6 +262,8 @@ init_orchestra()
     orchestra.emplace("tense_string", std::unique_ptr<instrument>(new tense_string));
     orchestra.emplace("mouth", std::unique_ptr<instrument>(new mouth));
     orchestra.emplace("beep", std::unique_ptr<instrument>(new beep));
+    orchestra.emplace("sawtooth", std::unique_ptr<instrument>(new sawtooth));
+    orchestra.emplace("square", std::unique_ptr<instrument>(new square));
     orchestra.emplace("fqm", std::unique_ptr<instrument>(new fqm));
     orchestra.emplace("amm", std::unique_ptr<instrument>(new amm));
 }

@@ -363,7 +363,7 @@ void limiter::out(unit & u, double target)
             std::begin(u.y),
             [&a, d](double x){
             const double y = x * (a += d);
-            if (std::fabs(y > 1)) throw y;
+            if (std::fabs(y) > 1) return y<0?-1.:1.;//throw
             return y;
             });
 }

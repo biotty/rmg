@@ -1,10 +1,6 @@
 from math import pi, sin, cos, sinh, log, sqrt
 
 
-def frequency_of(p):
-    return 440 * 2 ** ((p - 69.) / 12)
-
-
 SAMPLERATE = 44100
 
 
@@ -72,7 +68,7 @@ class Biquad:
         f.b1 = 0
         f.b0 = a
         f.b2 = -f.b0
-        return f * (1 / set_a_pass(w, a))
+        return f * (1 / f.set_a_pass(w, a))
 
     @classmethod
     def notch(cls, s, q):
@@ -82,7 +78,7 @@ class Biquad:
         f.b1 = -2 * cos(w)
         f.b0 = 1
         f.b2 = 1
-        return f * (1 / set_a_pass(w, a))
+        return f * (1 / f.set_a_pass(w, a))
 
     @classmethod
     def gain(cls, s, q):
@@ -93,7 +89,7 @@ class Biquad:
         f.b1 = 0;
         f.b0 = .5 * sin(w)
         f.b2 = -b0;
-        return f * (1 / set_a_pass(w, a))
+        return f * (1 / f.set_a_pass(w, a))
 
     # z in octaves, a is ampl, s=1 is steepest when still monotonical
     @classmethod
