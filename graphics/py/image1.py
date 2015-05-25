@@ -18,10 +18,10 @@ from rmg.script import ScriptInvocation
 def optics_a():
     color = Color.random()
     reflection = color * .2
-    absorption = color * .06
+    absorption = color * .02
     diamond_index = 2.6
     refraction = color * .9
-    passthrough = color * .8
+    passthrough = white
     return Optics(reflection, absorption,
             diamond_index, refraction, passthrough)
 

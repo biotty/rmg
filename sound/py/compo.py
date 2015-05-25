@@ -13,10 +13,18 @@ def linear(a, b, p): return a + p * (b - a)
 def rnd(a, b): return linear(a, b, random.random())
 def rndlist(a, b, n): return [rnd(a, b) for _ in range(n)]
 
+def rndbeep():
+    return random.choice(["beep", "sawtooth", "square", "stair"])
 
 def rndharmonics():
+    a = []
+    for _ in range(random.randrange(3, 5)): a.append(rnd(.3, .6))
+    for _ in range(random.randrange(2, 3)): a.append(rnd(.7, 1))
+    for _ in range(random.randrange(2, 7)): a.append(rnd(.1, .3))
+    for _ in range(random.randrange(2, 3)): a.append(rnd(.7, 1))
+    for _ in range(random.randrange(5, 9)): a.append(rnd(0, .1))
     oddness = rnd(0, 1)
-    return [rnd(0, 1) for _ in range(7)], oddness
+    return a, oddness
 
 
 ox = Orchestra(.11)
@@ -25,7 +33,7 @@ mt = lambda d, p: Note(d, "mouth", .65, 10,
         ox.just(p), *(rndharmonics() + rndharmonics()))
 
 fm = lambda d, m, i, c: Note(d, "fqm",
-        ("beep", [1, 0, ox.just(m)]), .65, 1, i, ox.just(c))
+        (rndbeep(), [1, 0, ox.just(m)]), .65, 1, i, ox.just(c))
 
 def ts(d, p):
     r = Note(d, "tense_string", .65, 3, ox.just(p), .5, 0)
@@ -54,8 +62,8 @@ for _ in range(32):
     x.add_row([fm(8, m, i, 48)])
     x.add_row([ps(5), fm(3, m, i, 48)])
     n = ImpliedDurationNote(1, "amm",
-        (1, "beep", [.9, 0, [440, 220]]),
-        (1, "beep", [.9, 0, [660, 880]]))
+        (1, rndbeep(), [.9, 0, [440, 220]]),
+        (1, rndbeep(), [.9, 0, [660, 880]]))
     x.add_row([ps(4), n])
     xa.append(x)
 

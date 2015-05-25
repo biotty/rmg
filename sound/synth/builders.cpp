@@ -50,8 +50,8 @@ ug_ptr cross::build()
     return std::move(mx);
 }
 
-harmonics::harmonics(mv_ptr f, en_ptr e, unsigned n, double ow)
-    : f(f), e(e), n(n), odd(.5 * (1 + ow)), even(1 - odd)
+harmonics::harmonics(mv_ptr f, en_ptr e, double ow, double m)
+    : f(f), e(e), m(m), odd(.5 * (1 + ow)), even(1 - odd)
 {
     const double a = 1 / std::max(odd, even);
     odd *= a;
@@ -64,30 +64,34 @@ double harmonics::w(unsigned i)
     else return 1;
 }
 
-double harmonics::a(unsigned i)
+double harmonics::a(double f)
 {
-    double x = i /(double) n;
+    const double x = f / m;
     const double y = e->y(x);
-    return w(i) * y * y;
+    return y * y;
 }
 
-double harmonics::p()
+double harmonics::p(double b)
 {
     double s = 0;
-    for (unsigned i=0; i<n; i++) s += a(i);
+    for (unsigned i=0; ; i+=2) {
+        const double f = b * (i + 1);
+        if (f >= m) break;
+        s += a(f);
+    }
     return sqrt(s);
 }
 
 ug_ptr harmonics::build()
 {
-    const double k = 1 / p();
     const double b = f->z(0);
+    const double k = 1 / p(b);
     sum s;
-    for (unsigned i=0; i<n; i++) {
+    for (unsigned i=0; ; i++) {
         const double f = b * (i + 1);
-        if (f * 2 >= SR) break;
-        en_ptr w = P<sine>(rnd(0, 1));
-        s.c(wave(P<still>(f), w).build(), a(i) * k);
+        if (f >= m) break;
+        s.c(wave(P<still>(f), P<sine>(rnd(0, 1))).build(),
+                a(f) * w(i) * k);
     }
     return U<periodic>(U<record>(s, P<movement>(P<inverted>(f->e), f->s)));
 };

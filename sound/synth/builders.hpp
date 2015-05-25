@@ -57,14 +57,14 @@ struct harmonics : builder
 {
     mv_ptr f;
     en_ptr e;
-    unsigned n;
+    double m;
     double odd;
     double even;
     double w(unsigned i);
-    double a(unsigned i);
-    double p();
+    double a(double f);
+    double p(double b);
 
-    harmonics(mv_ptr f, en_ptr e, unsigned n, double ow);
+    harmonics(mv_ptr f, en_ptr e, double ow, double m);
     ug_ptr build();
 };
 

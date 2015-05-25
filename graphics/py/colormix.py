@@ -49,7 +49,7 @@ def subtractive_remove(a, b):
 
 
 options = OptionParser()
-options.add_option("-m", "--mode", default="additive")
+options.add_option("-m", "--mode", default="additive-filter")
 (opts, args) = options.parse_args()
 
 
