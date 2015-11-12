@@ -1,28 +1,18 @@
-# Compiled Object files
-*.slo
-*.lo
+sound/amuse/amuse
+sound/digitarp
+sound/mrender/mrender
+graphics/flow/fluid
+graphics/ray/gun
+graphics/rgb/bluf
 *.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-
-# Compiled Static libraries
-*.lai
-*.la
 *.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
+*.so
+*.raw
+*.mp3
+*.png
+*.pnm
+*.jpeg
+*.movie
+*.mp4
+*.pyc
+__pycache__

@@ -11,14 +11,14 @@ if [ 0 -ne $# ]; then
         echo "Option '$1' not understood" >&2
         exit 1; fi
     d=$2
-    if [ ! -d "$d" -o ! -h "$d" ]; then
-        echo "Please specify a symlink to a directory" >&2
+    if [ ! -h "$d" ]; then
+        echo "Please specify a symlink" >&2
         exit 1; fi
     p=$t/$d
-    if [ ! -d "$p" -o -h "$p" ]; then
-        echo "No directory '$p'" >&2
+    if [ ! -d "$p" -a "$1" != "-D" ]; then
+        echo "Not a directory '$p'" >&2
         exit 1; fi
-    if [ -e "$p/k" -a ! "$1" = "-D" ]; then
+    if [ -e "$p/k" -a "$1" != "-D" ]; then
         echo "Directory kept" >&2
         exit 0; fi
     rm -rf $p
@@ -30,3 +30,4 @@ p=$t/$d
 mkdir $p
 ln -sf $p .
 echo $d
+
