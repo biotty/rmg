@@ -8,10 +8,6 @@
 
 
 template<class T>
-struct Flow;
-
-
-template<class T>
 struct FlowFunction
 {
     virtual ~FlowFunction() {}

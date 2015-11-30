@@ -47,12 +47,12 @@ class ScriptInvocation:
 
     def image(self, world, path):
         data = bytes(str(world), 'ascii')
-        comm = "%s %s %s" % (self.trace_command, self.frame_resolution, path)
-        p = Popen(comm, stdin=PIPE, shell=True, close_fds=True)
+        comm = (self.trace_command, self.frame_resolution, path)
+        p = Popen(comm, stdin=PIPE)
         p.stdin.write(data)
         p.stdin.close()
         if p.wait() != 0:
-            raise Exception("Failure on '%s'" % (comm,))
+            raise Exception("Failure on %r" % (comm,))
 
     def sequence(self, parametric_world):
         if not self.frame_count:
