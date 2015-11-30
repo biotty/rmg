@@ -1,9 +1,19 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 #include "speaker.hpp"
-#include "unit.hpp"
-#include "SDL.h"
-#include <algorithm>
+
+void speaker_callback(void *u, Uint8 *stream, int len);
+void init_sdl_audio(speaker * sp, unsigned sr);
+
+speaker::speaker(unsigned sr) : b(4096)
+{
+    init_sdl_audio(this, sr);
+}
+
+unsigned speaker::asked()
+{
+    return b.n - b.count();
+}
 
 void speaker::put(double y)
 {
@@ -12,41 +22,29 @@ void speaker::put(double y)
     b.put(y * 32767);
 }
 
-speaker::speaker() : g(), b(4096)
+unsigned speaker::samples()
 {
-    init_sdl_audio(this);
+    return b.count();
 }
 
-speaker::~speaker() { SDL_CloseAudio(); }
-
-bool speaker::produce()
+void speaker::readsample(unsigned char * a)
 {
-    unsigned i = 0;
-    if (g->more()) {
-        while (b.count() + unit::size <= b.n) {
-            ++i;
-            unit u;
-            g->generate(u);
-            SDL_LockAudio();
-            std::for_each(std::begin(u.y), std::end(u.y),
-                    [this](double q){ this->put(q); });
-            SDL_UnlockAudio();
-        }
-    }
-    return i;
+    b.get().set(a);
 }
 
 void speaker_callback(void *u, Uint8 *s, int n)
 {
-    for (int i=0; i<n; i+=2) ((speaker *)u)->b.get().set(&s[i]);
+    for (int i=0; i<n; i+=2) ((speaker *)u)->readsample(&s[i]);
 }
 
-void init_sdl_audio(speaker * sp)
+speaker::~speaker() { SDL_CloseAudio(); }
+
+void init_sdl_audio(speaker * sp, unsigned sr)
 {
     static bool i = false;
     if (i) fprintf(stderr, "SDL already inited\n");
     SDL_AudioSpec s;
-    s.freq = SR;
+    s.freq = sr;
     s.format = AUDIO_S16;
     s.channels = 1;
     s.samples = 1024;

@@ -4,7 +4,6 @@
 #define SPEAKER_HPP
 
 #include "ringbuf.hpp"
-#include "unitfwd.hpp"
 #include "SDL.h"
 
 class speaker
@@ -20,17 +19,16 @@ class speaker
             p[1] = b[1];
         }
     };
-    void put(double y);
-public:
-    generator * g;
     ringbuf<e> b;
-    speaker();
+    void readsample(unsigned char * a);
+    friend void speaker_callback(void *u, Uint8 *s, int n);
+public:
+    unsigned asked();
+    void put(double y);
+    unsigned samples();
+    speaker(unsigned sr);
     ~speaker();
-    bool produce();
 };
-
-void speaker_callback(void *u, Uint8 *stream, int len);
-void init_sdl_audio(speaker * sp);
 
 #endif
 

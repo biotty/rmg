@@ -1,9 +1,10 @@
+graphics/flow/fluid
+graphics/flow/wave
+graphics/ray/gun
+graphics/rgb/bluf
 sound/amuse/amuse
 sound/digitarp
 sound/mrender/mrender
-graphics/flow/fluid
-graphics/ray/gun
-graphics/rgb/bluf
 *.o
 *.a
 *.so
