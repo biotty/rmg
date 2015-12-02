@@ -1,7 +1,10 @@
-CXXFLAGS=-std=c++11
+CXXFLAGS=-std=c++11 -I..
 
-mrender: mrender.o midi.o biquad.o
+mrender: mrender.o midi.o biquad.o musicm.o
 	$(CXX) $(CXXFLAGS) -o $@ $^
+
+musicm.o: ../musicm.cpp
+	$(CXX) $(CXXFLAGS) -c $^
 
 .PHONY:
 clean:

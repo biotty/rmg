@@ -5,14 +5,16 @@ GTEST_LIB=$(GTEST_DIR)/src
 GTEST_CXXFLAGS=-I$(GTEST_DIR)/include
 GTEST_LDFLAGS=-lpthread
 
-sizr.a: builders.o envelopes.o filters.o generators.o musicm.o unit.o
+sizr.a: builders.o envelopes.o filters.o generators.o unit.o musicm.o
 	$(AR) cr $@ $^
+
+musicm.o: ../musicm.cpp
+	$(CXX) $(CXXFLAGS) -c $^
 
 builders.cpp:  builders.hpp
 envelopes.cpp: envelopes.hpp
 filters.cpp:   filters.hpp
 generators.cpp:generators.hpp
-musicm.cpp:    musicm.hpp
 unit.cpp:      unit.hpp
 
 .PHONY:

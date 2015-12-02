@@ -3,6 +3,7 @@
 
 #include "midi.hpp"
 #include "biquad.hpp"
+#include "musicm.hpp"
 #include "samplerate.hpp"
 
 #include <cstdio>
@@ -30,10 +31,6 @@ double const pi = 3.1415926535;
 double sign(double r) { return r >= 0 ? 1 : -1; }
 double linear(double a, double b, double r) { return a * (1 - r) + b * r; }
 double rnd(double a, double b) { return a + rand() * (b - a) / RAND_MAX; }
-double frequency_of(double p) { return 440 * pow(2, (p - 69) / 12); }
-double pitch_of(double f) { return 69 + 12 * log2(f / 440); }
-double amplitude_of(double l) { return pow(10, l / 20); }
-double loudness_of(double a) { return 20 * log10(a); }
 
 double sine(double x) { return sin(x * 2 * pi); }
 
@@ -173,8 +170,9 @@ struct vibrato {
     vibrato() : a(), f(1), s(defaultfun()) {}
     vibrato(double p, double e, double f, wavefunptr s = defaultfun()) : f(f), s(s)
     {
-        const double q = frequency_of(p);
-        a = (frequency_of(p + e) - q) / q;
+        const double q = f_of(p);
+        a = (f_of(p + e) - q) / q;
+        // org: could use variant of c_of
     }
     double get(double x)
     {
@@ -189,7 +187,7 @@ struct tremolo {
 
     tremolo() : k(), f(1), s(defaultfun()) {}
     tremolo(double l, double f, wavefunptr s = defaultfun())
-        : k((1 - amplitude_of(l)) / 2), f(f), s(s)
+        : k((1 - a_of(l)) / 2), f(f), s(s)
     {}
     double get(double x)
     {
@@ -304,7 +302,7 @@ struct stringwave : sourcewave {
     samples a;
     unsigned i;
     stringwave(double p, wavefunptr s, filter::biquad f)
-        : f(f), s(s), a(SAMPLERATE / frequency_of(p)), i()
+        : f(f), s(s), a(SAMPLERATE / f_of_just(p)), i()
     {
         const unsigned n = a.size();
         for (unsigned i=0; i<n; i++)
@@ -412,7 +410,7 @@ public:
     double z;
     sound(double t, double p, double l, double o, waveptr w,
             vibrato v, tremolo r, envelope e)
-        : d(frequency_of(p) / SAMPLERATE), a(amplitude_of(l))
+        : d(f_of_just(p) / SAMPLERATE), a(a_of(l))
         , m(linear(dist_amp, 1, fabs(sin(o))))
         , w(w), v(v), r(r), e(e), t(t)
     {
@@ -546,7 +544,7 @@ public:
         tremolo r;
         envelope e = envelope(0, 0, 1, n.d, 0.6);
         filter::biquad f;
-        f.lowpass(4 * frequency_of(n.p));
+        f.lowpass(4 * f_of(n.p));
         stringwave * x = new stringwave(n.p, w(), f);
         p.insert(sound(n.t, 0, n.l, n.o, waveptr(x), v, r, e));
     }

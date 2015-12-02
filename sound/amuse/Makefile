@@ -1,6 +1,7 @@
 
 SOUND=..
-CXXFLAGS=-Wextra -Werror -std=c++11 `sdl2-config --cflags` -I$(SOUND)/synth
+CXXFLAGS=-Wextra -Werror -std=c++11 `sdl2-config --cflags` \
+		 -I$(SOUND) -I$(SOUND)/synth
 LDFLAGS=`sdl2-config --libs` $(SOUND)/synth/sizr.a -lncurses -lm
 
 amuse: amuse.o orchestra.o page.o book.o recorder.o screen.o speaker.o
