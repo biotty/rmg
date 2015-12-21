@@ -651,12 +651,10 @@ int main(int argc, char **argv)
         std::cerr << "Give a MIDI file [and for lyrics a path to save at]" << std::endl;
         return 1;
     }
-    if (isatty(1)) {
-        std::cerr << "Redirect stdout.  Listen or to save respectively:\n"
-            " | aplay -c 2 -f s16_be -r 44100 #or >tmp.raw #if slow\n"
-            " | lame -r -s 44.1"
-            " --signed --bitwidth 16 --big-endian"
-            " - saved.mp3\n";
+    if (isatty(1) && argc == 2) {
+        std::cerr << "Redirect stdout i.e '> raw'.  Examples\n"
+            "|lame -r -s 44.1 --signed --bitwidth 16 --big-endian - x.mp3\n"
+            "aplay -c 2 -f s16_be -r 44100 raw\n";
         return 1;
     }
     srand(time(nullptr));
@@ -667,6 +665,11 @@ int main(int argc, char **argv)
         lyricfile l(argv[2]);
         for (unsigned i=0; i<y.size(); i++) l.put(y[i].t, y[i].d);
     }
+    if (isatty(1)) {
+        std::cerr << "\nNot generating audio because stdout is a tty\n";
+        return 0;
+    }
+
     orchestra h;
     std::multiset<sound> s;
     for (unsigned i=0; i<m.t.size(); i++) {

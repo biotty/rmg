@@ -26,11 +26,11 @@ struct note // api users desire is to get these
 struct event
 {
     double t;
-    unsigned c, h, o; // MIDI
+    unsigned command, ch, op;
     std::string d;
     event(double t, unsigned s);
-    unsigned p();
-    void parse(const unsigned char * s, unsigned & i);
+    unsigned op2();
+    void decode(const unsigned char * s, unsigned & i);
 };
 
 struct channel
