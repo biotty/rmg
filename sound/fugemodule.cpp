@@ -144,7 +144,7 @@ struct tense_string : instrument
                 "tense_string requires 5 params");
         en_ptr e = mk_envelope(p[2]);
         return U<attack>(p[1].get() / p[2].get(), p[0].get(), duration,
-                U<karpluss_strong>(P<movement>(e, duration),
+                U<karpluss_strong>(P<stretched>(e, duration),
                     p[3].get(), p[4].get()));
     }
 };
@@ -156,18 +156,18 @@ struct mouth : instrument
         const params p = parse_params(list);
         if (p.size() != 7) throw std::runtime_error(
                 "mouth requires 7 params");
-        mv_ptr f = P<movement>(mk_envelope(p[2]), duration);
+        en_ptr f = P<stretched>(mk_envelope(p[2]), duration);
         bu_ptr a = U<harmonics>(f, mk_envelope(p[3]), p[4].get(), 4000);
         bu_ptr b = U<harmonics>(f, mk_envelope(p[5]), p[6].get(), 4000);
         return U<attack>(p[1].get() / p[2].get(), p[0].get(), duration,
                 U<cross>(std::move(a), std::move(b),
-                    P<movement>(P<punctual>(0, 1), duration)));
+                    P<stretched>(P<punctual>(0, 1), duration)));
     }
 };
 
 static bu_ptr wavetrapesoid(en_ptr e, double duration, const params & p)
 {
-    mv_ptr f = P<movement>(mk_envelope(p[2]), duration);
+    en_ptr f = P<stretched>(mk_envelope(p[2]), duration);
     return U<trapesoid>(p[1].get() / p[2].get(), p[0].get(), duration,
             U<wave>(f, P<sine>(0)));
 }
@@ -238,8 +238,8 @@ struct fqm : instrument
                 "fqm requires 5 params");
         en_ptr index = mk_envelope(p[2]);
         en_ptr carrier = mk_envelope(p[3]);
-        mv_ptr i = P<movement>(index, duration);
-        mv_ptr c = P<movement>(carrier, duration);
+        en_ptr i = P<stretched>(index, duration);
+        en_ptr c = P<stretched>(carrier, duration);
         return U<attack>(p[1].get() / p[3].get(), p[0].get(), duration,
                 U<fm>(std::move(m), i, c));
     }
@@ -302,9 +302,9 @@ struct echo : fuge::filter
         const params p = parse_params(list);
         if (p.size() != 2) throw std::runtime_error(
                 "echo requires 2 params");
-        en_ptr mix = mk_envelope(p[0]);
-        en_ptr delay = mk_envelope(p[1]);
-        fl_ptr lf = P<feedback>(P<as_is>(), P<movement>(mix, duration), delay);
+        en_ptr amount = P<stretched>(mk_envelope(p[0]), duration);
+        en_ptr delay = P<stretched>(mk_envelope(p[1]), duration);
+        fl_ptr lf = P<feedback>(P<as_is>(), amount, delay);
         return U<timed_filter>(std::move(input), lf, duration);
     }
 };
@@ -316,9 +316,9 @@ struct comb : fuge::filter
         const params p = parse_params(list);
         if (p.size() != 2) throw std::runtime_error(
                 "comb requires 2 params");
-        en_ptr mix = mk_envelope(p[0]);
-        en_ptr delay = mk_envelope(p[1]);
-        fl_ptr lf = P<feed>(P<as_is>(), P<movement>(mix, duration), delay);
+        en_ptr amount = P<stretched>(mk_envelope(p[0]), duration);
+        en_ptr delay = P<stretched>(mk_envelope(p[1]), duration);
+        fl_ptr lf = P<feed>(P<as_is>(), amount, delay);
         return U<timed_filter>(std::move(input), lf, duration);
     }
 };
@@ -331,11 +331,11 @@ struct biqd : fuge::filter
         if (p.size() != 5) throw std::runtime_error(
                 "biqd requires 5 params");
         biquad::control c;
-        c.b0 = P<movement>(mk_envelope(p[0]), duration);
-        c.b1 = mk_envelope(p[1]);
-        c.b2 = mk_envelope(p[2]);
-        c.a1 = mk_envelope(p[3]);
-        c.a2 = mk_envelope(p[4]);
+        c.b0 = P<stretched>(mk_envelope(p[0]), duration);
+        c.b1 = P<stretched>(mk_envelope(p[1]), duration);
+        c.b2 = P<stretched>(mk_envelope(p[2]), duration);
+        c.a1 = P<stretched>(mk_envelope(p[3]), duration);
+        c.a2 = P<stretched>(mk_envelope(p[4]), duration);
         fl_ptr f = P<biquad>(c);
         return U<timed_filter>(std::move(input), f, duration);
     }

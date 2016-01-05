@@ -26,7 +26,6 @@ std::unique_ptr<T> make_unique(Args&&... args)
 
 // consider: misplaced
 #define SR 44100
-#define SC 21
 
 struct builder
 {

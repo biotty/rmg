@@ -8,13 +8,62 @@
 #include <memory>
 #include <functional>
 
-struct envelope
+struct envelope : std::enable_shared_from_this<envelope>
 {
     virtual double y(double x) = 0;
     virtual ~envelope();
+
+    // re-design: have .stretch(w)=0 that yields as todays P<stretched>
+    //            for functional (a warped) but manipulates (copied!) data
+    //            on punctal and width (somehow keeps shared-ptr
+    //            to the table) in tabular.  then remove stretched and
+    //            use .stretch at callers instead.  resulting envelopes
+    //            are to be efficient on operation with ::y (in incr x)
+    //            recap: punctual have .stretch implemented, scaling on x-axis
+    //            and tabular will be variable-width and .stretch is just
+    //            making a new width "interface" to underlying table.
 };
 
 typedef std::shared_ptr<envelope> en_ptr;
+
+struct stretched : envelope
+{
+    en_ptr e;
+
+    stretched(en_ptr e_, double w);
+    double y(double x);
+};
+
+struct extracted : envelope
+{
+    double y0;
+    double y1;
+    en_ptr e;
+
+    extracted(en_ptr e);
+    double y(double x);
+};
+
+struct serial : envelope
+{
+    double y0;
+    double y1;
+    double h;
+    en_ptr a;
+    en_ptr b;
+
+    serial(en_ptr a_, en_ptr b_, double h);
+    double y(double x);
+};
+
+struct inverts { double operator()(double x); };
+struct scales
+{
+    double factor;
+    scales(double factor);
+    double operator()(double x);
+};
+
 typedef std::function<double (double)> fun;
 
 struct shaped : envelope
@@ -43,15 +92,6 @@ struct constant : envelope
     double y(double x);
 };
 
-struct subtracted : envelope
-{
-    en_ptr a;
-    en_ptr b;
-
-    subtracted(en_ptr a, en_ptr b);
-    double y(double x);
-};
-
 struct added : envelope
 {
     en_ptr a;
@@ -61,62 +101,14 @@ struct added : envelope
     double y(double x);
 };
 
-struct scaled : envelope
-{
-    en_ptr e;
-    double m;
+en_ptr make_stroke(en_ptr e, double h, double w);
 
-    scaled(en_ptr e, double m);
+struct functional : envelope
+{
+    fun f;
+
+    functional(fun f);
     double y(double x);
-};
-
-struct inverted : envelope
-{
-    en_ptr e;
-
-    inverted(en_ptr e);
-    double y(double x);
-};
-
-struct squared : envelope
-{
-    en_ptr e;
-
-    squared(en_ptr e);
-    double y(double x);
-};
-
-struct expounded : envelope
-{
-    en_ptr e;
-
-    expounded(en_ptr e);
-    double y(double x);
-};
-
-#define IB1 1-1e-9
-
-struct movement
-{
-    en_ptr e;
-    double s;
-
-    movement(en_ptr e, double s);
-    virtual double z(double t);
-    virtual ~movement();
-};
-
-typedef std::shared_ptr<movement> mv_ptr;
-
-struct still : movement { still(double k, double t = 1); };
-
-struct stroke : movement
-{
-    double h;
-
-    stroke(en_ptr e, double h, double s);
-    double a(double t);
-    double z(double t);
 };
 
 struct punctual : envelope

@@ -7,51 +7,73 @@
 
 builder::~builder() {}
 
-sound::sound(mv_ptr s, bu_ptr && b) : s(s), b(std::move(b)) {};
+// strategy: prepared at construction but setup of data
+//           like buffers or further envelope-manipulations
+//           and so done at ::build.  rationale is to take max
+//           advantage of score with lazy and purge mechanism
 
-ug_ptr sound::build() { return U<multiply>(U<pulse>(s), b->build()); }
+sound::sound(en_ptr e, double t, bu_ptr && b) : e(e), t(t), b(std::move(b)) {};
+
+ug_ptr sound::build()
+{
+    return U<multiply>(U<gent>(e, t), b->build());
+}
 
 attack::attack(double h, double y1, double t, bu_ptr && w)
     : a(P<punctual>(0, y1))
-    , s(P<stroke>(a, h, t))
-    , w(U<sound>(s, std::move(w)))
+    , s(make_stroke(a, h, t))
+    , w(U<sound>(s, t, std::move(w)))
 {}
 
 ug_ptr attack::build() { return w->build(); }
 
 trapesoid::trapesoid(double h, double y1, double t, bu_ptr && w)
-    : attack(h, y1, t, std::move(w))
+    : a(P<punctual>(0, 0))
+    , s(P<stretched>(a, t))
+    , w(U<sound>(s, t, std::move(w)))
 {
-    a->p(t - h, y1);
+    const double d = h / t;
+    a->p(0 + d, y1);
+    a->p(1 - d, y1);
 }
 
 ug_ptr trapesoid::build() { return w->build(); }
 
-wave::wave(mv_ptr f, en_ptr e) : f(f), e(e) {}
+wave::wave(en_ptr freq, en_ptr e) : freq(freq), e(e) {}
+
+// quality-improvement: instead of periodic_buffer,
+// use a tabular-envelope that does anti-aliasing (?) and
+// is at a resolution fine enough for the slowest period
+// that this wave goes thru; this is trivial to find
+// by at initiation walking over the cycled periods.
 
 ug_ptr wave::build()
 {
-    mv_ptr p = P<movement>(P<inverted>(f->e), f->s);
-    pulse w(P<movement>(e, p->z(0)));
-    return U<periodic>(U<record>(w, p));
+    en_ptr period = P<shaped>(freq, inverts());
+    const double z = period->y(0);
+    gent w(P<stretched>(e, z), z);
+    return U<periodic>(U<record>(w, period));
 }
 
-cross::cross(bu_ptr && a, bu_ptr && b, mv_ptr c)
+cross::cross(bu_ptr && a, bu_ptr && b, en_ptr c)
     : a(std::move(a)), b(std::move(b)), c(c)
 {}
 
 ug_ptr cross::build()
 {
-    ug_ptr wa = U<hung>(c);
-    ug_ptr wb = U<hung>(P<movement>(P<subtracted>(P<constant>(1), c->e), c->s));
+    ug_ptr wa = U<gen>(c);
+    ug_ptr wb = U<gen>(P<shaped>(c, [](double x){ return 1 - x; }));
     mg_ptr mx = U<sum>();
     mx->c(U<multiply>(std::move(wa), a->build()), 1);
     mx->c(U<multiply>(std::move(wb), b->build()), 1);
+    // observation: multiply(pulse) is used for "slow" envelopes,
+    //   and it could be more efficient to have an "amplify" that
+    //   does the task with an envelope directly in these cases.
     return std::move(mx);
 }
 
-harmonics::harmonics(mv_ptr f, en_ptr e, double ow, double m)
-    : f(f), e(e), m(m), odd(.5 * (1 + ow)), even(1 - odd)
+harmonics::harmonics(en_ptr freq, en_ptr e, double ow, double m)
+    : freq(freq), e(e), m(m), odd(.5 * (1 + ow)), even(1 - odd)
 {
     const double a = 1 / std::max(odd, even);
     odd *= a;
@@ -84,20 +106,27 @@ double harmonics::p(double b)
 
 ug_ptr harmonics::build()
 {
-    const double b = f->z(0);
+    const double b = freq->y(0);
     const double k = 1 / p(b);
     sum s;
     for (unsigned i=0; ; i++) {
         const double f = b * (i + 1);
         if (f >= m) break;
-        s.c(wave(P<still>(f), P<sine>(rnd(0, 1))).build(),
+        // quality: instead of 0, make possible to phase-shift all
+        //          but having them phase-synced to some t.
+        //          this is not realized by having non-zero as of now
+        //          -- figure out what semantic of sine argument
+        //          (the phase-sync is consistent with wave-phenomena)
+        //          also, make shure odd/even semantics is sane; specifically
+        //          not permit even-only if not physically occurs
+        s.c(wave(P<constant>(f), P<sine>(0)).build(),
                 a(f) * w(i) * k);
     }
-    return U<periodic>(U<record>(s, P<movement>(P<inverted>(f->e), f->s)));
+    return U<periodic>(U<record>(s, P<shaped>(freq, inverts())));
 };
 
-chorus::chorus(mv_ptr f, en_ptr t, en_ptr w, unsigned n)
-    : f(f), t(t), w(w), n(n)
+chorus::chorus(en_ptr freq, en_ptr t, en_ptr w, unsigned n)
+    : freq(freq), t(t), w(w), n(n)
 {}
 
 ug_ptr chorus::build()
@@ -106,13 +135,13 @@ ug_ptr chorus::build()
     mg_ptr s = U<sum>();
     for (unsigned i=0; i<n; i++) {
         const double m = (2 * i - double(n)) / n;
-        en_ptr h = P<added>(f->e, P<scaled>(t, m));
-        ug_ptr g = wave(P<still>(h->y(0)), w).build();
-        record * r = new record(*g, P<movement>(P<inverted>(h), f->s));
+        en_ptr h = P<added>(freq, P<shaped>(t, scales(m)));
+        ug_ptr g = wave(P<constant>(h->y(0)), w).build();
+        record * r = new record(*g, P<shaped>(h, inverts()));
         std::vector<double> & w = r->buffer_.w;
         std::rotate(w.begin(),
                 w.begin() + unsigned(rnd(0, w.size())),
-                w.end());
+                w.end()); // note: enshure not phase-sync on start
         s->c(U<periodic>(pg_ptr(r)), k);
     }
     return std::move(s);
@@ -122,23 +151,26 @@ am::am(bu_ptr && a, bu_ptr && b) : a(std::move(a)), b(std::move(b)) {}
 
 ug_ptr am::build() { return U<multiply>(a->build(), b->build()); }
 
-fm::fm(bu_ptr && m, mv_ptr i, mv_ptr f) : m(std::move(m)), i(i), f(f) {}
+fm::fm(bu_ptr && m, en_ptr i, en_ptr carrier_freq)
+    : m(std::move(m)), i(i), carrier_freq(carrier_freq)
+{}
 
 ug_ptr fm::build()
 {
-    return U<modulation>(U<multiply>(U<pulse>(i), m->build()),
-            U<sine>(rnd(0, 1)), f);
+    return U<modulation>(
+            U<multiply>(U<gen>(i), m->build()),
+            U<sine>(rnd(0, 1)), carrier_freq);
 }
 
-karpluss_strong::karpluss_strong(mv_ptr f, double a, double b)
-    : f(f), a(a), b(b)
+karpluss_strong::karpluss_strong(en_ptr freq, double a, double b)
+    : freq(freq), a(a), b(b)
 {}
 
 ug_ptr karpluss_strong::build()
 {
     noise n(1);
-    return U<periodic>(U<karpluss>(P<strong>(a, b), n,
-                P<movement>(P<inverted>(f->e), f->s)));
+    return U<periodic>(U<karpluss>(P<strong>(a, b),
+                n, P<shaped>(freq, inverts())));
 }
 
 timed_filter::timed_filter(bs_ptr i, fl_ptr l, double t)

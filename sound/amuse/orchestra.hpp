@@ -9,10 +9,15 @@
 
 #include <cstdint>
 
-struct movement;
-struct builder;
-
+struct envelope;
+typedef std::shared_ptr<envelope> en_ptr;
+struct movement {
+    en_ptr e; double s;
+    movement(en_ptr e, double s) : e(e), s(s) {};
+};
 typedef std::shared_ptr<movement> mv_ptr;
+
+struct builder;
 typedef std::shared_ptr<builder> bs_ptr;
 typedef std::unique_ptr<builder> bu_ptr;
 

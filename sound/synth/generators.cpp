@@ -58,41 +58,55 @@ void noise::generate(unit & u)
             [r](){ return rnd(-r, r); });
 }
 
-double pulse::t_generated()
-{
-    return (unit::size /(double) SR) * units_generated_;
+gen::gen(en_ptr e) : e(e), units_generated_() {}
+
+namespace {
+double t_generated(unsigned u) { return u * (unit::size /(double) SR); }
 }
 
-bool pulse::more()
+void gen::generate(unit & u)
 {
-    return movement_->s > t_generated();
+    using namespace std::placeholders;
+    auto f = std::bind(&envelope::y, e.get(), _1);
+    double x = t_generated(units_generated_++);
+    std::generate(std::begin(u.y), std::end(u.y),
+            [&x, f](){ return f(x += 1./SR); });
 }
 
-pulse::pulse(mv_ptr m)
-    : movement_(m), units_generated_()
+bool gent::more() { return s > t_generated(units_generated_); }
+
+gent::gent(en_ptr e, double s) : gen(e), s(s) {}
+
+filtration::filtration(ug_ptr && g, fl_ptr l) : g(std::move(g)), l(l) {}
+
+void filtration::generate(unit & u)
+{
+    g->generate(u);
+    for (double & x : u.y) x = l->shift(x);
+}
+
+timed::timed(ug_ptr && g, double t)
+    : generator_(std::move(g))
+    , units_to_generate_(SR * t / unit::size)
+    , units_generated_()
 {}
 
-void pulse::generate(unit & u)
+void timed::generate(unit & u)
 {
-    double x = t_generated();
-    ++units_generated_;
-    const double d = 1./SR;
-    movement * p = movement_.get();
-    std::generate(std::begin(u.y), std::end(u.y),
-            [&x, d, p](){ return p->z(x += d); });
+    generator_->generate(u);
+    if (more()) ++units_generated_;
+    else {
+        double a = 1;
+        static constexpr double per_unit = 1. / unit::size;
+        std::for_each(std::begin(u.y), std::end(u.y),
+                [&a](double & y){
+                y *= a;
+                a -= per_unit;
+                });
+    }
 }
 
-hung::hung(mv_ptr m) : pulse(m) {}
-
-bool hung::more() { return true; }
-
-void hung::generate(unit & u)
-{
-    if (pulse::more())
-        return pulse::generate(u);
-
-    u.set(movement_->z(movement_->s));
-}
+bool timed::more() { return units_generated_ < units_to_generate_; }
 
 bool record::more() { return samples_generated_ < buffer_.w.size(); }
 
@@ -101,12 +115,12 @@ unsigned record::size() { return buffer_.w.size(); }
 void record::reset()
 {
     t_reset += samples_generated_ /(double) SR;
-    buffer_.cycle(duration_->z(t_reset) * SR);
+    buffer_.cycle(duration_->y(t_reset) * SR);
     samples_generated_ = 0;
 }
 
-record::record(generator & g, mv_ptr duration)
-    : buffer_(duration->z(0) * SR)
+record::record(generator & g, en_ptr duration)
+    : buffer_(duration->y(0) * SR)
     , duration_(duration)
     , samples_generated_()
     , t_reset()
@@ -187,7 +201,7 @@ void periodic::generate(unit & u)
     shift(u);
 }
 
-karpluss::karpluss(fl_ptr l, generator & g, mv_ptr duration)
+karpluss::karpluss(fl_ptr l, generator & g, en_ptr duration)
     : record(g, duration), filter_(l)
 {}
 
@@ -252,10 +266,10 @@ void product::f(unit & accumulator, unit & u, double w)
     accumulator.mul(u, w);
 }
 
-modulation::modulation(ug_ptr && modulator, en_ptr carrier, mv_ptr index)
+modulation::modulation(ug_ptr && modulator, en_ptr carrier, en_ptr freq)
     : modulator_(std::move(modulator))
     , carrier_(carrier)
-    , index_(index)
+    , freq_(freq)
     , x_()
     , t_generated_()
 {}
@@ -265,11 +279,10 @@ void modulation::generate(unit & u)
     unit v;
     modulator_->generate(v);
 
-    static constexpr double t_per_sample = 1./ SR;
+    constexpr double t_per_sample = 1./ SR;
     for (unsigned i=0; i<unit::size; ++i) {
         u.y[i] = carrier_->y(x_);
-        mod1inc(x_, t_per_sample
-                * (1 + v.y[i]) * index_->z(t_generated_));
+        mod1inc(x_, t_per_sample * (1 + v.y[i]) * freq_->y(t_generated_));
         t_generated_ += t_per_sample;
     }
 }
@@ -358,12 +371,17 @@ bool lazy::more()
 void limiter::out(unit & u, double target)
 {
     const double d = (target - glider_) / unit::size;
-    double a = glider_;
+    const double a = glider_;
+    int i = 0; // quality: glide stepping on brownian stairs?
     std::transform(std::begin(buffer_unit_.y), std::end(buffer_unit_.y),
             std::begin(u.y),
-            [&a, d](double x){
-            const double y = x * (a += d);
-            if (std::fabs(y) > 1) return y<0?-1.:1.;//throw
+            [a, d, &i](double x)
+            {
+            double y = x * (a + d * i++);
+            if (std::abs(y) > 1) { // puzzled: seems to happen
+            y = std::copysign(1, y);
+            //throw std::runtime_error("limiter malfunction");
+            }
             return y;
             });
 }
@@ -382,10 +400,12 @@ void limiter::generate(unit & u)
     if ( ! started_) {
         started_ = true;
         generator_->generate(buffer_unit_);
+        // improve: i guess s_ and glider_ should be set here instead
     }
     unit w;
     generator_->generate(w);
 
+    // optimization: prolly more efficient to do max_element([]abs e)
     const auto p = std::minmax_element(std::begin(w.y), std::end(w.y));
     const double a = std::max(std::abs(*p.first), std::abs(*p.second));
     const double m = (a > 1) ? 1/a : 1;
@@ -406,37 +426,6 @@ bool limiter::more()
     quit_ = true;
     return true;
 }
-
-filtration::filtration(ug_ptr && g, fl_ptr l) : g(std::move(g)), l(l) {}
-
-void filtration::generate(unit & u)
-{
-    g->generate(u);
-    for (double & x : u.y) x = l->shift(x);
-}
-
-timed::timed(ug_ptr && g, double t)
-    : generator_(std::move(g))
-    , units_to_generate_(SR * t / unit::size)
-    , units_generated_()
-{}
-
-void timed::generate(unit & u)
-{
-    generator_->generate(u);
-    if (more()) ++units_generated_;
-    else {
-        double a = 1;
-        static constexpr double per_unit = 1. / unit::size;
-        std::for_each(std::begin(u.y), std::end(u.y),
-                [&a](double & y){
-                y *= a;
-                a -= per_unit;
-                });
-    }
-}
-
-bool timed::more() { return units_generated_ < units_to_generate_; }
 
 ncopy::ncopy(int n, ug_ptr && g) : i(), n(n), g(std::move(g)) {}
 

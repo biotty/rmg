@@ -7,7 +7,7 @@
 * **nothing** for the graphics tools
 * **python3-dev** to build the **fuge** module
 * **python-pygame** available to python for **icons**
-* **libsdl2-dev** and **libncurses-dev** for **amuse**
+* **libsdl2-dev** and **libncurses5-dev** for **amuse**
 
 ### To Generate Media
 

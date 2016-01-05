@@ -20,26 +20,47 @@ struct noise : infinite
     void generate(unit & u);
 };
 
-struct pulse : generator
+struct gen : infinite
 {
-    mv_ptr movement_;
+    en_ptr e;
     unsigned units_generated_;
-    double t_generated();
 
-    pulse(mv_ptr m);
+    gen(en_ptr e);
     void generate(unit & u);
+};
+
+struct gent : gen // note: reuses gen but not infinite
+{
+    double s;
+
+    gent(en_ptr e, double s);
     bool more();
 };
 
-struct hung : pulse
+struct filtration : infinite
 {
-    hung(mv_ptr m);
+    ug_ptr g;
+    fl_ptr l;
+
+    filtration(ug_ptr && g, fl_ptr l);
+    void generate(unit & u);
+};
+
+struct timed : generator
+{
+    ug_ptr generator_;
+    unsigned units_to_generate_;
+    unsigned units_generated_;
+
+    timed(ug_ptr && g, double t);
     void generate(unit & u);
     bool more();
 };
 
 struct period : generator
 {
+    double duration;
+
     virtual unsigned size() = 0;
     virtual void reset() = 0;
 };
@@ -49,14 +70,14 @@ typedef std::unique_ptr<period> pg_ptr;
 struct record : period
 {
     period_buffer buffer_;
-    mv_ptr duration_;
+    en_ptr duration_;
     unsigned samples_generated_;
     double t_reset;
     bool more();
     unsigned size();
     void reset();
 
-    record(generator & g, mv_ptr duration);
+    record(generator & g, en_ptr duration);
     void generate(unit & u);
 };
 
@@ -64,7 +85,7 @@ struct karpluss : record
 {
     fl_ptr filter_;
 
-    karpluss(fl_ptr l, generator & g, mv_ptr duration);
+    karpluss(fl_ptr l, generator & g, en_ptr duration);
     void reset();
 };
 
@@ -128,6 +149,13 @@ struct weighted_transform : mix
     bool more();
 };
 
+// cleanup:
+//   remove product. (unused)
+//   remove mg_ptr. (specific class when used)
+//   remove weight on sum. (scale output instead, or individuals if needed)
+//   remove weighted_transform. (abstraction nor weight-component needed)
+//   remove unit.add and unit.mul. (unused)
+
 struct sum : weighted_transform
 {
     sum();
@@ -144,11 +172,11 @@ struct modulation : infinite
 {
     ug_ptr modulator_;
     en_ptr carrier_;
-    mv_ptr index_;
+    en_ptr freq_;
     double x_;
     double t_generated_;
 
-    modulation(ug_ptr && modulator, en_ptr carrier, mv_ptr index);
+    modulation(ug_ptr && modulator, en_ptr carrier, en_ptr freq);
     void generate(unit & u);
 };
 
@@ -210,26 +238,6 @@ struct limiter : generator
     limiter(ug_ptr && z);
     void generate(unit & u);
     bool more();
-};
-
-struct timed : generator
-{
-    ug_ptr generator_;
-    unsigned units_to_generate_;
-    unsigned units_generated_;
-
-    timed(ug_ptr && g, double t);
-    void generate(unit & u);
-    bool more();
-};
-
-struct filtration : infinite
-{
-    ug_ptr g;
-    fl_ptr l;
-
-    filtration(ug_ptr && g, fl_ptr l);
-    void generate(unit & u);
 };
 
 struct ncopy : generator

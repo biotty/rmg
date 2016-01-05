@@ -5,6 +5,9 @@
 
 period_buffer::period_buffer(unsigned n) : f(rnd(0, 1)), w(n) {}
 
+// stretches buffer so that doppler effect result by use in feed(back)
+// note that the use to obtain vibrato in a wave generator is
+// discouraged because of degraded quality for an exact desired waveform
 void period_buffer::cycle(double s)
 {
     if (f > 1) {
@@ -37,75 +40,71 @@ double strong::shift(double y)
 
 strong::strong(double a, double b) : a(a), b(b), w() {}
 
-delay_network::delay_network(fl_ptr l, double s)
-        : i(), b(s * SR), l(l), s(s)
+delay_network::delay_network(fl_ptr l, en_ptr s)
+        : i(), b(s->y(0) * SR), l(l), s(s), x_cycle()
 {}
 
 void delay_network::step(double z)
 {
     b.w[i] = z;
     if (++i == b.w.size()) {
-        b.cycle(s * SR);
-        for (auto & x: b.w) x = l->shift(x);
+        x_cycle += i / (double) SR;
+        b.cycle(s->y(x_cycle) * SR);
+        for (auto & y: b.w) y = l->shift(y);
         i = 0;
     }
 }
 
 double delay_network::current() { return b.w[i]; }
 
-control_clock::control_clock() : i(), x() {}
+control_clock::control_clock(unsigned a, unsigned b)
+    : a(a), b(b), i(), x()
+{}
 
-void control_clock::tick(std::function<void(double)> f)
+bool control_clock::tick()
 {
     if (i == 0) {
-        f(x);
-        i = SC;
-        x += SC /(double) SR;
+        i = a;
+        if (b) i += rnd(0, b);
+        x += i /(double) SR;
+        return true;
+    } else {
+        --i;
+        return false;
     }
-    --i;
 }
 
-feed::feed(fl_ptr l, mv_ptr f, en_ptr s) : d(l, s->y(0)), f(f), g(), s(s) {}
+feed::feed(fl_ptr l, en_ptr amount, en_ptr delay, bool back)
+    : back(back), c(21), d(l, delay), amount(amount), delay(delay), g()
+{}
 
 double feed::shift(double y)
 {
-    c.tick(
-        [this](double x)
-        {
-            this->g = this->f->z(x);
-            if (x < this->f->s) this->d.s = this->s->y(x / this->f->s);
-        }
-    );
+    if (c.tick()) g = amount->y(c.x);
     const double z = linear(y, d.current(), g);
-    d.step(back ? z : y);
+    d.step(back? z : y);
     return z;
 }
 
-feedback::feedback(fl_ptr l, mv_ptr f, en_ptr s) : feed(l, f, s)
-{
-    back = true;
-}
-
-biquad::biquad(biquad::control c)
-    : fc(c), w1(), w2(), b0(), b1(), b2(), a1(), a2()
+feedback::feedback(fl_ptr l, en_ptr amount, en_ptr delay)
+    : feed(l, amount, delay, true)
 {}
 
-double biquad::shift(double x)
+biquad::biquad(biquad::control c)
+    : w1(), w2(), b0(), b1(), b2(), a1(), a2(), cc(11, 11), fc(c)
+{}
+
+double biquad::shift(double z)
 {
-    cc.tick(
-        [this](double x)
-        {
-            const double s = this->fc.b0->s;
-            if (x >= s) return;
-            this->b0 = this->fc.b0->z(x);
-            const double z = x / s;
-            this->b1 = this->fc.b1->y(z);
-            this->b2 = this->fc.b2->y(z);
-            this->a1 = this->fc.a1->y(z);
-            this->a2 = this->fc.a2->y(z);
-        }
-    );
-    const double w0 = x - a1 * w1 - a2 * w2;
+    if (cc.tick()) {
+        const double &x = cc.x;
+        b0 = fc.b0->y(x);
+        b1 = fc.b1->y(x);
+        b2 = fc.b2->y(x);
+        a1 = fc.a1->y(x);
+        a2 = fc.a2->y(x);
+    }
+    const double w0 = z - a1 * w1 - a2 * w2;
     const double y = b0 * w0 + b1 * w1 + b2 * w2;
     w2 = w1;
     w1 = w0;

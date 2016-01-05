@@ -7,8 +7,49 @@
 
 envelope::~envelope() {}
 
-shaped::shaped(en_ptr e, fun f) : e(e), f(f) {}
-double shaped::y(double x) { return f(e->y(x)); }
+double inverts::operator()(double x){ return 1 / x; }
+
+scales::scales(double factor) : factor(factor) {}
+double scales::operator()(double x) { return factor * x; }
+
+stretched::stretched(en_ptr e_, double w)
+{
+    en_ptr b = P<extracted>(e_);
+    e = P<warped>(b, scales(1 / w));
+}
+
+double stretched::y(double x) { return e->y(x); }
+
+// idea: a brownian stair walker with a given average density of steps
+//       -- used for "slow" stuff (instead of implicit
+//       control_clock on filter controller only) by lib-user
+
+extracted::extracted(en_ptr e) : y0(e->y(0)), y1(e->y(1)), e(e) {}
+double extracted::y(double x)
+{
+    if (x <= 0) return y0;
+    if (x >= 1) return y1;
+
+    return e->y(x);
+}
+
+serial::serial(en_ptr a_, en_ptr b_, double h)
+    : y0(a_->y(0))
+    , y1(b_->y(1))
+    , h(h)
+    , a(P<stretched>(a_, h))
+    , b(P<stretched>(b_, 1 - h))
+{}
+
+double serial::y(double x)
+{
+    if (x <= 0) return y0;
+    if (x >= 1) return y1;
+
+    if (x < h) return a->y(x);
+
+    return b->y(x - h);
+}
 
 warped::warped(en_ptr e, fun f) : e(e), f(f) {}
 double warped::y(double x) { return e->y(f(x)); }
@@ -16,44 +57,26 @@ double warped::y(double x) { return e->y(f(x)); }
 constant::constant(double k) : k(k) {}
 double constant::y(double) { return k; }
 
-subtracted::subtracted(en_ptr a, en_ptr b) : a(a), b(b) {}
-double subtracted::y(double x) { return a->y(x) - b->y(x); }
+shaped::shaped(en_ptr e, fun f) : e(e), f(f) {}
+double shaped::y(double x) { return f(e->y(x)); }
 
 added::added(en_ptr a, en_ptr b) : a(a), b(b) {}
 double added::y(double x) { return a->y(x) + b->y(x); }
 
-scaled::scaled(en_ptr e, double m) : e(e), m(m) {}
-double scaled::y(double x) { return m * e->y(x); }
-
-inverted::inverted(en_ptr e) : e(e) {}
-double inverted::y(double x) { return 1 / e->y(x); }
-
-squared::squared(en_ptr e) : e(e) {}
-double squared::y(double x) { const double y = e->y(x); return y * y; }
-
-expounded::expounded(en_ptr e) : e(e) {}
-double expounded::y(double x) { return exp(e->y(x)); }
-
-movement::movement(en_ptr e, double s) : e(e), s(s) {}
-double movement::z(const double t)
+en_ptr make_stroke(en_ptr e, double h, double w)
 {
-    if (t <= 0) return e->y(0);
-    if (t >= s) return e->y(IB1);
-    return e->y(t / s);
+    return P<shaped>(
+            P<stretched>(
+                P<serial>(
+                    e,
+                    P<punctual>(e->y(1), 0), h / w),
+                w),
+            [](double x){ return x * x; });
 }
 
-movement::~movement() {}
+functional::functional(fun f) : f(f) {}
 
-still::still(double k, double t) : movement(P<constant>(k), t) {}
-
-stroke::stroke(en_ptr e, double h, double s) : movement(e, s), h(h) {}
-double stroke::z(const double t) { const double y = a(t); return y * y; }
-double stroke::a(const double t)
-{
-    if (t < 0 || t >= s) return 0;
-    if (t < h) return e->y(t / h);
-    else return linear(e->y(IB1), 0, (t - h) / (s - h));
-}
+double functional::y(double x) { return f(x); }
 
 punctual::punctual() : points({{0, 0}, {1, 0}}) {}
 
@@ -73,8 +96,8 @@ void punctual::p(double x, double y)
 
 double punctual::y(double x)
 {
-    if (x < 0 || x >= 1) return 0;
-    if (x >= IB1) return points.back().second;
+    if (x <= points.front().first) return points.front().second;
+    if (x >= points.back().first) return points.back().second;
     const unsigned i = offset(x);
     // optimization: cache previous i.
     //   if i same, then we CAN calculate
@@ -90,12 +113,13 @@ double punctual::y(double x)
 
 double tabular::y(double x)
 {
-    if (x < 0 || x >= 1) return 0;
-    if (x >= IB1) return values.back();
+    if (x <= 0) return values.front();
+    if (x >= 1) return values.back();
     return values[x * values.size()];
 }
 
-#define PI 3.141592653589793
-
 sine::sine(double phase) : phase(phase) {}
-double sine::y(double x) { return sin(2 * PI * (x + phase)); }
+double sine::y(double x) { return sin(2 * pi * (x + phase)); }
+// optimization: use a tabular of a lib-init populated quarter of the period
+//  this is not the interpolated tabular variant (have two variants)
+

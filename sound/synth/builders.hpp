@@ -9,25 +9,30 @@
 
 struct sound : builder
 {
-    mv_ptr s;
+    en_ptr e;
+    double t;
     bu_ptr b;
 
-    sound(mv_ptr s, bu_ptr && b);
+    sound(en_ptr e, double t, bu_ptr && b);
     ug_ptr build();
 };
 
 struct attack : builder
 {
     pe_ptr a;
-    mv_ptr s;
+    en_ptr s;
     bu_ptr w;
 
     attack(double h, double y1, double t, bu_ptr && w);
     ug_ptr build();
 };
 
-struct trapesoid : attack
+struct trapesoid : builder
 {   //(isosceles)
+    pe_ptr a;
+    en_ptr s;
+    bu_ptr w;
+
     trapesoid(double h, double y1, double t, bu_ptr && w);
     ug_ptr build();
 };
@@ -36,10 +41,10 @@ typedef std::unique_ptr<attack> at_ptr;
 
 struct wave : builder
 {
-    mv_ptr f;
-    en_ptr e;
+    en_ptr freq;
+    en_ptr e; // one period [0,1) of wave
 
-    wave(mv_ptr f, en_ptr e);
+    wave(en_ptr freq, en_ptr e);
     ug_ptr build();
 };
 
@@ -47,15 +52,15 @@ struct cross : builder
 {
     bu_ptr a;
     bu_ptr b;
-    mv_ptr c;
+    en_ptr c;
 
-    cross(bu_ptr && a, bu_ptr && b, mv_ptr c);
+    cross(bu_ptr && a, bu_ptr && b, en_ptr c);
     ug_ptr build();
 };
 
 struct harmonics : builder
 {
-    mv_ptr f;
+    en_ptr freq;
     en_ptr e;
     double m;
     double odd;
@@ -64,18 +69,18 @@ struct harmonics : builder
     double a(double f);
     double p(double b);
 
-    harmonics(mv_ptr f, en_ptr e, double ow, double m);
+    harmonics(en_ptr freq, en_ptr e, double ow, double m);
     ug_ptr build();
 };
 
 struct chorus : builder
 {
-    mv_ptr f;
+    en_ptr freq;
     en_ptr t;
     en_ptr w;
     unsigned n;
 
-    chorus(mv_ptr f, en_ptr t, en_ptr w, unsigned n);
+    chorus(en_ptr freq, en_ptr t, en_ptr w, unsigned n);
     ug_ptr build();
 };
 
@@ -91,20 +96,20 @@ struct am : builder
 struct fm : builder
 {
     bu_ptr m;
-    mv_ptr i;
-    mv_ptr f;
+    en_ptr i;
+    en_ptr carrier_freq;
 
-    fm(bu_ptr && m, mv_ptr i, mv_ptr f);
+    fm(bu_ptr && m, en_ptr i, en_ptr carrier_freq);
     ug_ptr build();
 };
 
 struct karpluss_strong : builder
 {
-    mv_ptr f;
+    en_ptr freq;
     double a;
     double b;
 
-    karpluss_strong(mv_ptr f, double a, double b);
+    karpluss_strong(en_ptr freq, double a, double b);
     ug_ptr build();
 };
 

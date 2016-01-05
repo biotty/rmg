@@ -46,20 +46,24 @@ struct delay_network
     unsigned i;
     period_buffer b;
     fl_ptr l;
-    double s;
+    en_ptr s;
+    double x_cycle;
 
-    delay_network(fl_ptr l, double s);
+    delay_network(fl_ptr l, en_ptr s);
     void step(double z);
     double current();
 };
 
 class control_clock
 {
+    unsigned a;
+    unsigned b;
     unsigned i;
-    double x;
 public:
-    control_clock();
-    void tick(std::function<void(double)> f);
+    double x;
+
+    control_clock(unsigned a, unsigned b = 0);
+    bool tick();
 };
 
 struct feed : filter
@@ -67,24 +71,24 @@ struct feed : filter
     bool back;
     control_clock c;
     delay_network d;
-    mv_ptr f;
+    en_ptr amount;
+    en_ptr delay;
     double g;
-    en_ptr s;
 
-    feed(fl_ptr l, mv_ptr f, en_ptr s);
+    feed(fl_ptr l, en_ptr amount, en_ptr delay, bool back = false);
     double shift(double y);
 };
 
-struct feedback : feed { feedback(fl_ptr l, mv_ptr f, en_ptr s); };
+struct feedback : feed { feedback(fl_ptr l, en_ptr amount, en_ptr delay); };
 
 struct biquad : filter
 {
     double w1, w2;
-    control_clock cc;
     double b0, b1, b2, a1, a2;
+    control_clock cc;
     struct control
     {
-        mv_ptr b0;
+        en_ptr b0;
         en_ptr b1;
         en_ptr b2;
         en_ptr a1;
