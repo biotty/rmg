@@ -80,6 +80,12 @@ parse_int(PyObject * n)
 double
 parse_float(PyObject * n)
 {
+    if ( ! PyNumber_Check(n)) {
+        PyObject * r = PyObject_Repr(n);
+        const char * s = PyUnicode_AsUTF8(r);
+        Py_DECREF(r);
+        throw std::runtime_error(s);
+    }
     PyObject * f = PyNumber_Float(n);
     const double x = PyFloat_AsDouble(f);
     Py_DECREF(f);
@@ -96,15 +102,16 @@ struct param
 typedef std::vector<param> params;
 
 params
-parse_params(PyObject * seq, int i=0)
+parse_params(const char * e, PyObject * seq, int i = 0)
 {
     params r;
     if ( ! PyList_Check(seq)) throw std::runtime_error("params isn't List");
     const int n = PyList_Size(seq);
+    if (strlen(e) != unsigned(n)) throw std::runtime_error(e);
     for (; i<n; i++) {
         PyObject * o = PyList_GetItem(seq, i);
         param s;
-        if ( ! PyList_Check(o)) {
+        if ( e[i] == '+' || ! PyList_Check(o)) {
             s.values.push_back(parse_float(o));
         } else {
             const int k = PyList_Size(o);
@@ -135,51 +142,19 @@ mk_envelope(param const & p)
     return e;
 }
 
-struct tense_string : instrument
+static bu_ptr parse_beep(en_ptr e, double duration, PyObject * list)
 {
-    bu_ptr operator()(double duration, PyObject * list)
-    {
-        const params p = parse_params(list);
-        if (p.size() != 5) throw std::runtime_error(
-                "tense_string requires 5 params");
-        en_ptr e = mk_envelope(p[2]);
-        return U<attack>(p[1].get() / p[2].get(), p[0].get(), duration,
-                U<karpluss_strong>(P<stretched>(e, duration),
-                    p[3].get(), p[4].get()));
-    }
-};
-
-struct mouth : instrument
-{
-    bu_ptr operator()(double duration, PyObject * list)
-    {
-        const params p = parse_params(list);
-        if (p.size() != 7) throw std::runtime_error(
-                "mouth requires 7 params");
-        en_ptr f = P<stretched>(mk_envelope(p[2]), duration);
-        bu_ptr a = U<harmonics>(f, mk_envelope(p[3]), p[4].get(), 4000);
-        bu_ptr b = U<harmonics>(f, mk_envelope(p[5]), p[6].get(), 4000);
-        return U<attack>(p[1].get() / p[2].get(), p[0].get(), duration,
-                U<cross>(std::move(a), std::move(b),
-                    P<stretched>(P<punctual>(0, 1), duration)));
-    }
-};
-
-static bu_ptr wavetrapesoid(en_ptr e, double duration, const params & p)
-{
+    const params p = parse_params("++@", list);
     en_ptr f = P<stretched>(mk_envelope(p[2]), duration);
     return U<trapesoid>(p[1].get() / p[2].get(), p[0].get(), duration,
-            U<wave>(f, P<sine>(0)));
+            U<wave>(f, e));
 }
 
-struct beep : instrument
+struct freqwave : instrument
 {
     bu_ptr operator()(double duration, PyObject * list)
     {
-        const params p = parse_params(list);
-        if (p.size() != 3) throw std::runtime_error(
-                "beep requires 3 params");
-        return wavetrapesoid(P<sine>(0), duration, p);
+        return parse_beep(P<sine>(0), duration, list);
     }
 };
 
@@ -187,10 +162,7 @@ struct sawtooth : instrument
 {
     bu_ptr operator()(double duration, PyObject * list)
     {
-        const params p = parse_params(list);
-        if (p.size() != 3) throw std::runtime_error(
-                "sawtooth requires 3 params");
-        return wavetrapesoid(P<punctual>(1, -1), duration, p);
+        return parse_beep(P<punctual>(1, -1), duration, list);
     }
 };
 
@@ -198,13 +170,10 @@ struct square : instrument
 {
     bu_ptr operator()(double duration, PyObject * list)
     {
-        const params p = parse_params(list);
-        if (p.size() != 3) throw std::runtime_error(
-                "square requires 3 params");
         tabular * t = new tabular();
         t->values.push_back(1);
         t->values.push_back(-1);
-        return wavetrapesoid(en_ptr(t), duration, p);
+        return parse_beep(en_ptr(t), duration, list);
     }
 };
 
@@ -212,15 +181,38 @@ struct stair : instrument
 {
     bu_ptr operator()(double duration, PyObject * list)
     {
-        const params p = parse_params(list);
-        if (p.size() != 3) throw std::runtime_error(
-                "square requires 3 params");
         tabular * t = new tabular();
         t->values.push_back(1);
         t->values.push_back(0);
         t->values.push_back(-1);
         t->values.push_back(0);
-        return wavetrapesoid(en_ptr(t), duration, p);
+        return parse_beep(en_ptr(t), duration, list);
+    }
+};
+
+struct ks_string : instrument
+{
+    bu_ptr operator()(double duration, PyObject * list)
+    {
+        const params p = parse_params("++@++", list);
+        en_ptr e = mk_envelope(p[2]);
+        return U<attack>(p[1].get() / p[2].get(), p[0].get(), duration,
+                U<karpluss_strong>(P<stretched>(e, duration),
+                    p[3].get(), p[4].get()));
+    }
+};
+
+struct diphthong : instrument
+{
+    bu_ptr operator()(double duration, PyObject * list)
+    {
+        const params p = parse_params("++@@+@+", list);
+        en_ptr f = P<stretched>(mk_envelope(p[2]), duration);
+        bu_ptr a = U<harmonics>(f, mk_envelope(p[3]), p[4].get(), 4000);
+        bu_ptr b = U<harmonics>(f, mk_envelope(p[5]), p[6].get(), 4000);
+        return U<attack>(p[1].get() / p[2].get(), p[0].get(), duration,
+                U<cross>(std::move(a), std::move(b),
+                    P<stretched>(P<punctual>(0, 1), duration)));
     }
 };
 
@@ -233,9 +225,7 @@ struct fqm : instrument
         if (duration == 0) throw std::runtime_error("fqm misses duration");
         PyObject * head = PyList_GetItem(list, 0);
         bu_ptr m = parse_note(head, duration);
-        const params p = parse_params(list, 1);
-        if (p.size() != 4) throw std::runtime_error(
-                "fqm requires 5 params");
+        const params p = parse_params("?++@@", list, 1);
         en_ptr index = mk_envelope(p[2]);
         en_ptr carrier = mk_envelope(p[3]);
         en_ptr i = P<stretched>(index, duration);
@@ -275,14 +265,14 @@ parse_string(PyObject * s)
 void
 init_orchestra()
 {
-    orchestra.emplace("tense_string", std::unique_ptr<instrument>(new tense_string));
-    orchestra.emplace("mouth", std::unique_ptr<instrument>(new mouth));
-    orchestra.emplace("beep", std::unique_ptr<instrument>(new beep));
+    orchestra.emplace("sine", std::unique_ptr<instrument>(new freqwave));
     orchestra.emplace("sawtooth", std::unique_ptr<instrument>(new sawtooth));
     orchestra.emplace("square", std::unique_ptr<instrument>(new square));
     orchestra.emplace("stair", std::unique_ptr<instrument>(new stair));
-    orchestra.emplace("fqm", std::unique_ptr<instrument>(new fqm));
-    orchestra.emplace("amm", std::unique_ptr<instrument>(new amm));
+    orchestra.emplace("amp-mod", std::unique_ptr<instrument>(new amm));
+    orchestra.emplace("freq-mod", std::unique_ptr<instrument>(new fqm));
+    orchestra.emplace("diphthong", std::unique_ptr<instrument>(new diphthong));
+    orchestra.emplace("ks-string", std::unique_ptr<instrument>(new ks_string));
 }
 
 namespace fuge { // because ::filter exists
@@ -299,9 +289,7 @@ struct echo : fuge::filter
 {
     bu_ptr operator()(double duration, bu_ptr && input, PyObject * list)
     {
-        const params p = parse_params(list);
-        if (p.size() != 2) throw std::runtime_error(
-                "echo requires 2 params");
+        const params p = parse_params("@@", list);
         en_ptr amount = P<stretched>(mk_envelope(p[0]), duration);
         en_ptr delay = P<stretched>(mk_envelope(p[1]), duration);
         fl_ptr lf = P<feedback>(P<as_is>(), amount, delay);
@@ -313,9 +301,7 @@ struct comb : fuge::filter
 {
     bu_ptr operator()(double duration, bu_ptr && input, PyObject * list)
     {
-        const params p = parse_params(list);
-        if (p.size() != 2) throw std::runtime_error(
-                "comb requires 2 params");
+        const params p = parse_params("@@", list);
         en_ptr amount = P<stretched>(mk_envelope(p[0]), duration);
         en_ptr delay = P<stretched>(mk_envelope(p[1]), duration);
         fl_ptr lf = P<feed>(P<as_is>(), amount, delay);
@@ -327,9 +313,7 @@ struct biqd : fuge::filter
 {
     bu_ptr operator()(double duration, bu_ptr && input, PyObject * list)
     {
-        const params p = parse_params(list);
-        if (p.size() != 5) throw std::runtime_error(
-                "biqd requires 5 params");
+        const params p = parse_params("@@@@@", list);
         biquad::control c;
         c.b0 = P<stretched>(mk_envelope(p[0]), duration);
         c.b1 = P<stretched>(mk_envelope(p[1]), duration);
@@ -365,8 +349,8 @@ init_effects()
 {
     effects.emplace("comb", std::unique_ptr<fuge::filter>(new comb));
     effects.emplace("echo", std::unique_ptr<fuge::filter>(new echo));
-    effects.emplace("biqd", std::unique_ptr<fuge::filter>(new biqd));
-    effects.emplace("fmix", std::unique_ptr<fuge::filter>(new fmix));
+    effects.emplace("biquad", std::unique_ptr<fuge::filter>(new biqd));
+    effects.emplace("mix", std::unique_ptr<fuge::filter>(new fmix));
 }
 
 bu_ptr

@@ -2,8 +2,9 @@
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
-from orchestra import Orchestra
-from music import Composition, Pause, Note, ImpliedDurationNote, FilterNote
+from orchestra import render, just
+from music import (NoteComposition, CompositionFilter,
+        Pause, Note, ImpliedDurationNote)
 from biquad import Biquad
 import random
 import sys
@@ -14,7 +15,7 @@ def rnd(a, b): return linear(a, b, random.random())
 def rndlist(a, b, n): return [rnd(a, b) for _ in range(n)]
 
 def rndbeep():
-    return random.choice(["beep", "sawtooth", "square", "stair"])
+    return random.choice(["sine", "sawtooth", "square", "stair"])
 
 def rndharmonics():
     a = []
@@ -23,75 +24,59 @@ def rndharmonics():
     for _ in range(random.randrange(2, 7)): a.append(rnd(.1, .3))
     for _ in range(random.randrange(2, 3)): a.append(rnd(.7, 1))
     for _ in range(random.randrange(5, 9)): a.append(rnd(0, .1))
-    oddness = rnd(0, 1)
-    return a, oddness
+    return a
 
 
-ox = Orchestra(.11)
+mt = lambda d, p: Note(d, "diphthong",
+        [.5, 10, just(p),
+            rndharmonics(), rnd(0, 1),
+            rndharmonics(), rnd(0, 1)])
 
-mt = lambda d, p: Note(d, "mouth", .65, 10,
-        ox.just(p), *(rndharmonics() + rndharmonics()))
-
-fm = lambda d, m, i, c: Note(d, "fqm",
-        (rndbeep(), [1, 0, ox.just(m)]), .65, 1, i, ox.just(c))
+fm = lambda d, m, i, c: Note(d, "freq-mod",
+        [(rndbeep(), [1, 0, just(m)]), .7, 1, i, just(c)])
 
 def ts(d, p):
-    r = Note(d, "tense_string", .65, 3, ox.just(p), .5, 0)
+    r = Note(d, "ks-string", [.65, 3, just(p), .5, 0])
     r.duration *= 1.5  # note: .span (logical duration) unaltered
     return r
 
 
-frequency_of = ox.just
-
-ps = Pause
-compo = Composition()
-compo.add_filter(FilterNote("comb", rndlist(0, .2, 19), rndlist(0, .2, 19)), .2)
-row = []
+compo = NoteComposition()
+compo.filters.append((CompositionFilter("comb",
+    [rndlist(0, .4, 19), rndlist(0, 1./20, 19)]), 1./20))
+notes = []
 for _ in range(32):
-    cs = Composition()
+    cs = NoteComposition()
+    # todo: opt arg sets total fixed span (allow override in sub-seq w/o span-augment)
     p = [(("echo", [rnd(.2, .4), rnd(.1, .5)])),
          (("echo", [rnd(.2, .4), rnd(.1, .5)]))]
-    cs.add_filter(FilterNote("fmix", *p), 2)
-    xa = [ps(compo.span)]
-    xb = [ps(compo.span + 2)]
-    xc = [ps(compo.span + 4)]
+    cs.filters.append((CompositionFilter("mix", p), 2))
 
-    x = Composition()
-    m = [int(rnd(48, 80)), int(rnd(48, 80))]
-    i = [rnd(1, 9), 0]
-    x.add_row([fm(8, m, i, 48)])
-    x.add_row([ps(5), fm(3, m, i, 48)])
-    n = ImpliedDurationNote(1, "amm",
-        (1, rndbeep(), [.9, 0, [440, 220]]),
-        (1, rndbeep(), [.9, 0, [660, 880]]))
-    x.add_row([ps(4), n])
-    xa.append(x)
+    cs.sequence(0, [fm(8,
+        [int(rnd(36, 60)), int(rnd(48, 60))],  # mod-freq
+        [rnd(1, 9), 0],                        # mod-amp
+        [36, random.choice([24, 48])])])   # carrier-freq
 
-    x = Composition()
-    x.add_row([mt(3, 72), mt(3, 48)])
-    x.add_row([mt(3, 69), mt(3, 54)])
-    xb.append(x)
+    a = (1, rndbeep(), [.2, 3, [220, 55]])
+    b = (1, rndbeep(), [.4, 7, [just(60), just(59)]])
+    n = ImpliedDurationNote(2, "amp-mod", [a, b])
+    cs.sequence(0, [Note(*a), Note(*b), n])
 
-    x = Composition()
-    x.add_row([ps(rnd(0, .4)), ts(4, 48)])
-    x.add_row([ps(rnd(0, .4)), ts(4, 52)])
-    x.add_row([ps(rnd(0, .4)), ts(4, 61)])
-    xc.append(x)
+    cs.sequence(2, [mt(4, 60), mt(2, 48)])
+    cs.sequence(rnd(4., 4.1), [ts(4, 48)])
+    cs.sequence(rnd(4., 4.1), [ts(4, 60)])
 
-    cs.add_row(xa)
-    cs.add_row(xb)
-    cs.add_row(xc)
-    row.append(cs)
-compo.add_row(row)
+    notes.append(cs)
+
+compo.sequence(0, notes)
 a = []
-for _ in range(2):
-    f = frequency_of(rnd(48, 72))
-    a.append(Biquad.highpass(f, 1).args())
-    a.append(Biquad.lowpass(f, 1).args())
+for _ in range(19):
+    a.append(Biquad.highpass(just(rnd(24, 48)), 1).args())
+    a.append(Biquad.lowpass(just(rnd(72, 108)), 1).args())
 p = [list(z) for z in zip(*a)]
-compo.add_filter(FilterNote("biqd", *p), .1)
+compo.filters.append((CompositionFilter("biquad", p), 0.))
 
-ug = ox.render(compo())
+ug = render(compo(), .11)
 while True:
     b = ug()
     if not b: break

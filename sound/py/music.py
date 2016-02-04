@@ -9,11 +9,11 @@ class Pause:
 
 class Note(Pause):
 
-    def __init__(self, d, i, *p):
+    def __init__(self, d, i, p):
         Pause.__init__(self, d)
         self.duration = self.span
         self.label = i
-        self.params = list(p)
+        self.params = p
 
     def __call__(self):
         return (self.duration, self.label, self.params)
@@ -25,25 +25,24 @@ class ImpliedDurationNote(Note):
         return (self.label, self.params)
 
 
-class FilterNote:
+class CompositionFilter:
 
-    def __init__(self, i, *p):
+    def __init__(self, i, p):
         self.label = i
-        self.params = list(p)
+        self.params = p
 
     def __call__(self, duration):
         return (duration, self.label, self.params)
 
 
-class Composition(Note):
+class NoteComposition(Note):
 
     def __init__(self):
         Pause.__init__(self, 0)
-        self.rows = []
+        self.score = []
         self.filters = []
 
-    def add_row(self, notes):
-        t = 0
+    def sequence(self, t, notes):
         r = []
         for n in notes:
             n.time = t
@@ -52,10 +51,7 @@ class Composition(Note):
             t += n.span
         if self.span < t:
             self.span = t
-        self.rows.append(r)
-
-    def add_filter(self, f, linger):
-        self.filters.append((f, linger))
+        self.score.extend(r)
 
     def __call__(self):
         l = []
@@ -64,6 +60,6 @@ class Composition(Note):
             x += s
             l.append(f(x))
         r = [l]
-        for row in self.rows:
-            r.extend([(note.time, note()) for note in row])
+        for note in self.score:
+            r.append((note.time, note()))
         return r
