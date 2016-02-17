@@ -66,9 +66,12 @@ ug_ptr cross::build()
     mg_ptr mx = U<sum>();
     mx->c(U<multiply>(std::move(wa), a->build()), 1);
     mx->c(U<multiply>(std::move(wb), b->build()), 1);
-    // observation: multiply(pulse) is used for "slow" envelopes,
+    // observation: multiply(gen) is used for "slow" envelopes,
     //   and it could be more efficient to have an "amplify" that
     //   does the task with an envelope directly in these cases.
+    //   sound could do this in its implementation and one could
+    //   use sound here, but assuming crossing is done by envelope
+    //   c within a given time t (passed to cross).
     return std::move(mx);
 }
 
