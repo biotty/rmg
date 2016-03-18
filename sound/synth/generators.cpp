@@ -390,7 +390,7 @@ limiter::limiter(ug_ptr && z)
     : generator_(std::move(z))
     , started_()
     , quit_()
-    , increment_(.01)
+    , increment_(.001)
     , s_(1)
     , glider_(1)
 {}
@@ -443,3 +443,24 @@ bool ncopy::more() { return g->more(); }
 wrapshared::wrapshared(std::shared_ptr<generator> g) : g(g) {}
 void wrapshared::generate(unit & u) { g->generate(u); }
 bool wrapshared::more() { g->more(); }
+
+inter::inter(ug_ptr && l, ug_ptr && r)
+    : l(std::move(l)), r(std::move(r)), n(), j()
+{}
+
+void inter::generate(unit & u)
+{
+    if ((n & 1) == 0) {
+        l->generate(lu);
+        r->generate(ru);
+        j = 0;
+    }
+    for (unsigned i=0; i!=unit::size; i++)
+    {
+        const unsigned h = j >> 1;
+        u.y[i] = (j++&1)==0 ? lu.y[h] : ru.y[h];
+    }
+    n++;
+}
+
+bool inter::more() { return (n & 1) != 0 || l->more() || r->more(); }

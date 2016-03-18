@@ -153,6 +153,8 @@ struct adder : builder
     ug_ptr build();
 };
 
+// consider: remove (stereo does it by hand and it seems fine,
+//           so fmix may also do it that way -- try it out
 struct trunk
 {
     bu_ptr input;

@@ -17,11 +17,14 @@
 
 namespace {
 
-double tempo;
+double tempo = 0.11;  // only written on module start-up
 
 struct UgenObject {
     PyObject_HEAD
-    generator * g;
+    generator * master; // owned here
+
+    sum * left; // borrowed from above
+    sum * right; // ^
 };
 
 PyObject *
@@ -29,7 +32,9 @@ Ugen_new(PyTypeObject * type, PyObject * args, PyObject * kw)
 {
     PyObject * self = type->tp_alloc(type, 0);
     UgenObject & u = *reinterpret_cast<UgenObject *>(self);
-    u.g = nullptr;
+    u.master = nullptr;
+    u.left = nullptr;
+    u.right = nullptr;
     return self;
 }
 
@@ -37,7 +42,7 @@ void
 Ugen_dealloc(PyObject * self)
 {
     UgenObject & u = *reinterpret_cast<UgenObject *>(self);
-    delete u.g;
+    delete u.master;  // left and right goes with it
     self->ob_type->tp_free(self);
 }
 
@@ -47,9 +52,9 @@ Ugen_call(PyObject * self, PyObject * args, PyObject * kw)
     UgenObject & u = *reinterpret_cast<UgenObject *>(self);
     int16_t e[unit::size];
     int z = sizeof e;
-    if (u.g && u.g->more()) {
+    if (u.master && u.master->more()) {
         unit a;
-        u.g->generate(a);
+        u.master->generate(a);
         std::transform(std::begin(a.y), std::end(a.y),
                 std::begin(e),
                 [](double q) -> int16_t { return 32766 * q; });
@@ -351,6 +356,7 @@ init_effects()
     effects.emplace("echo", std::unique_ptr<fuge::filter>(new echo));
     effects.emplace("biquad", std::unique_ptr<fuge::filter>(new biqd));
     effects.emplace("mix", std::unique_ptr<fuge::filter>(new fmix));
+    // todo: serial - list of no_duration filters applied sequentially
 }
 
 bu_ptr
@@ -432,15 +438,56 @@ parse_score(PyObject * seq)
 }
 
 PyObject *
-render(PyObject * self, PyObject * args)
+mono(PyObject * self, PyObject * args)
 {
     PyObject * data;
-    if ( ! PyArg_ParseTuple(args, "Od", &data, &tempo))
+    if ( ! PyArg_ParseTuple(args, ""))
         return NULL;
-    score_entry se(0, data);
     PyObject * o = PyObject_CallObject((PyObject *)&UgenType, NULL);
-    reinterpret_cast<UgenObject *>(o)->g = new limiter(se.b->build());
+    UgenObject * u = reinterpret_cast<UgenObject *>(o);
+    u->right = new sum();
+    // leave left
+    u->master = new limiter(ug_ptr(u->right));
     return o;
+}
+
+PyObject *
+stereo(PyObject * self, PyObject * args)
+{
+    PyObject * data;
+    if ( ! PyArg_ParseTuple(args, ""))
+        return NULL;
+    PyObject * o = PyObject_CallObject((PyObject *)&UgenType, NULL);
+    UgenObject * u = reinterpret_cast<UgenObject *>(o);
+    u->left = new sum();
+    u->right = new sum();
+    u->master = new limiter(U<inter>(ug_ptr(u->left), ug_ptr(u->right)));
+    return o;
+}
+
+// todo: implenent hrtf and binaur in addition to pan (below)
+//       binaur will take two sets to render (one for each ear)
+//       and will thus not need the wrapshared technicality
+
+PyObject *
+pan(PyObject * self, PyObject * args)
+{
+    PyObject * data;
+    PyObject * uobj;
+    double p;
+    if ( ! PyArg_ParseTuple(args, "O!Od", &UgenType, &uobj, &data, &p))
+        return NULL;
+    UgenObject * ugen = reinterpret_cast<UgenObject *>(uobj);
+    score_entry se(0, data);
+    if ( ! ugen->left) { // mono
+        ugen->right->c(se.b->build(), p);
+    } else { // stereo
+        std::shared_ptr<generator> g = P<ncopy>(2, se.b->build());
+        ugen->left->c(U<wrapshared>(g), 1 - p); // improve: not linear p dist
+        ugen->right->c(U<wrapshared>(g), p);    //          ^
+    }
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 PyObject *
@@ -460,7 +507,9 @@ just(PyObject * self, PyObject * args)
 }
 
 PyMethodDef methoddef[] = {
-    { "render", render, METH_VARARGS, "render." },
+    { "mono", mono, METH_VARARGS, "mono." },
+    { "stereo", stereo, METH_VARARGS, "stereo." },
+    { "pan", pan, METH_VARARGS, "pan." },
     { "just", just, METH_VARARGS, "just." },
     { NULL, NULL, 0, NULL }, /* Sentinel */
 };
@@ -479,10 +528,12 @@ struct PyModuleDef moduledef = {
 PyMODINIT_FUNC
 PyInit_fuge(void)
 {
+    char * e = getenv("FUGE_TEMPO");
+    if (e && sscanf(e, "%lf", &tempo) != 1) return NULL;
     UgenType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&UgenType) < 0) return NULL;
     PyObject * m = PyModule_Create(&moduledef);
-    if (m == NULL) return NULL;
+    if ( ! m) return NULL;
     Py_INCREF(&UgenType);
     PyModule_AddObject(m, "Ugen", (PyObject *)&UgenType);
     init_orchestra();

@@ -62,4 +62,7 @@ class NoteComposition(Note):
         r = [l]
         for note in self.score:
             r.append((note.time, note()))
+            # improve: collapse if note is NoteComposition with
+            #          no filters, onto self.score offset by note.time
+            #          (but wait with this; optimization)
         return r

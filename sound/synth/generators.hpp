@@ -261,4 +261,18 @@ struct wrapshared : generator
     bool more();
 };
 
+struct inter : generator
+{
+    std::shared_ptr<generator> l;
+    std::shared_ptr<generator> r;
+    unsigned n;
+    unsigned j;
+    unit lu;
+    unit ru;
+
+    inter(ug_ptr && l, ug_ptr && r);
+    void generate(unit & u);
+    bool more();
+};
+
 #endif

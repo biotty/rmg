@@ -2,7 +2,7 @@
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
-from orchestra import render, just
+from orchestra import stereo, pan, just
 from music import (NoteComposition, CompositionFilter,
         Pause, Note, ImpliedDurationNote)
 from biquad import Biquad
@@ -68,10 +68,10 @@ compo = NoteComposition()
 compo.filters.append((CompositionFilter("comb",
     [rndlist(0, .4, 19), rndlist(0, 1./20, 19)]), 1./20))
 notes = []
-for _ in range(32):
+for _ in range(8):
     cs = NoteComposition()
-    p = [(("echo", [rnd(.2, .4), rnd(.1, .5)])),
-         (("echo", [rnd(.2, .4), rnd(.1, .5)]))]
+    p = [("echo", [rnd(.2, .4), rnd(.1, .5)]),
+         ("echo", [rnd(.2, .4), rnd(.1, .5)])]
     cs.filters.append((CompositionFilter("mix", p), 2))
 
     cs.sequence(0, [fm(8,
@@ -104,8 +104,15 @@ compo.filters.append(dynfilter(
     [Biquad.lowpass(just(rnd(82, 108)), 1).args()
         for _ in range(19)]))
 
-ug = render(compo(), .11)
+i = 0
+ug = stereo()
+pan(ug, compo(), 0)
 while True:
     b = ug()
     if not b: break
     sys.stdout.buffer.write(b)
+
+    i += 1
+    if i in range(200, 300, 10):
+        c = ts(4, pitch_of_letter(random.choice("DGA"), 48))
+        pan(ug, c(), 1)
