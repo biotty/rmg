@@ -1,4 +1,3 @@
-MOD_INCS=`python3-config --includes` -Isynth
 CXXFLAGS=-Wextra -Werror -std=c++11
 LAME_S16=-mm -r -s 44.1 --signed --bitwidth 16 --little-endian
 
@@ -17,20 +16,20 @@ synth/sizr.a:
 amuse/amuse: synth/sizr.a
 	@$(MAKE) -C amuse
 
-py/fuge.so: fugemodule.o synth/sizr.a
-	$(CXX) -o $@ $^ -shared
+fuge/fuge.so: synth/sizr.a
+	@$(MAKE) -C fuge
 
-fugemodule.o: fugemodule.cpp
-	$(CXX) -c $^ $(CXXFLAGS) $(MOD_INCS) -fPIC
+py/fuge.so: fuge/fuge.so
+	@ln -f $^ $@
 
-%.mp3: %.raw
-	lame $(LAME_S16) $^ $@
+%.raw: py/%.py py/fuge.so
+	py/$*.py > $@
 
 digitarp.raw: digitarp
 	./digitarp > $@
 
-%.raw: py/%.py py/fuge.so
-	py/$*.py > $@
+%.mp3: %.raw
+	lame $(LAME_S16) $^ $@
 
 .PHONY:
 clean:
@@ -39,8 +38,9 @@ clean:
 .PHONY:
 sweep: clean
 	@rm -f digitarp
-	@rm -f py/fuge.so *.o
+	@rm -f py/fuge.so
 	@rm -f *.raw *.mp3
 	@$(MAKE) -C mrender $@
 	@$(MAKE) -C synth $@
 	@$(MAKE) -C amuse $@
+	@$(MAKE) -C fuge $@

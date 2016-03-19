@@ -2,7 +2,7 @@
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
-from orchestra import stereo, pan, just
+from orchestra import mono, render, just
 from music import (NoteComposition, CompositionFilter,
         Pause, Note, ImpliedDurationNote)
 from biquad import Biquad
@@ -105,8 +105,8 @@ compo.filters.append(dynfilter(
         for _ in range(19)]))
 
 i = 0
-ug = stereo()
-pan(ug, compo(), 0)
+ug = mono()
+render(ug, compo())
 while True:
     b = ug()
     if not b: break
@@ -115,4 +115,4 @@ while True:
     i += 1
     if i in range(200, 300, 10):
         c = ts(4, pitch_of_letter(random.choice("DGA"), 48))
-        pan(ug, c(), 1)
+        render(ug, c())
