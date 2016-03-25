@@ -173,11 +173,11 @@ struct diphthong : instrument
     }
 };
 
-struct fqm : instrument
+struct freq_mod : instrument
 {
     bu_ptr operator()(double duration, PyObject * list)
     {
-        if (duration == 0) throw std::runtime_error("fqm misses duration");
+        if (duration == 0) throw std::runtime_error("freq_mod misses duration");
         PyObject * head = PyList_GetItem(list, 0);
         bu_ptr m = parse_note(head, duration);
         const params p = parse_params("?++@@", list, 1);
@@ -190,13 +190,13 @@ struct fqm : instrument
     }
 };
 
-struct amm : instrument
+struct amp_mod : instrument
 {
     bu_ptr operator()(double duration, PyObject * list)
     {
-        if (duration != 0) throw std::runtime_error("amm with explicit duration");
+        if (duration != 0) throw std::runtime_error("amp_mod with explicit duration");
         const int n = PyList_Size(list);
-        if (n != 2) throw std::runtime_error("amm requires 2 notes");
+        if (n != 2) throw std::runtime_error("amp_mod requires 2 notes");
         return U<am>(
                 parse_note(PyList_GetItem(list, 0)),
                 parse_note(PyList_GetItem(list, 1)));
@@ -212,8 +212,8 @@ init_orchestra()
     orchestra.emplace("sawtooth", std::unique_ptr<instrument>(new sawtooth));
     orchestra.emplace("square", std::unique_ptr<instrument>(new square));
     orchestra.emplace("stair", std::unique_ptr<instrument>(new stair));
-    orchestra.emplace("amp-mod", std::unique_ptr<instrument>(new amm));
-    orchestra.emplace("freq-mod", std::unique_ptr<instrument>(new fqm));
+    orchestra.emplace("amp-mod", std::unique_ptr<instrument>(new amp_mod));
+    orchestra.emplace("freq-mod", std::unique_ptr<instrument>(new freq_mod));
     orchestra.emplace("diphthong", std::unique_ptr<instrument>(new diphthong));
     orchestra.emplace("ks-string", std::unique_ptr<instrument>(new ks_string));
 }
@@ -238,37 +238,43 @@ parse_note(PyObject * seq, double duration)
 
 struct filter
 {
-    virtual bu_ptr operator()(double duration, bu_ptr && input, PyObject * list) = 0;
+    struct return_type {
+        fl_ptr fl;
+        double linger;
+    };
+    virtual return_type operator()
+        (double duration, bu_ptr && input, PyObject * list) = 0;
     virtual ~filter() {}
 };
 
 struct echo : filter
 {
-    bu_ptr operator()(double duration, bu_ptr && input, PyObject * list)
+    return_type operator()(double duration, bu_ptr && input, PyObject * list)
     {
         const params p = parse_params("@@", list);
         en_ptr amount = P<stretched>(mk_envelope(p[0]), duration);
         en_ptr delay = P<stretched>(mk_envelope(p[1]), duration);
-        fl_ptr lf = P<feedback>(P<as_is>(), amount, delay);
-        return U<timed_filter>(std::move(input), lf, duration);
+        //improve: have feedback take more than one such pair
+        return { P<feedback>(amount, delay),
+                p[1].values.back() * 5 };//improve
     }
 };
 
 struct comb : filter
 {
-    bu_ptr operator()(double duration, bu_ptr && input, PyObject * list)
+    return_type operator()(double duration, bu_ptr && input, PyObject * list)
     {
         const params p = parse_params("@@", list);
         en_ptr amount = P<stretched>(mk_envelope(p[0]), duration);
         en_ptr delay = P<stretched>(mk_envelope(p[1]), duration);
-        fl_ptr lf = P<feed>(P<as_is>(), amount, delay);
-        return U<timed_filter>(std::move(input), lf, duration);
+        //improve: have feed take more than one such pair
+        return { P<feed>(amount, delay), p[1].values.back() };
     }
 };
 
 struct biqd : filter
 {
-    bu_ptr operator()(double duration, bu_ptr && input, PyObject * list)
+    return_type operator()(double duration, bu_ptr && input, PyObject * list)
     {
         const params p = parse_params("@@@@@", list);
         biquad::control c;
@@ -277,36 +283,18 @@ struct biqd : filter
         c.b2 = P<stretched>(mk_envelope(p[2]), duration);
         c.a1 = P<stretched>(mk_envelope(p[3]), duration);
         c.a2 = P<stretched>(mk_envelope(p[4]), duration);
-        fl_ptr f = P<biquad>(c);
-        return U<timed_filter>(std::move(input), f, duration);
+        return { P<biquad>(c), .1 };
     }
 };
 
-struct fmix : filter
-{
-    bu_ptr operator()(double duration, bu_ptr && input, PyObject * list)
-    {
-        const int n = PyList_Size(list);
-        if (n == 0) throw std::runtime_error("empty fmix-list");
-        trunk::ptr t = P<trunk>(std::move(input));
-        for (int i=0; i!=n; ++i) {
-            PyObject * f = PyList_GetItem(list, i);
-            t->branch(parse_filter(U<trunk::leaf>(t), f, true));
-        }
-        return U<timed_filter>(t->conclude(), P<as_is>(), duration);
-    }
-};
-
-std::map<std::string, std::unique_ptr<fuge::filter>> effects;
+std::map<std::string, std::unique_ptr<fuge::filter>> filters;
 
 void
-init_effects()
+init_filters()
 {
-    effects.emplace("comb", std::unique_ptr<filter>(new comb));
-    effects.emplace("echo", std::unique_ptr<filter>(new echo));
-    effects.emplace("biquad", std::unique_ptr<filter>(new biqd));
-    effects.emplace("mix", std::unique_ptr<filter>(new fmix));
-    // todo: serial - list of no_duration filters applied sequentially
+    filters.emplace("comb", std::unique_ptr<filter>(new comb));
+    filters.emplace("echo", std::unique_ptr<filter>(new echo));
+    filters.emplace("biquad", std::unique_ptr<filter>(new biqd));
 }
 
 bu_ptr
@@ -316,9 +304,12 @@ parse_filter(bu_ptr && input, PyObject * seq, bool no_duration)
     int i = 0;
     const double duration = no_duration ? 1e9
         : tempo * parse_float(PyTuple_GetItem(seq, i++));
-    if (n != i + 2) throw std::runtime_error("effect Tuple has invalid size");
+    if (n != i + 2) throw std::runtime_error("filter Tuple has invalid size");
     std::string label = parse_string(PyTuple_GetItem(seq, i++));
-    return (*effects.at(label))(duration, std::move(input), PyTuple_GetItem(seq, i++));
+    // todo: if item is list, return U<paralell_filter> of those fl
+    filter::return_type fr = (*filters.at(label))
+        (duration, std::move(input), PyTuple_GetItem(seq, i++));
+    return U<timed_filter>(std::move(input), fr.fl, fr.linger);
 }
 
 }

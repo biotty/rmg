@@ -66,13 +66,16 @@ def parse(s, a, r=1):
 
 compo = NoteComposition()
 compo.filters.append((CompositionFilter("comb",
-    [rndlist(0, .4, 19), rndlist(0, 1./20, 19)]), 1./20))
+    [rndlist(0, .4, 19), rndlist(0, 1./20, 19)])))
 notes = []
 for _ in range(8):
     cs = NoteComposition()
-    p = [("echo", [rnd(.2, .4), rnd(.1, .5)]),
-         ("echo", [rnd(.2, .4), rnd(.1, .5)])]
-    cs.filters.append((CompositionFilter("mix", p), 2))
+    #commented: bad way to do it - duplicate buffers -
+    #           instead let echo and comb take a list of
+    #           delays and a param (envelope) of amounts.
+    #p = [("echo", [rnd(.2, .4), rnd(.1, .5)]),
+    #     ("echo", [rnd(.2, .4), rnd(.1, .5)])]
+    #cs.filters.append((CompositionFilter("mix", p)))
 
     cs.sequence(0, [fm(8,
         [int(rnd(36, 60)), int(rnd(48, 60))],  # mod-freq
@@ -94,7 +97,7 @@ compo.sequence(0, notes)
 
 def dynfilter(a):
     p = [list(z) for z in zip(*a)]
-    return (CompositionFilter("biquad", p), 0)
+    return (CompositionFilter("biquad", p))
 
 compo.filters.append(dynfilter(
     [Biquad.highpass(just(rnd(24, 48)), 1).args()

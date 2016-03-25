@@ -92,9 +92,9 @@ sound_entry fspread(instruction ii)
     return sound_entry(P<attack>(a, ii.h, ii.d, std::move(s)), a);
 }
 
-bs_ptr echo(bs_ptr b, mv_ptr m, double u, double x)
+bs_ptr echo(bs_ptr b, mv_ptr m, double u, double /*x*/)
 {
-    fl_ptr lf = P<feedback>(P<strong>(.5, (1-x) * .5),
+    fl_ptr lf = P<feedback>(
             P<stretched>(P<shaped>(m->e,
                     [](double x){ return x / f_of(100); }), m->s),
             P<constant>((u+1)/20));
@@ -103,7 +103,7 @@ bs_ptr echo(bs_ptr b, mv_ptr m, double u, double x)
 
 bs_ptr comb(bs_ptr b, mv_ptr m, double u, double /*x*/)
 {
-    fl_ptr lf = P<feed>(P<as_is>(),
+    fl_ptr lf = P<feed>(
             P<constant>((u+1)/20),
             P<stretched>(P<shaped>(m->e, inverts()),
                 m->s));

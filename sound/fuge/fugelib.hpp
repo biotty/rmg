@@ -10,7 +10,7 @@ namespace fuge {
 
 extern double tempo;
 void init_orchestra();
-void init_effects();
+void init_filters();
 double parse_float(PyObject * n);
 bu_ptr parse_filter(bu_ptr && input, PyObject * seq, bool no_duration = false);
 bu_ptr parse_note(PyObject * seq, double span = 0);

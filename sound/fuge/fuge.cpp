@@ -144,10 +144,6 @@ parse_score(PyObject * seq)
     return rt;
 }
 
-// todo: implenent hrtf and binaur in addition to pan (below)
-//       binaur will take two sets to render (one for each ear)
-//       and will thus not need the wrapshared technicality
-
 PyObject *
 pan(PyObject * self, PyObject * args)
 {
@@ -220,6 +216,6 @@ PyInit_fuge(void)
     Py_INCREF(&UgenType);
     PyModule_AddObject(m, "Ugen", (PyObject *)&UgenType);
     fuge::init_orchestra();
-    fuge::init_effects();
+    fuge::init_filters();
     return m;
 }

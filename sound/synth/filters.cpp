@@ -40,8 +40,8 @@ double strong::shift(double y)
 
 strong::strong(double a, double b) : a(a), b(b), w() {}
 
-delay_network::delay_network(fl_ptr l, en_ptr s)
-        : i(), b(s->y(0) * SR), l(l), s(s), x_cycle()
+delay_network::delay_network(en_ptr s, fl_ptr l)
+        : i(), b(s->y(0) * SR), s(s), l(l), x_cycle()
 {}
 
 void delay_network::step(double z)
@@ -50,7 +50,11 @@ void delay_network::step(double z)
     if (++i == b.w.size()) {
         x_cycle += i / (double) SR;
         b.cycle(s->y(x_cycle) * SR);
-        for (auto & y: b.w) y = l->shift(y);
+        if (l) for (auto & y: b.w) y = l->shift(y);
+        // improvement: use the aproach of unset pointer as here
+        //              instead of as_is filter (used elsewhere)
+        //              so, the improvement is not here, which
+        //              is already using unset pointer semantics
         i = 0;
     }
 }
@@ -74,8 +78,8 @@ bool control_clock::tick()
     }
 }
 
-feed::feed(fl_ptr l, en_ptr amount, en_ptr delay, bool back)
-    : back(back), c(21), d(l, delay), amount(amount), delay(delay), g()
+feed::feed(en_ptr amount, en_ptr delay, bool back)
+    : back(back), c(21), d(delay, fl_ptr()), amount(amount), g()
 {}
 
 double feed::shift(double y)
@@ -86,8 +90,8 @@ double feed::shift(double y)
     return z;
 }
 
-feedback::feedback(fl_ptr l, en_ptr amount, en_ptr delay)
-    : feed(l, amount, delay, true)
+feedback::feedback(en_ptr amount, en_ptr delay)
+    : feed(amount, delay, true)
 {}
 
 biquad::biquad(biquad::control c)

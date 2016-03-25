@@ -54,12 +54,7 @@ class NoteComposition(Note):
         self.score.extend(r)
 
     def __call__(self):
-        l = []
-        x = self.span
-        for (f, s) in self.filters:
-            x += s
-            l.append(f(x))
-        r = [l]
+        r = [[f(self.span) for f in self.filters]]
         for note in self.score:
             r.append((note.time, note()))
             # improve: collapse if note is NoteComposition with

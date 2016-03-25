@@ -77,12 +77,22 @@ bool gent::more() { return s > t_generated(units_generated_); }
 
 gent::gent(en_ptr e, double s) : gen(e), s(s) {}
 
-filtration::filtration(ug_ptr && g, fl_ptr l) : g(std::move(g)), l(l) {}
+filtration::filtration(ug_ptr && g, fl_ptr l, double linger_t)
+    : g(std::move(g)), l(l), linger_units(std::ceil(SR * linger_t / unit::size))
+{}
 
 void filtration::generate(unit & u)
 {
     g->generate(u);
     for (double & x : u.y) x = l->shift(x);
+}
+
+bool filtration::more()
+{
+    if (g->more()) return true;
+    if (linger_units == 0) return false;
+    --linger_units;
+    return true;
 }
 
 timed::timed(ug_ptr && g, double t)
@@ -107,6 +117,23 @@ void timed::generate(unit & u)
 }
 
 bool timed::more() { return units_generated_ < units_to_generate_; }
+
+ncopy::ncopy(int n, ug_ptr && g) : i(), n(n), g(std::move(g)) {}
+
+void ncopy::generate(unit & u)
+{
+    if (i == 0) g->generate(v);
+
+    u = v;
+
+    if (++i >= n) i = 0;
+}
+
+bool ncopy::more() { return g->more(); }
+
+wrapshared::wrapshared(std::shared_ptr<generator> g) : g(g) {}
+void wrapshared::generate(unit & u) { g->generate(u); }
+bool wrapshared::more() { g->more(); }
 
 bool record::more() { return samples_generated_ < buffer_.w.size(); }
 
@@ -426,23 +453,6 @@ bool limiter::more()
     quit_ = true;
     return true;
 }
-
-ncopy::ncopy(int n, ug_ptr && g) : i(), n(n), g(std::move(g)) {}
-
-void ncopy::generate(unit & u)
-{
-    if (i == 0) g->generate(v);
-
-    u = v;
-
-    if (++i >= n) i = 0;
-}
-
-bool ncopy::more() { return g->more(); }
-
-wrapshared::wrapshared(std::shared_ptr<generator> g) : g(g) {}
-void wrapshared::generate(unit & u) { g->generate(u); }
-bool wrapshared::more() { g->more(); }
 
 inter::inter(ug_ptr && l, ug_ptr && r)
     : l(std::move(l)), r(std::move(r)), n(), j()

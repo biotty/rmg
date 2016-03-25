@@ -45,11 +45,11 @@ struct delay_network
 {
     unsigned i;
     period_buffer b;
-    fl_ptr l;
     en_ptr s;
+    fl_ptr l;
     double x_cycle;
 
-    delay_network(fl_ptr l, en_ptr s);
+    delay_network(en_ptr s, fl_ptr l);
     void step(double z);
     double current();
 };
@@ -72,14 +72,13 @@ struct feed : filter
     control_clock c;
     delay_network d;
     en_ptr amount;
-    en_ptr delay;
     double g;
 
-    feed(fl_ptr l, en_ptr amount, en_ptr delay, bool back = false);
+    feed(en_ptr amount, en_ptr delay, bool back = false);
     double shift(double y);
 };
 
-struct feedback : feed { feedback(fl_ptr l, en_ptr amount, en_ptr delay); };
+struct feedback : feed { feedback(en_ptr amount, en_ptr delay); };
 
 struct biquad : filter
 {

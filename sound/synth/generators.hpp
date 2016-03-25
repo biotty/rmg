@@ -37,22 +37,46 @@ struct gent : gen // note: reuses gen but not infinite
     bool more();
 };
 
-struct filtration : infinite
+struct filtration : generator
 {
     ug_ptr g;
     fl_ptr l;
+    unsigned linger_units;
 
-    filtration(ug_ptr && g, fl_ptr l);
+    filtration(ug_ptr && g, fl_ptr l, double linger_t);
     void generate(unit & u);
+    bool more();
 };
 
 struct timed : generator
+//improve: since currently unused, make usefull by phading end
 {
     ug_ptr generator_;
     unsigned units_to_generate_;
     unsigned units_generated_;
 
     timed(ug_ptr && g, double t);
+    void generate(unit & u);
+    bool more();
+};
+
+struct ncopy : generator
+{
+    int i;
+    int n;
+    unit v;
+    ug_ptr g;
+
+    ncopy(int n, ug_ptr && g);
+    void generate(unit & u);
+    bool more();
+};
+
+struct wrapshared : generator
+{
+    std::shared_ptr<generator> g;
+
+    wrapshared(std::shared_ptr<generator> g);
     void generate(unit & u);
     bool more();
 };
@@ -236,27 +260,6 @@ struct limiter : generator
     void out(unit & u, double target);
     
     limiter(ug_ptr && z);
-    void generate(unit & u);
-    bool more();
-};
-
-struct ncopy : generator
-{
-    int i;
-    int n;
-    unit v;
-    ug_ptr g;
-
-    ncopy(int n, ug_ptr && g);
-    void generate(unit & u);
-    bool more();
-};
-
-struct wrapshared : generator
-{
-    std::shared_ptr<generator> g;
-
-    wrapshared(std::shared_ptr<generator> g);
     void generate(unit & u);
     bool more();
 };

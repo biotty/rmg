@@ -144,38 +144,4 @@ struct score : builder
 
 typedef std::unique_ptr<score> sc_ptr;
 
-struct adder : builder
-{
-    std::vector<bu_ptr> v;
-    double w;
-
-    adder();
-    ug_ptr build();
-};
-
-// consider: remove (stereo does it by hand and it seems fine,
-//           so fmix may also do it that way -- try it out
-struct trunk
-{
-    bu_ptr input;
-    std::shared_ptr<generator> g;
-    adder * a;
-    int n;
-    ug_ptr build_leaf();
-
-    trunk(bu_ptr && input);
-    void branch(bu_ptr && b);
-    bu_ptr conclude();
-
-    typedef std::shared_ptr<trunk> ptr;
-
-    struct leaf : builder
-    {
-        ptr t;
-
-        leaf(ptr trunk_);
-        ug_ptr build();
-    };
-};
-
 #endif
