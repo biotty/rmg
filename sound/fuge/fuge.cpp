@@ -55,14 +55,7 @@ Ugen_call(PyObject * self, PyObject * args, PyObject * kw)
     return PyBytes_FromStringAndSize((char *)e, z);
 }
 
-PyTypeObject UgenType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "fuge.Ugen", sizeof (UgenObject), 0, Ugen_dealloc,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, Ugen_call,
-    0, 0, 0, 0, Py_TPFLAGS_DEFAULT, "encoded-unit generator",
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Ugen_new,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};
+PyTypeObject UgenType;
 
 } // namespace
 
@@ -190,7 +183,7 @@ PyMethodDef methoddef[] = {
     { "stereo", fuge::stereo, METH_VARARGS, "stereo." },
     { "pan", fuge::pan, METH_VARARGS, "pan." },
     { "just", fuge::just, METH_VARARGS, "just." },
-    { NULL, NULL, 0, NULL }, /* Sentinel */
+    { NULL, NULL, 0, NULL }, /* sentinel */
 };
 
 struct PyModuleDef moduledef = {
@@ -208,14 +201,30 @@ PyMODINIT_FUNC
 PyInit_fuge(void)
 {
     char * e = getenv("FUGE_TEMPO");
-    if (e && sscanf(e, "%lf", &fuge::tempo) != 1) return NULL;
-    UgenType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&UgenType) < 0) return NULL;
+    if (e && sscanf(e, "%lf", &fuge::tempo) != 1)
+        return NULL;
+
+    Py_TYPE(&UgenType) = &PyType_Type;
+    Py_REFCNT(&UgenType) = 1;
+    UgenType.tp_name = "fuge.Ugen";
+    UgenType.tp_basicsize = sizeof (UgenObject);
+    UgenType.tp_dealloc = Ugen_dealloc;
+    UgenType.tp_call = Ugen_call;
+    UgenType.tp_flags = Py_TPFLAGS_DEFAULT;
+    UgenType.tp_doc = "audio unit generator";
+    UgenType.tp_new = Ugen_new;
+    if (PyType_Ready(&UgenType) < 0)
+        return NULL;
+
     PyObject * m = PyModule_Create(&moduledef);
-    if ( ! m) return NULL;
+    if ( ! m)
+        return NULL;
+
     Py_INCREF(&UgenType);
     PyModule_AddObject(m, "Ugen", (PyObject *)&UgenType);
+
     fuge::init_orchestra();
     fuge::init_filters();
+
     return m;
 }
