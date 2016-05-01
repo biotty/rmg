@@ -1,7 +1,6 @@
-
 SOUND=..
-CXXFLAGS=-Wextra -Werror -std=c++11 `python3-config --includes` \
-		 -I$(SOUND)/synth
+CXXFLAGS=-Wall -Wextra -Werror -O2 -std=c++11\
+ `python3-config --includes` -I$(SOUND)/synth
 
 fuge.so: fuge.o lib.o $(SOUND)/synth/sizr.a
 	$(CXX) -o $@ $^ -shared

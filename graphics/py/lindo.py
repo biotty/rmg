@@ -155,7 +155,6 @@ tree_builder = TreeBuilder(drawing,
         u_default = degrees_unit(options.default_turn),
         hook = Hook(options.palette_breadth, options.palette_index))
 ls.axiom.visit_by(operating_visitor(tree_builder))
-stderr.write("")
 
 if not options.ray_trace_mode:
     stderr.write("Rendering drawing at %s\n" % (options.resolution,))

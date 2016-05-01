@@ -1,5 +1,3 @@
-CFLAGS=-Wextra -Werror -std=c11 -Irgb
-LDFLAGS=-lm
 RAY_GUN=$(shell pwd)/ray/gun
 FLOW_FLUID=$(shell pwd)/flow/fluid
 

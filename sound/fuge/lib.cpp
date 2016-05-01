@@ -242,14 +242,13 @@ struct filter
         fl_ptr fl;
         double linger;
     };
-    virtual return_type operator()
-        (double duration, bu_ptr && input, PyObject * list) = 0;
+    virtual return_type operator()(double duration, PyObject * list) = 0;
     virtual ~filter() {}
 };
 
 struct echo : filter
 {
-    return_type operator()(double duration, bu_ptr && input, PyObject * list)
+    return_type operator()(double duration, PyObject * list)
     {
         const params p = parse_params("@@", list);
         en_ptr amount = P<stretched>(mk_envelope(p[0]), duration);
@@ -262,7 +261,7 @@ struct echo : filter
 
 struct comb : filter
 {
-    return_type operator()(double duration, bu_ptr && input, PyObject * list)
+    return_type operator()(double duration, PyObject * list)
     {
         const params p = parse_params("@@", list);
         en_ptr amount = P<stretched>(mk_envelope(p[0]), duration);
@@ -274,7 +273,7 @@ struct comb : filter
 
 struct biqd : filter
 {
-    return_type operator()(double duration, bu_ptr && input, PyObject * list)
+    return_type operator()(double duration, PyObject * list)
     {
         const params p = parse_params("@@@@@", list);
         biquad::control c;
@@ -308,7 +307,7 @@ parse_filter(bu_ptr && input, PyObject * seq, bool no_duration)
     std::string label = parse_string(PyTuple_GetItem(seq, i++));
     // todo: if item is list, return U<paralell_filter> of those fl
     filter::return_type fr = (*filters.at(label))
-        (duration, std::move(input), PyTuple_GetItem(seq, i++));
+        (duration, PyTuple_GetItem(seq, i++));
     return U<timed_filter>(std::move(input), fr.fl, fr.linger);
 }
 

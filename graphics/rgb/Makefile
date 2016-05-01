@@ -1,4 +1,4 @@
-CFLAGS=-Wextra -Werror -std=c11
+CFLAGS=-Wall -Wextra -Werror -std=c11 -O2
 LDFLAGS=-lm
 
 bluf: bluf.o librgb.a

@@ -1,11 +1,11 @@
-CXXFLAGS=-Wextra -Werror -std=c++11
+CXXFLAGS=-Wall -Wextra -Werror -O2 -std=c++11
 LAME_S16=-mm -r -s 44.1 --signed --bitwidth 16 --little-endian
 
 .PHONY:
 all: digitarp mrender/mrender amuse/amuse py/fuge.so
 
 .PHONY:
-media: digitarp.mp3 compo.mp3
+media: digitarp.mp3 demo.mp3
 
 mrender/mrender:
 	@$(MAKE) -C mrender

@@ -84,7 +84,7 @@ filtration::filtration(ug_ptr && g, fl_ptr l, double linger_t)
 void filtration::generate(unit & u)
 {
     g->generate(u);
-    for (double & x : u.y) x = l->shift(x);
+    for (auto & x : u.y) x = l->shift(x);
 }
 
 bool filtration::more()
@@ -108,11 +108,10 @@ void timed::generate(unit & u)
     else {
         double a = 1;
         static constexpr double per_unit = 1. / unit::size;
-        std::for_each(std::begin(u.y), std::end(u.y),
-                [&a](double & y){
-                y *= a;
-                a -= per_unit;
-                });
+        for (auto & x : u.y) {
+            x *= a;
+            a -= per_unit;
+        }
     }
 }
 
@@ -133,7 +132,7 @@ bool ncopy::more() { return g->more(); }
 
 wrapshared::wrapshared(std::shared_ptr<generator> g) : g(g) {}
 void wrapshared::generate(unit & u) { g->generate(u); }
-bool wrapshared::more() { g->more(); }
+bool wrapshared::more() { return g->more(); }
 
 bool record::more() { return samples_generated_ < buffer_.w.size(); }
 

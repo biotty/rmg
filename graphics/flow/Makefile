@@ -1,6 +1,6 @@
 GRAPHICS=..
-CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -I$(GRAPHICS)/rgb
-LDFLAGS=-L$(GRAPHICS)/rgb -lrgb -lm
+CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -O2 -I$(GRAPHICS)/rgb
+LDFLAGS=-L$(GRAPHICS)/rgb -lrgb
 
 .PHONY:
 all: wave fluid

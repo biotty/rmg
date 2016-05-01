@@ -36,7 +36,7 @@ init_arg_pool(int n, int i, int m)
 }
 
     void
-fini_arg_pool(void * p)
+fini_arg_pool()
 {
     free(arg_pool.buf);
 }

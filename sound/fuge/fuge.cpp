@@ -19,7 +19,7 @@ struct UgenObject {
 };
 
 PyObject *
-Ugen_new(PyTypeObject * type, PyObject * args, PyObject * kw)
+Ugen_new(PyTypeObject * type, PyObject * /*args*/, PyObject * /*kw*/)
 {
     PyObject * self = type->tp_alloc(type, 0);
     UgenObject & u = *reinterpret_cast<UgenObject *>(self);
@@ -38,7 +38,7 @@ Ugen_dealloc(PyObject * self)
 }
 
 PyObject *
-Ugen_call(PyObject * self, PyObject * args, PyObject * kw)
+Ugen_call(PyObject * self, PyObject * /*args*/, PyObject * /*kw*/)
 {
     UgenObject & u = *reinterpret_cast<UgenObject *>(self);
     int16_t e[unit::size];
@@ -62,9 +62,8 @@ PyTypeObject UgenType;
 namespace fuge {
 
 PyObject *
-mono(PyObject * self, PyObject * args)
+mono(PyObject * /*self*/, PyObject * args)
 {
-    PyObject * data;
     if ( ! PyArg_ParseTuple(args, ""))
         return NULL;
     PyObject * o = PyObject_CallObject((PyObject *)&UgenType, NULL);
@@ -76,9 +75,8 @@ mono(PyObject * self, PyObject * args)
 }
 
 PyObject *
-stereo(PyObject * self, PyObject * args)
+stereo(PyObject * /*self*/, PyObject * args)
 {
-    PyObject * data;
     if ( ! PyArg_ParseTuple(args, ""))
         return NULL;
     PyObject * o = PyObject_CallObject((PyObject *)&UgenType, NULL);
@@ -138,7 +136,7 @@ parse_score(PyObject * seq)
 }
 
 PyObject *
-pan(PyObject * self, PyObject * args)
+pan(PyObject * /*self*/, PyObject * args)
 {
     PyObject * data;
     PyObject * uobj;
@@ -159,7 +157,7 @@ pan(PyObject * self, PyObject * args)
 }
 
 PyObject *
-just(PyObject * self, PyObject * args)
+just(PyObject * /*self*/, PyObject * args)
 {
     double pitch;
     if ( ! PyArg_ParseTuple(args, "d", &pitch))

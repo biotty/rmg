@@ -1,4 +1,4 @@
-CXXFLAGS=-Wextra -Werror -std=c++11 -fPIC
+CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -O2 -fPIC
 
 GTEST_DIR=$(HOME)/gtest
 GTEST_LIB=$(GTEST_DIR)/src
