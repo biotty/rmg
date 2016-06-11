@@ -7,16 +7,26 @@
 
 builder::~builder() {}
 
-// strategy: prepared at construction but setup of data
-//           like buffers or further envelope-manipulations
-//           and so done at ::build.  rationale is to take max
-//           advantage of score with lazy and purge mechanism
+// builders raison-d'etre: enable mem-consuming builders to not be constructed
+// until needed.  the lazy construction is done in score, so that larger constructions
+// can be formed but the data and buffers for the generators are only present when
+// generated and then destructed.  it seems they could be generators, and take care
+// of the lazy data and destruction of inputs themselves.  then the technical lazy
+// generator would not be needed, and replaced by some internal helpers.
+// there is however a conceptual difference, as builders combine other generators only
+// and do not manipulate the data themselves.  with c++17 move-capture support
+// in lambdas, a generic builder can be provided, where the user specified the delayed
+// generator-setup at the call-site.  this generic builder could still also itself
+// be a generator.  there might be a pre-c++17 trick using std::bind and references
+// to the unique-pointer providing a movable std::function.
 
-sound::sound(en_ptr e, double t, bu_ptr && b) : e(e), t(t), b(std::move(b)) {};
+sound::sound(en_ptr e, double t, bu_ptr && b)
+    : e(e), t(t), b(std::move(b))
+{}
 
 ug_ptr sound::build()
 {
-    return U<multiply>(U<gent>(e, t), b->build());
+    return U<genv>(b->build(), t, e);
 }
 
 attack::attack(double h, double y1, double t, bu_ptr && w)
@@ -41,12 +51,6 @@ ug_ptr trapesoid::build() { return w->build(); }
 
 wave::wave(en_ptr freq, en_ptr e) : freq(freq), e(e) {}
 
-// quality-improvement: instead of periodic_buffer,
-// use a tabular-envelope that does anti-aliasing (?) and
-// is at a resolution fine enough for the slowest period
-// that this wave goes thru; this is trivial to find
-// by at initiation walking over the cycled periods.
-
 ug_ptr wave::build()
 {
     en_ptr period = P<shaped>(freq, inverts());
@@ -55,23 +59,16 @@ ug_ptr wave::build()
     return U<periodic>(U<record>(w, period));
 }
 
-cross::cross(bu_ptr && a, bu_ptr && b, en_ptr c)
-    : a(std::move(a)), b(std::move(b)), c(c)
+cross::cross(bu_ptr && a, bu_ptr && b, double t, en_ptr c)
+    : a(std::move(a)), b(std::move(b)), t(t), c(c)
 {}
 
 ug_ptr cross::build()
 {
-    ug_ptr wa = U<gen>(c);
-    ug_ptr wb = U<gen>(P<shaped>(c, [](double x){ return 1 - x; }));
     mg_ptr mx = U<sum>();
-    mx->c(U<multiply>(std::move(wa), a->build()), 1);
-    mx->c(U<multiply>(std::move(wb), b->build()), 1);
-    // observation: multiply(gen) is used for "slow" envelopes,
-    //   and it could be more efficient to have an "amplify" that
-    //   does the task with an envelope directly in these cases.
-    //   sound could do this in its implementation and one could
-    //   use sound here, but assuming crossing is done by envelope
-    //   c within a given time t (passed to cross).
+    en_ptr d = P<shaped>(c, [](double x){ return 1 - x; });
+    mx->c(U<genv>(a->build(), t, c, true), 1);
+    mx->c(U<genv>(b->build(), t, d), 1);
     return std::move(mx);
 }
 
@@ -144,7 +141,7 @@ ug_ptr chorus::build()
         std::vector<double> & w = r->buffer_.w;
         std::rotate(w.begin(),
                 w.begin() + unsigned(rnd(0, w.size())),
-                w.end()); // note: enshure not phase-sync on start
+                w.end()); // note: ensure not phase-sync on start
         s->c(U<periodic>(pg_ptr(r)), k);
     }
     return std::move(s);
@@ -154,14 +151,14 @@ am::am(bu_ptr && a, bu_ptr && b) : a(std::move(a)), b(std::move(b)) {}
 
 ug_ptr am::build() { return U<multiply>(a->build(), b->build()); }
 
-fm::fm(bu_ptr && m, en_ptr i, en_ptr carrier_freq)
-    : m(std::move(m)), i(i), carrier_freq(carrier_freq)
+fm::fm(bu_ptr && m, double t, en_ptr i, en_ptr carrier_freq)
+    : m(std::move(m)), t(t), i(i), carrier_freq(carrier_freq)
 {}
 
 ug_ptr fm::build()
 {
     return U<modulation>(
-            U<multiply>(U<gen>(i), m->build()),
+            U<genv>(m->build(), t, i),  // obs: this is sound().  let caller provide it
             U<sine>(rnd(0, 1)), carrier_freq);
 }
 
@@ -176,8 +173,8 @@ ug_ptr karpluss_strong::build()
                 n, P<shaped>(freq, inverts())));
 }
 
-timed_filter::timed_filter(bs_ptr i, fl_ptr l, double t)
-    : i(i), l(l), t(t)
+timed_filter::timed_filter(bu_ptr i, fl_ptr l, double t)
+    : i(std::move(i)), l(l), t(t)
 {}
 
 ug_ptr timed_filter::build()

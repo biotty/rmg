@@ -168,7 +168,7 @@ struct diphthong : instrument
         bu_ptr a = U<harmonics>(f, mk_envelope(p[3]), p[4].get(), 4000);
         bu_ptr b = U<harmonics>(f, mk_envelope(p[5]), p[6].get(), 4000);
         return U<attack>(p[1].get() / p[2].get(), p[0].get(), duration,
-                U<cross>(std::move(a), std::move(b),
+                U<cross>(std::move(a), std::move(b), duration,
                     P<stretched>(P<punctual>(0, 1), duration)));
     }
 };
@@ -186,7 +186,7 @@ struct freq_mod : instrument
         en_ptr i = P<stretched>(index, duration);
         en_ptr c = P<stretched>(carrier, duration);
         return U<attack>(p[1].get() / p[3].get(), p[0].get(), duration,
-                U<fm>(std::move(m), i, c));
+                U<fm>(std::move(m), duration, i, c));
     }
 };
 
@@ -286,7 +286,7 @@ struct biqd : filter
     }
 };
 
-std::map<std::string, std::unique_ptr<fuge::filter>> filters;
+std::map<std::string, std::unique_ptr<filter>> filters;
 
 void
 init_filters()
@@ -305,7 +305,17 @@ parse_filter(bu_ptr && input, PyObject * seq, bool no_duration)
         : tempo * parse_float(PyTuple_GetItem(seq, i++));
     if (n != i + 2) throw std::runtime_error("filter Tuple has invalid size");
     std::string label = parse_string(PyTuple_GetItem(seq, i++));
-    // todo: if item is list, return U<paralell_filter> of those fl
+    // observation:  we may be tempted to here implement the following;  "if item
+    //       is list, return U<paralell_filter> of those fl" but its a "bad" idea;
+    //       doing comb or echo in parallell are extremely memory-redundant,
+    //       since each will have its own delay_network buffering.  (mtap /is/
+    //       desired in echo and comb, and they can be made to accept an mtap
+    //       with a static* set of (delay, weight).  *to ease complexity, because
+    //       if each is an envelope, the dynamic buffer must take max-delay.)
+    //       when it comes to biquad filters, they are best combined in serial
+    //       as can be readily done.  combining biquad in parallel can give surprising
+    //       results, because they may phase-shift and nullify eachother
+    //       varying along frequency.
     filter::return_type fr = (*filters.at(label))
         (duration, PyTuple_GetItem(seq, i++));
     return U<timed_filter>(std::move(input), fr.fl, fr.linger);

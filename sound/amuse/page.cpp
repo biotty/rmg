@@ -62,9 +62,13 @@ unsigned page::pitch(unsigned k, unsigned i)
 sound_entry page::play(unsigned k, unsigned i)
 {
     if (ruler::cell * e = cell(k, i)) {
-        return s->o->play(a[k].i,
+        sound_entry se = s->o->play(a[k].i,
                 instruction(f_of_just(e->p), a[k].u * s->duration() / BE,
                     a_of(-double(a[k].l)), e->q));
+        return se;
+        // observation: treated as rvalue ref when return,
+        //              so that move-semantics takes place --
+        //              that is generated per-member move-constr.
     } else {
         return sound_entry();
     }

@@ -77,6 +77,29 @@ bool gent::more() { return s > t_generated(units_generated_); }
 
 gent::gent(en_ptr e, double s) : gen(e), s(s) {}
 
+genv::genv(ug_ptr && g, double s, en_ptr e, bool hang)
+        : g(std::move(g)), e(e), hang(hang), s(s), units_generated_()
+{}
+
+void genv::generate(unit & u)
+{
+    double t = t_generated(units_generated_++);
+    if (t > s) {
+        if (hang) g->generate(u);
+        else u.set(0);
+    } else {
+        g->generate(u);
+        for (auto & x : u.y)
+            x *= e->y(t += 1./SR);
+    }
+}
+
+bool genv::more()
+{
+    return hang ||
+        (g->more() && s > t_generated(units_generated_));
+}
+
 filtration::filtration(ug_ptr && g, fl_ptr l, double linger_t)
     : g(std::move(g)), l(l), linger_units(std::ceil(SR * linger_t / unit::size))
 {}
@@ -94,28 +117,6 @@ bool filtration::more()
     --linger_units;
     return true;
 }
-
-timed::timed(ug_ptr && g, double t)
-    : generator_(std::move(g))
-    , units_to_generate_(SR * t / unit::size)
-    , units_generated_()
-{}
-
-void timed::generate(unit & u)
-{
-    generator_->generate(u);
-    if (more()) ++units_generated_;
-    else {
-        double a = 1;
-        static constexpr double per_unit = 1. / unit::size;
-        for (auto & x : u.y) {
-            x *= a;
-            a -= per_unit;
-        }
-    }
-}
-
-bool timed::more() { return units_generated_ < units_to_generate_; }
 
 ncopy::ncopy(int n, ug_ptr && g) : i(), n(n), g(std::move(g)) {}
 

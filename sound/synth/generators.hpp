@@ -29,11 +29,24 @@ struct gen : infinite
     void generate(unit & u);
 };
 
-struct gent : gen // note: reuses gen but not infinite
+struct gent : gen // note: reuses gen but is not actually infinite
 {
     double s;
 
     gent(en_ptr e, double s);
+    bool more();
+};
+
+struct genv : generator
+{
+    ug_ptr g;
+    en_ptr e;
+    bool hang;
+    double s;
+    unsigned units_generated_;
+
+    genv(ug_ptr && g, double s, en_ptr e, bool hang = false);
+    void generate(unit & u);
     bool more();
 };
 
@@ -44,18 +57,6 @@ struct filtration : generator
     unsigned linger_units;
 
     filtration(ug_ptr && g, fl_ptr l, double linger_t);
-    void generate(unit & u);
-    bool more();
-};
-
-struct timed : generator
-//improve: since currently unused, make usefull by phading end
-{
-    ug_ptr generator_;
-    unsigned units_to_generate_;
-    unsigned units_generated_;
-
-    timed(ug_ptr && g, double t);
     void generate(unit & u);
     bool more();
 };

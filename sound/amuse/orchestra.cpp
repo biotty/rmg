@@ -15,9 +15,9 @@ sound_entry mouthao(instruction ii)
     ahe->p(.5, 1);
     bu_ptr ah = U<harmonics>(P<constant>(ii.f), ahe, ii.p.get(0), 4000);
     bu_ptr bh = U<harmonics>(P<constant>(ii.f), P<punctual>(.5, 0), ii.p.get(0), 4000);
-    bu_ptr s = U<cross>(std::move(ah), std::move(bh),
+    bu_ptr s = U<cross>(std::move(ah), std::move(bh), ii.d,
             P<stretched>(P<punctual>(0, 1), ii.d));
-    return sound_entry(P<attack>(a, ii.h, ii.d, std::move(s)), a);
+    return sound_entry(U<attack>(a, ii.h, ii.d, std::move(s)), a);
 }
 
 sound_entry fmfi(instruction ii)
@@ -28,8 +28,8 @@ sound_entry fmfi(instruction ii)
     pe_ptr ip = P<punctual>(ii.p.get(0), 0);
     en_ptr ie = make_stroke(ip, (ii.p.get(1)+.5) * ii.d, ii.d);
     bu_ptr ms = U<wave>(P<constant>(ii.f * (ii.p.get(2)+.5)), P<sine>(0));
-    bu_ptr s = U<fm>(std::move(ms), ie, P<constant>(ii.f));
-    return sound_entry(P<attack>(a, ii.h, ii.d, std::move(s)), a);
+    bu_ptr s = U<fm>(std::move(ms), ii.d, ie, P<constant>(ii.f));
+    return sound_entry(U<attack>(a, ii.h, ii.d, std::move(s)), a);
 }
 
 sound_entry guitar(instruction ii)
@@ -39,7 +39,7 @@ sound_entry guitar(instruction ii)
 
     bu_ptr s = U<karpluss_strong>(P<constant>(ii.f),
             ii.p.get(0), ii.p.get(1));
-    return sound_entry(P<attack>(a, ii.h, ii.d, std::move(s)), a);
+    return sound_entry(U<attack>(a, ii.h, ii.d, std::move(s)), a);
 }
 
 sound_entry drop(instruction ii)
@@ -52,7 +52,7 @@ sound_entry drop(instruction ii)
     en_ptr en = P<added>(P<shaped>(pe, [](double x){ return exp(x); }),
             P<constant>(ii.f - b));
     bu_ptr sw = U<wave>(P<stretched>(en, d), P<sine>(0));
-    return sound_entry(P<attack>(p, ii.h, d, std::move(sw)));
+    return sound_entry(U<attack>(p, ii.h, d, std::move(sw)));
 }
 
 sound_entry shaperw(instruction ii)
@@ -80,7 +80,7 @@ sound_entry shaperw(instruction ii)
     en_ptr qe = P<shaped>(se, qf);
     en_ptr we = P<warped>(qe, wf);
     bu_ptr wc = U<wave>(P<constant>(ii.f), we);
-    return sound_entry(P<attack>(a, ii.h, ii.d, std::move(wc)), a);
+    return sound_entry(U<attack>(a, ii.h, ii.d, std::move(wc)), a);
 }
 
 sound_entry fspread(instruction ii)
@@ -89,29 +89,29 @@ sound_entry fspread(instruction ii)
     ii.d += a;
     pe_ptr t = P<punctual>(c_at(ii.f) * 2, c_at(ii.f) * .5);
     bu_ptr s = U<chorus>(P<constant>(ii.f), t, P<sine>(0), 4);
-    return sound_entry(P<attack>(a, ii.h, ii.d, std::move(s)), a);
+    return sound_entry(U<attack>(a, ii.h, ii.d, std::move(s)), a);
 }
 
-bs_ptr echo(bs_ptr b, mv_ptr m, double u, double /*x*/)
+bu_ptr echo(bu_ptr && b, mv_ptr m, double u, double /*x*/)
 {
     fl_ptr lf = P<feedback>(
             P<stretched>(P<shaped>(m->e,
                     [](double x){ return x / f_of(100); }), m->s),
             P<constant>((u+1)/20));
-    return P<timed_filter>(b, lf, m->s);
+    return U<timed_filter>(std::move(b), lf, m->s);
 }
 
-bs_ptr comb(bs_ptr b, mv_ptr m, double u, double /*x*/)
+bu_ptr comb(bu_ptr && b, mv_ptr m, double u, double /*x*/)
 {
     fl_ptr lf = P<feed>(
             P<constant>((u+1)/20),
             P<stretched>(P<shaped>(m->e, inverts()),
                 m->s));
-    return P<timed_filter>(b, lf, m->s);
+    return U<timed_filter>(std::move(b), lf, m->s);
 }
 
-sound_entry::sound_entry(bs_ptr s, double a) : s(s), a(a) {}
-sound_entry::sound_entry(bs_ptr s) : s(s), a() {}
+sound_entry::sound_entry(bu_ptr && s, double a) : s(std::move(s)), a(a) {}
+sound_entry::sound_entry(bu_ptr && s) : s(std::move(s)), a() {}
 sound_entry::sound_entry() : a() {}
 sound_entry::operator bool() { return bool(s); }
 
@@ -143,7 +143,7 @@ sound_entry orchestra::play(unsigned i, instruction ii)
     return a[i % a.size()](ii);
 }
 
-bs_ptr orchestra::effect(unsigned i, bs_ptr b, mv_ptr m, double u, double x)
+bu_ptr orchestra::effect(unsigned i, bu_ptr && b, mv_ptr m, double u, double x)
 {
     if ( ! is_effect(i)) throw nullptr;
     return e[(i-50) % e.size()](std::move(b), m, u, x);

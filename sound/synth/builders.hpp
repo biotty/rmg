@@ -52,9 +52,10 @@ struct cross : builder
 {
     bu_ptr a;
     bu_ptr b;
+    double t;
     en_ptr c;
 
-    cross(bu_ptr && a, bu_ptr && b, en_ptr c);
+    cross(bu_ptr && a, bu_ptr && b, double t, en_ptr c);
     ug_ptr build();
 };
 
@@ -96,10 +97,11 @@ struct am : builder
 struct fm : builder
 {
     bu_ptr m;
+    double t;
     en_ptr i;
     en_ptr carrier_freq;
 
-    fm(bu_ptr && m, en_ptr i, en_ptr carrier_freq);
+    fm(bu_ptr && m, double t, en_ptr i, en_ptr carrier_freq);
     ug_ptr build();
 };
 
@@ -115,11 +117,11 @@ struct karpluss_strong : builder
 
 struct timed_filter : builder
 {
-    bs_ptr i;
+    bu_ptr i;
     fl_ptr l;
     double t;
 
-    timed_filter(bs_ptr i, fl_ptr l, double t);
+    timed_filter(bu_ptr i, fl_ptr l, double t);
     ug_ptr build();
 };
 

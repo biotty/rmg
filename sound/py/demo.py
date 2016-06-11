@@ -16,6 +16,7 @@ def rndlist(a, b, n): return [rnd(a, b) for _ in range(n)]
 
 def rndbeep():
     return random.choice(["sine", "sawtooth", "square", "stair"])
+    # improve: instead use band-limited variants; using harmonic generator
 
 def rndharmonics():
     #improvement: base on exact vocal formants, then drag and randomize
@@ -66,16 +67,13 @@ def parse(s, a, r=1):
 
 compo = NoteComposition()
 compo.filters.append((CompositionFilter("comb",
-    [rndlist(0, .4, 19), rndlist(0, 1./20, 19)])))
+        [rndlist(0, .4, 19), rndlist(0, 1./20, 19)])))
 notes = []
 for _ in range(8):
     cs = NoteComposition()
-    #commented: bad way to do it - duplicate buffers -
-    #           instead let echo and comb take a list of
-    #           delays and a param (envelope) of amounts.
-    #p = [("echo", [rnd(.2, .4), rnd(.1, .5)]),
-    #     ("echo", [rnd(.2, .4), rnd(.1, .5)])]
-    #cs.filters.append((CompositionFilter("mix", p)))
+
+    cs.filters.append((CompositionFilter("echo",
+            [rnd(.2, .4), rnd(.1, .5)])))
 
     cs.sequence(0, [fm(8,
         [int(rnd(36, 60)), int(rnd(48, 60))],  # mod-freq
