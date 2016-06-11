@@ -8,7 +8,7 @@
 
 namespace fuge {
 
-double tempo = 0.11;  // only written initially
+double tempo = 0.23;  // only written initially
 
 long
 parse_int(PyObject * n)
@@ -97,8 +97,8 @@ static bu_ptr parse_beep(en_ptr e, double duration, PyObject * list)
 {
     const params p = parse_params("++@", list);
     en_ptr f = P<stretched>(mk_envelope(p[2]), duration);
-    return U<trapesoid>(p[1].get() / p[2].get(), p[0].get(), duration,
-            U<wave>(f, e));
+    return U<sound>(U<wave>(f, e), duration,
+            make_isosceles(p[1].get() / p[2].get(), p[0].get(), duration));
 }
 
 struct instrument
@@ -153,9 +153,11 @@ struct ks_string : instrument
     {
         const params p = parse_params("++@++", list);
         en_ptr e = mk_envelope(p[2]);
-        return U<attack>(p[1].get() / p[2].get(), p[0].get(), duration,
-                U<karpluss_strong>(P<stretched>(e, duration),
-                    p[3].get(), p[4].get()));
+        return U<sound>(U<karpluss_strong>(P<stretched>(e, duration),
+                    p[3].get(), p[4].get()),
+                duration,
+                make_stroke(P<punctual>(0, p[0].get()),
+                    p[1].get() / p[2].get(), duration));
     }
 };
 
@@ -163,13 +165,18 @@ struct diphthong : instrument
 {
     bu_ptr operator()(double duration, PyObject * list)
     {
-        const params p = parse_params("++@@+@+", list);
+        const params p = parse_params("++@@+@++", list);
+        const double maxfreq = p[7].get();
         en_ptr f = P<stretched>(mk_envelope(p[2]), duration);
-        bu_ptr a = U<harmonics>(f, mk_envelope(p[3]), p[4].get(), 4000);
-        bu_ptr b = U<harmonics>(f, mk_envelope(p[5]), p[6].get(), 4000);
-        return U<attack>(p[1].get() / p[2].get(), p[0].get(), duration,
-                U<cross>(std::move(a), std::move(b), duration,
-                    P<stretched>(P<punctual>(0, 1), duration)));
+        bu_ptr a = U<harmonics>(f, maxfreq,
+                P<stretched>(mk_envelope(p[3]), maxfreq), p[4].get());
+        bu_ptr b = U<harmonics>(f, maxfreq,
+                P<stretched>(mk_envelope(p[5]), maxfreq), p[6].get());
+        return U<sound>(U<cross>(std::move(a), std::move(b), duration,
+                    P<stretched>(P<punctual>(0, 1), duration)),
+                duration,
+                make_stroke(P<punctual>(0, p[0].get()),
+                    p[1].get() / p[2].get(), duration));
     }
 };
 
@@ -185,8 +192,10 @@ struct freq_mod : instrument
         en_ptr carrier = mk_envelope(p[3]);
         en_ptr i = P<stretched>(index, duration);
         en_ptr c = P<stretched>(carrier, duration);
-        return U<attack>(p[1].get() / p[3].get(), p[0].get(), duration,
-                U<fm>(std::move(m), duration, i, c));
+        return U<sound>(U<fm>(std::move(m), duration, i, c),
+                duration,
+                make_stroke(P<punctual>(0, p[0].get()),
+                    p[1].get() / p[3].get(), duration));
     }
 };
 

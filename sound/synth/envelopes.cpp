@@ -63,14 +63,23 @@ double shaped::y(double x) { return f(e->y(x)); }
 added::added(en_ptr a, en_ptr b) : a(a), b(b) {}
 double added::y(double x) { return a->y(x) + b->y(x); }
 
-en_ptr make_stroke(en_ptr e, double h, double w)
+en_ptr make_isosceles(double h, double y1, double t)
+{
+    const double d = h / t;  // note: h abs-time. while result stretched
+    pe_ptr a = P<punctual>(0, 0);
+    a->p(0 + d, y1);
+    a->p(1 - d, y1);
+    return P<stretched>(a, t);
+}
+
+en_ptr make_stroke(en_ptr e, double h, double t)
 {
     return P<shaped>(
             P<stretched>(
                 P<serial>(
                     e,
-                    P<punctual>(e->y(1), 0), h / w),
-                w),
+                    P<punctual>(e->y(1), 0), h / t),
+                t),
             [](double x){ return x * x; });
 }
 

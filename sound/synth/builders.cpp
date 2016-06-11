@@ -20,7 +20,7 @@ builder::~builder() {}
 // be a generator.  there might be a pre-c++17 trick using std::bind and references
 // to the unique-pointer providing a movable std::function.
 
-sound::sound(en_ptr e, double t, bu_ptr && b)
+sound::sound(bu_ptr && b, double t, en_ptr e)
     : e(e), t(t), b(std::move(b))
 {}
 
@@ -28,26 +28,6 @@ ug_ptr sound::build()
 {
     return U<genv>(b->build(), t, e);
 }
-
-attack::attack(double h, double y1, double t, bu_ptr && w)
-    : a(P<punctual>(0, y1))
-    , s(make_stroke(a, h, t))
-    , w(U<sound>(s, t, std::move(w)))
-{}
-
-ug_ptr attack::build() { return w->build(); }
-
-trapesoid::trapesoid(double h, double y1, double t, bu_ptr && w)
-    : a(P<punctual>(0, 0))
-    , s(P<stretched>(a, t))
-    , w(U<sound>(s, t, std::move(w)))
-{
-    const double d = h / t;
-    a->p(0 + d, y1);
-    a->p(1 - d, y1);
-}
-
-ug_ptr trapesoid::build() { return w->build(); }
 
 wave::wave(en_ptr freq, en_ptr e) : freq(freq), e(e) {}
 
@@ -72,25 +52,15 @@ ug_ptr cross::build()
     return std::move(mx);
 }
 
-harmonics::harmonics(en_ptr freq, en_ptr e, double ow, double m)
-    : freq(freq), e(e), m(m), odd(.5 * (1 + ow)), even(1 - odd)
-{
-    const double a = 1 / std::max(odd, even);
-    odd *= a;
-    even *= a;
-}
+harmonics::harmonics(en_ptr freq, double m, en_ptr e, double even)
+    : freq(freq), e(e), m(m), even(even)
+{}
 
-double harmonics::w(unsigned i)
+double harmonics::a(double f, unsigned i)
 {
-    if (i) return (i&1) ? even : odd;
-    else return 1;
-}
-
-double harmonics::a(double f)
-{
-    const double x = f / m;
-    const double y = e->y(x);
-    return y * y;
+    double y = e->y(f);
+    if (i & 1) y *= even;  // note: i is odd, overtone even.
+    return y;
 }
 
 double harmonics::p(double b)
@@ -99,15 +69,15 @@ double harmonics::p(double b)
     for (unsigned i=0; ; i+=2) {
         const double f = b * (i + 1);
         if (f >= m) break;
-        s += a(f);
+        s += a(f, i);
     }
-    return sqrt(s);
+    return s;
 }
 
 ug_ptr harmonics::build()
 {
     const double b = freq->y(0);
-    const double k = 1 / p(b);
+    const double k = 2.71828 / p(b);  // puzzled: how to adjust
     sum s;
     for (unsigned i=0; ; i++) {
         const double f = b * (i + 1);
@@ -119,8 +89,7 @@ ug_ptr harmonics::build()
         //          (the phase-sync is consistent with wave-phenomena)
         //          also, make shure odd/even semantics is sane; specifically
         //          not permit even-only if not physically occurs
-        s.c(wave(P<constant>(f), P<sine>(0)).build(),
-                a(f) * w(i) * k);
+        s.c(wave(P<constant>(f), P<sine>(0)).build(), a(f, i) * k);
     }
     return U<periodic>(U<record>(s, P<shaped>(freq, inverts())));
 };

@@ -13,31 +13,9 @@ struct sound : builder
     double t;
     bu_ptr b;
 
-    sound(en_ptr e, double t, bu_ptr && b);
+    sound(bu_ptr && b, double t, en_ptr e);
     ug_ptr build();
 };
-
-struct attack : builder
-{
-    pe_ptr a;
-    en_ptr s;
-    bu_ptr w;
-
-    attack(double h, double y1, double t, bu_ptr && w);
-    ug_ptr build();
-};
-
-struct trapesoid : builder
-{   //(isosceles)
-    pe_ptr a;
-    en_ptr s;
-    bu_ptr w;
-
-    trapesoid(double h, double y1, double t, bu_ptr && w);
-    ug_ptr build();
-};
-
-typedef std::unique_ptr<attack> at_ptr;
 
 struct wave : builder
 {
@@ -64,13 +42,11 @@ struct harmonics : builder
     en_ptr freq;
     en_ptr e;
     double m;
-    double odd;
     double even;
-    double w(unsigned i);
-    double a(double f);
+    double a(double f, unsigned i);
     double p(double b);
 
-    harmonics(en_ptr freq, en_ptr e, double ow, double m);
+    harmonics(en_ptr freq, double m, en_ptr e, double even);
     ug_ptr build();
 };
 

@@ -32,13 +32,13 @@ def rndharmonics():
 mt = lambda d, p: Note(d, "diphthong",
         [.4, 10, just(p),
             rndharmonics(), rnd(0, 1),
-            rndharmonics(), rnd(0, 1)])
+            rndharmonics(), rnd(0, 1), 3000])
 
 fm = lambda d, m, i, c: Note(d, "freq-mod",
         [(rndbeep(), [1, 0, just(m)]), .7, 1, i, just(c)])
 
 def ts(d, p):
-    r = Note(d, "ks-string", [.65, 3, just(p), .5, 0])
+    r = Note(d, "ks-string", [.5, 3, just(p), .5, 0])
     r.duration *= 1.5  # note: .span (logical duration) unaltered
     return r
 
@@ -56,7 +56,7 @@ def parse(s, a, r=1):
         if c == "_":
             d += w
         else:
-            p = pitch_of_letter(c)
+            p = pitch_of_letter(c, 41)
             if p:
                 n = a(w + d, p)
                 n.time = t
@@ -75,18 +75,18 @@ for _ in range(8):
     cs.filters.append((CompositionFilter("echo",
             [rnd(.2, .4), rnd(.1, .5)])))
 
-    cs.sequence(0, [fm(8,
+    cs.sequence(4, [fm(4,
         [int(rnd(36, 60)), int(rnd(48, 60))],  # mod-freq
         [rnd(1, 9), 0],                        # mod-amp
         [36, random.choice([24, 48])])])   # carrier-freq
 
-    a = (1, rndbeep(), [.1, 3, [220, 55]])
-    b = (1, rndbeep(), [.2, 7, [just(60), just(59)]])
+    a = (1, rndbeep(), [.3, 7, [220, 55]])
+    b = (1, rndbeep(), [.1, 3, [just(60), just(59)]])
     n = ImpliedDurationNote(2, "amp-mod", [a, b])
     cs.sequence(0, [Note(*a), Note(*b), n])
 
     cs.score.extend(parse("==C_DG__", mt))
-    cs.sequence(rnd(4., 4.1), [ts(4, 48)])
+    cs.sequence(rnd(4., 4.1), [ts(4, 36)])
     cs.sequence(rnd(4., 4.1), [ts(4, 60)])
 
     notes.append(cs)

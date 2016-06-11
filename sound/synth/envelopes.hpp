@@ -101,6 +101,7 @@ struct added : envelope
     double y(double x);
 };
 
+en_ptr make_isosceles(double h, double y1, double t);
 en_ptr make_stroke(en_ptr e, double h, double w);
 
 struct functional : envelope
