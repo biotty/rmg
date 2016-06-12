@@ -2,21 +2,37 @@
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
+from math import pi, sin
+import random
+import sys
+
 from orchestra import mono, render, just
 from music import (NoteComposition, CompositionFilter,
         Pause, Note, ImpliedDurationNote)
 from biquad import Biquad
-import random
-import sys
 
-
+def sign(r): return 1 if r >= 0 else -1
 def linear(a, b, p): return a + p * (b - a)
 def rnd(a, b): return linear(a, b, random.random())
 def rndlist(a, b, n): return [rnd(a, b) for _ in range(n)]
+def probab(p): return p > rnd(0, 1)
 
-def rndbeep():
-    return random.choice(["sine", "sawtooth", "square", "stair"])
-    # improve: instead use band-limited variants; using harmonic generator
+def ufrange(n):  # 0, 1/n, 2/n, ..., 1
+    for i in range(n + 1):
+        yield i / float(n)
+
+def rndform():
+    return random.choice([
+        [sign(x - .5) for x in ufrange(200)],  # observation: would better take adv. of tabular
+        [sin(x * pi * 2) for x in ufrange(800)],  # observation: no advantage of functional-en
+        [0, 1],  # sawtooth
+        [0, 1, 0]])  # triangle
+    # improve: instead use band-limited variants; using harmonic generator, passing it a
+    #          shaped of a functional (leave "even" at 1 or remove parameter al-together,
+    #          as we could provide suitable envelope construction combining with the
+    #          suitable de-ripple function towards nyquist; or rather do the additional shaper
+    #          inside the current harmonic generator, as sample-details like rate is then kept
+    #          away from sight of synthesizing composer.
 
 def rndharmonics():
     #improvement: base on exact vocal formants, then drag and randomize
@@ -35,10 +51,10 @@ mt = lambda d, p: Note(d, "diphthong",
             rndharmonics(), rnd(0, 1), 3000])
 
 fm = lambda d, m, i, c: Note(d, "freq-mod",
-        [(rndbeep(), [1, 0, just(m)]), .7, 1, i, just(c)])
+        [("beep", [1, 0, just(m), rndform()]), .7, 1, i, just(c)])
 
-def ts(d, p):
-    r = Note(d, "ks-string", [.5, 3, just(p), .5, 0])
+def ts(d, p, v):
+    r = Note(d, "ks-string", [v, 3, just(p), .5, 0])
     r.duration *= 1.5  # note: .span (logical duration) unaltered
     return r
 
@@ -69,7 +85,7 @@ compo = NoteComposition()
 compo.filters.append((CompositionFilter("comb",
         [rndlist(0, .4, 19), rndlist(0, 1./20, 19)])))
 notes = []
-for _ in range(8):
+for _ in range(64):
     cs = NoteComposition()
 
     cs.filters.append((CompositionFilter("echo",
@@ -80,14 +96,16 @@ for _ in range(8):
         [rnd(1, 9), 0],                        # mod-amp
         [36, random.choice([24, 48])])])   # carrier-freq
 
-    a = (1, rndbeep(), [.3, 7, [220, 55]])
-    b = (1, rndbeep(), [.1, 3, [just(60), just(59)]])
-    n = ImpliedDurationNote(2, "amp-mod", [a, b])
-    cs.sequence(0, [Note(*a), Note(*b), n])
+    if probab(.6):
+        a = (1, "beep", [.3, 7, [220, 55], rndform()])
+        b = (1, "beep", [.1, 3, [just(60), just(59)], rndform()])
+        n = ImpliedDurationNote(2, "amp-mod", [a, b])
+        cs.sequence(0, [Note(*a), Note(*b), n])
 
-    cs.score.extend(parse("==C_DG__", mt))
-    cs.sequence(rnd(4., 4.1), [ts(4, 36)])
-    cs.sequence(rnd(4., 4.1), [ts(4, 60)])
+    if probab(.8):
+        cs.score.extend(parse("==C_DG__", mt))
+    for p in (32, 36, 60, 64):
+        if probab(.7): cs.sequence(rnd(1.9, 2.1), [ts(4, p, .7)])
 
     notes.append(cs)
 
@@ -115,5 +133,5 @@ while True:
 
     i += 1
     if i in range(200, 300, 10):
-        c = ts(4, pitch_of_letter(random.choice("DGA"), 48))
+        c = ts(4, pitch_of_letter(random.choice("DGA"), 48), .35)
         render(ug, c())

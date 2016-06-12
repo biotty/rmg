@@ -93,57 +93,21 @@ mk_envelope(param const & p)
     return e;
 }
 
-static bu_ptr parse_beep(en_ptr e, double duration, PyObject * list)
-{
-    const params p = parse_params("++@", list);
-    en_ptr f = P<stretched>(mk_envelope(p[2]), duration);
-    return U<sound>(U<wave>(f, e), duration,
-            make_isosceles(p[1].get() / p[2].get(), p[0].get(), duration));
-}
-
 struct instrument
 {
     virtual bu_ptr operator()(double duration, PyObject * list) = 0;
     virtual ~instrument() {}
 };
 
-struct freqwave : instrument
+struct beep : instrument
 {
     bu_ptr operator()(double duration, PyObject * list)
     {
-        return parse_beep(P<sine>(0), duration, list);
-    }
-};
-
-struct sawtooth : instrument
-{
-    bu_ptr operator()(double duration, PyObject * list)
-    {
-        return parse_beep(P<punctual>(1, -1), duration, list);
-    }
-};
-
-struct square : instrument
-{
-    bu_ptr operator()(double duration, PyObject * list)
-    {
-        tabular * t = new tabular();
-        t->values.push_back(1);
-        t->values.push_back(-1);
-        return parse_beep(en_ptr(t), duration, list);
-    }
-};
-
-struct stair : instrument
-{
-    bu_ptr operator()(double duration, PyObject * list)
-    {
-        tabular * t = new tabular();
-        t->values.push_back(1);
-        t->values.push_back(0);
-        t->values.push_back(-1);
-        t->values.push_back(0);
-        return parse_beep(en_ptr(t), duration, list);
+        const params p = parse_params("++@@", list);
+        en_ptr e = mk_envelope(p[3]);
+        en_ptr f = P<stretched>(mk_envelope(p[2]), duration);
+        return U<sound>(U<wave>(f, e), duration,
+                make_isosceles(p[1].get() / p[2].get(), p[0].get(), duration));
     }
 };
 
@@ -217,14 +181,11 @@ std::map<std::string, std::unique_ptr<instrument>> orchestra;
 void
 init_orchestra()
 {
-    orchestra.emplace("sine", std::unique_ptr<instrument>(new freqwave));
-    orchestra.emplace("sawtooth", std::unique_ptr<instrument>(new sawtooth));
-    orchestra.emplace("square", std::unique_ptr<instrument>(new square));
-    orchestra.emplace("stair", std::unique_ptr<instrument>(new stair));
+    orchestra.emplace("beep", std::unique_ptr<instrument>(new beep));
     orchestra.emplace("amp-mod", std::unique_ptr<instrument>(new amp_mod));
     orchestra.emplace("freq-mod", std::unique_ptr<instrument>(new freq_mod));
-    orchestra.emplace("diphthong", std::unique_ptr<instrument>(new diphthong));
     orchestra.emplace("ks-string", std::unique_ptr<instrument>(new ks_string));
+    orchestra.emplace("diphthong", std::unique_ptr<instrument>(new diphthong));
 }
 
 bu_ptr
