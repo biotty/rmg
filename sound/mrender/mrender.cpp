@@ -162,7 +162,8 @@ typedef std::shared_ptr<wavefun> wavefunptr;
 
 wavefunptr defaultfun() { return wavefunptr(new sinefun); }
 
-struct vibrato {
+struct vibrato
+{
     double a;
     double f;
     wavefunptr s;
@@ -180,7 +181,8 @@ struct vibrato {
     }
 };
 
-struct tremolo {
+struct tremolo
+{
     double k;
     double f;
     wavefunptr s;
@@ -195,7 +197,8 @@ struct tremolo {
     }
 };
 
-class envelope {
+class envelope
+{
     double a, d, s, r, k, u, q;
     double f(double x)
     {
@@ -222,7 +225,8 @@ public:
     }
 };
 
-struct sourcewave {
+struct sourcewave
+{
     virtual double get(double d) = 0;
     sourcewave() : x() {}
     virtual void start() {}
@@ -270,7 +274,8 @@ struct bandnoisewave : sourcewave
     }
 };
 
-struct modulatorwave : private sourcewave {
+struct modulatorwave : private sourcewave
+{
     double t, a;
     wavefunptr s;
     modulatorwave(double t, double a, wavefunptr s = defaultfun()) : t(t), a(a), s(s) {}
@@ -282,7 +287,8 @@ struct modulatorwave : private sourcewave {
     }
 };
 
-struct fmwave : sourcewave {
+struct fmwave : sourcewave
+{
     wavefunptr s;
     modulatorwave m;
     fmwave(double r, double f, wavefunptr s = defaultfun())
@@ -296,7 +302,8 @@ struct fmwave : sourcewave {
     }
 };
 
-struct stringwave : sourcewave {
+struct stringwave : sourcewave
+{
     filter::biquad f;
     wavefunptr s;
     samples a;
@@ -317,7 +324,8 @@ struct stringwave : sourcewave {
     }
 };
 
-struct participantwave : private sourcewave {
+struct participantwave : private sourcewave
+{
     double t;
     wavefunptr s;
     participantwave(double t, wavefunptr s = defaultfun()) : t(t), s(s)
@@ -330,7 +338,8 @@ struct participantwave : private sourcewave {
     }
 };
 
-struct choruswave : sourcewave {
+struct choruswave : sourcewave
+{
     std::vector<participantwave> a;
     choruswave(unsigned n, double t = .01)
     { for (unsigned i=0; i<n; i++) a.push_back(participantwave(1 + t)); }
@@ -342,7 +351,8 @@ struct choruswave : sourcewave {
     }
 };
 
-struct formant {
+struct formant
+{
     formant(double x, double y, double w, double a, double r)
         : p(x - w), q(x + w), y(y), a(a), r(r)
     {}
@@ -358,7 +368,8 @@ private:
     double p, q, y, a, r;
 };
 
-class harmonicwave : public sourcewave {
+class harmonicwave : public sourcewave
+{
     std::vector<double> a;
 public:
     bool p;
@@ -366,22 +377,33 @@ public:
         : p(p)
     {
         unsigned n = 0;
-        for (unsigned c=0; c<o.size(); c++) {
-            const double z = o[c].z();
-            if (n < z) n = z;
+        for (formant & ft: o) {
+            const double z = ft.z();
+            if (n < z)
+                n = z;
         }
+        // obervation: we use overtone-n semantics instead of frequency, which would
+        // be more readily adapted to phenomena like the human vocal tract, as resonance
+        // it what mainly causes the formants.  the conversion is of-course pitch-
+        // dependent, so instrument needs to consider (todo) when note play()ed
         a.resize(n);
-        for (unsigned q=0; q<n; q++) {
-            double s = 0;
-            for (unsigned i=0; i<o.size(); i++) {
-                double y = o[i].get(q);
-                if (s < y) s = y;
+        for (unsigned i=0; i<n; i++) {
+            double ymax = 0;
+            for (formant & ft: o) {
+                const double y = ft.get(i);
+                if (ymax < y)
+                    ymax = y;
             }
-            a[q] = s;
+            a[i] = ymax;
         }
     }
     double get(double d)
     {
+        // observation: may seem inefficient to generate each repeated period,
+        // the alternative would be to pre-generate a period and then loop over it,
+        // however this may give aliasing since d is subject to vibrato unless
+        // generated with a much higher sample-rate or we anti-alias.  we here choose
+        // a solution putting importance on simplicity and accuracy.
         double r = 0;
         const unsigned i = p ? 2 : 1;
         for (unsigned q=0; q<a.size(); q+=i)
@@ -395,7 +417,8 @@ typedef std::shared_ptr<sourcewave> waveptr;
 
 typedef std::pair<double, double> stereo;
 
-class sound {
+class sound
+{
     bool fromright;
     unsigned n;
     double d, a, m;
@@ -447,12 +470,9 @@ struct hihat : instrument
     {
         vibrato v;
         tremolo r;
-        envelope en = envelope(0, .01, .5, .01, .04);
+        envelope e = envelope(0, .01, .5, .01, .04);
         whitenoisewave * y = new whitenoisewave();
-        p.insert(sound(n.t, 33, n.l - 6, n.o, waveptr(y), v, r, en));
-        //envelope ec = envelope(0.03, .03, .4, 0.06, .12);
-        //choruswave * w = new choruswave(5, 1);
-        //p.insert(sound(n.t, 93, n.l - 9, n.o, waveptr(w), v, r, ec));
+        p.insert(sound(n.t, 33, n.l - 6, n.o, waveptr(y), v, r, e));
     }
 };
 
@@ -494,7 +514,7 @@ public:
         fmwave * y = new fmwave(rnd(1.7, 7.9), f, w());
         bandnoisewave * z = new bandnoisewave(4, .1);
         p.insert(sound(n.t, n.p, n.l - 18, n.o, waveptr(y), v, r, es));
-        p.insert(sound(n.t, n.p, n.l - 12, n.o, waveptr(z), v, r, en));
+        p.insert(sound(n.t, n.p, n.l - 9, n.o, waveptr(z), v, r, en));
     }
 };
 
@@ -505,16 +525,13 @@ public:
     {
         vibrato v(n.p, rnd(0.05, .1), rnd(3, 8));
         tremolo r(-2, rnd(3, 8));
-        envelope ex = envelope(0, 0, 1, n.d, rnd(.1, .2));
-        envelope ey = envelope(0, 0, 1, n.d, rnd(.1, .2));
+        envelope e = envelope(0, 0, 1, n.d, rnd(.1, .2));
         std::vector<formant> f;
         f.push_back(formant(rnd(0, 4.5), rnd(.5, .9), rnd(0, 2), rnd(3, 6), rnd(3, 6)));
         f.push_back(formant(rnd(6, 9.5), rnd(.5, .7), rnd(0, 2), rnd(4, 7), rnd(4, 7)));
         f.push_back(formant(rnd(12, 15.5), rnd(.1, .5), rnd(0, 2), rnd(5, 8), rnd(5, 8)));
         harmonicwave * x = new harmonicwave(f, true);
-        harmonicwave * y = new harmonicwave(f, true);
-        p.insert(sound(n.t, n.p, n.l, n.o, waveptr(x), v, r, ex));
-        p.insert(sound(n.t + rnd(0.04, 0.1), n.p, n.l, n.o, waveptr(y), v, r, ey));
+        p.insert(sound(n.t, n.p, n.l, n.o, waveptr(x), v, r, e));
     }
 };
 
@@ -550,6 +567,9 @@ public:
     }
 };
 
+// consider: parse orchestra instead of hard in program, and thus find
+// apropriate for standard midi code-points.  arrange above stuff in
+// indepedent files (building-blocks, instruments and parsing).
 struct orchestra
 {
     synth s;
@@ -558,7 +578,8 @@ struct orchestra
     drum d;
     wind w;
     string g;
-    instrument * get_program(midi::codepoint i) {
+    instrument * get_program(midi::codepoint i)
+    {
         if (i.is_percussion)
             switch (i.n) {    
             case 35: case 36: case 51: return &d;
