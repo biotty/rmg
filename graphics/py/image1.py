@@ -15,24 +15,46 @@ from rmg.scene import SceneObject, World, LightSpot, Observer, RgbSky
 from rmg.script import ScriptInvocation
 
 
-def optics_a():
-    color = Color.random()
-    reflection = color * .2
-    absorption = color * .02
-    diamond_index = 2.6
-    refraction = color * .9
-    passthrough = white
-    return Optics(reflection, absorption,
-            diamond_index, refraction, passthrough)
+water_index = 2.6
+diamond_index = 2.6
 
+
+# note: most reflexive
+def optics_a():
+    if lightened_variant:
+        reflection = white * .7
+        absorption = white * .3
+        refraction = black
+        passthrough = black
+        return Optics(reflection, absorption,
+                -1, refraction, passthrough)
+    else:
+        color = Color.random()
+        reflection = color.mix(white, .8) * .5
+        absorption = black
+        refraction = white * .2
+        passthrough = white * .1
+        return Optics(reflection, absorption,
+                diamond_index, refraction, passthrough)
+
+# note: most passthrough
 def optics_b():
-    water = Color(.9, .92, 1)
-    color = Color.random() * water
-    reflection = color.mix(water) * .3
-    absorption = black
-    refraction = white * .65
-    passthrough = water * .65
-    return Optics(reflection, absorption, 1.3, refraction, passthrough)
+    if lightened_variant:
+        reflection = white * .2
+        absorption = white * .6
+        refraction = white * .2
+        passthrough = white * .2
+        return Optics(reflection, absorption,
+                water_index, refraction, passthrough)
+    else:
+        color = Color.random()
+        reflection = color * .2
+        absorption = black
+        water = Color(.7, .8, .9)
+        refraction = color.mix(water, .4)
+        passthrough = water
+        return Optics(reflection, absorption,
+                water_index, refraction, passthrough)
 
 def rnd_optics(p):
     return rnd_weighted([optics_a, optics_b], [2, 1])()
@@ -53,12 +75,8 @@ def scene_disc(p, r):
         Plane(p - po, dp * (-1))
     ])
     b = Sphere(p + qo, r * .6)
-    o1 = optics_a()
-    o2 = optics_b()
-    return [
-            SceneObject(o1, b),
-            SceneObject(o2, i)
-    ]
+    return [SceneObject(optics_a(), b),
+            SceneObject(optics_b(), i)]
 
 def scene_fruit(p, r):
     a = Direction.random()
@@ -78,12 +96,8 @@ def scene_fruit(p, r):
         Sphere_(p + q2, r * .18)
     ])
     b = Sphere(p + q3, r * .32)
-    o1 = optics_a()
-    o2 = optics_b()
-    return [
-            SceneObject(o2, b),
-            SceneObject(o1, i)
-    ]
+    return [SceneObject(optics_a(), b),
+            SceneObject(optics_b(), i)]
 
 def scene_wheel(p, r):
     apex = p
@@ -92,7 +106,7 @@ def scene_wheel(p, r):
     thickness = r * .19
     sphere = Sphere(apex, r)
     sphere_ = Sphere_(apex, sphere.radius - thickness)
-    o = optics_a()
+    o = optics_b()
     i = Intersection([cone, sphere, sphere_])
     return [SceneObject(o, i)]
 
@@ -103,7 +117,7 @@ def scene_ring(p, r):
     thickness = r * .065
     sphere = Sphere(apex, r)
     sphere_ = Sphere_(apex, sphere.radius - thickness)
-    o = optics_b()
+    o = optics_a()
     i = Intersection([cone, sphere, sphere_])
     return [SceneObject(o, i)]
 
@@ -119,31 +133,29 @@ def rnd_intersection_of_two(p, r):
                 rnd_tilted(fig())])
     m = Manipulation(r, 0, 0, p)
     i.manipulate(m)
-    return [SceneObject(rnd_optics(p), i)]
+    return [SceneObject(optics_b(), i)]
 
 def rnd_scene_cluster():
     p = Point(*(Direction.random(rnd(.3, 2.1)).xyz()))
-    dice = rnd(1)
-    if dice < .7:
-        return rnd_intersection_of_two(p, 1)
-    else:
-        return rnd_weighted(
-                [scene_disc, scene_fruit, scene_wheel, scene_ring],
-                [1, 3, 2, 2])(p, 1)
+    return rnd_weighted([scene_fruit, rnd_intersection_of_two,
+                scene_wheel, scene_ring, scene_disc],
+            [5, 4, 3, 2, 1])(p, 1)
 
 
 invocation = ScriptInvocation.from_sys()
 scene_objects = []
-for c in range(int(invocation.positional_args[0])):
+n = int(invocation.positional_args[0])
+lightened_variant = .5 < rnd(0, 1)
+
+for c in range(n):
     scene_objects.extend(rnd_scene_cluster())
 
 w = World(scene_objects,
-        [
-            LightSpot(Point(7, 0, 0), Color(1, .65, .65)),
-            LightSpot(Point(0, 7, 0), Color(.65, .65, 1)),
-            LightSpot(Point(-3, -3, 9), Color(1, 1, .65)),
-        ],
-        Observer(Direction.random(2), origo),
+        [ LightSpot(Point(7, 0, 0), Color(.8, .4, .4)),
+          LightSpot(Point(0, 7, 0), Color(.4, .8, .4)),
+          LightSpot(Point(0, 0,-7), Color(.4, .4, .8))
+        ] if lightened_variant else [],
+        Observer(Direction.random(2.4), origo),
         RgbSky())
 
 if 1 == len(invocation.positional_args):

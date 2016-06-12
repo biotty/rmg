@@ -131,6 +131,9 @@ void help()
 "-x W,H     dimentions of the fluid grid\n";
 }
 
+// todo: smooth-out borders between colors.  advanced detection must
+//       process and re-arrange when single-pixel peninsulas occure.
+
 
 int main(int argc, char **argv)
 {
