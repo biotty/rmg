@@ -3,6 +3,7 @@
 #include "generators.hpp"
 #include "math.hpp"
 #include <algorithm>
+#include <iostream>
 
 namespace {
 
@@ -24,7 +25,10 @@ void fill(generator & g, T ptr, unsigned n)
 
 inline void mod1inc(double & x, double d)
 {
-    if (fabs(d) >= 1) throw 1;
+    if (fabs(d) >= 1) {
+        d = fmod(d, 1);
+        std::cerr << "mod jump" << std::endl;
+    }
     x += d;
     if (x >= 1) x -= 1;
     else if (x < 0) x += 1;
@@ -200,7 +204,7 @@ void periodic::append(unit & u, unsigned n)
 
 void periodic::shift(unit & u)
 {
-    if (carry_->n() < unit::size) throw 1;
+    if (carry_->n() < unit::size) throw std::runtime_error("short carry");
 
     carry_buffer * p = carry_.get();
     std::generate(std::begin(u.y), std::end(u.y),
@@ -321,7 +325,7 @@ delayed_sum::term::term(double t, ug_ptr && g)
 delayed_sum::glue_buffer::glue_buffer() : c(2) { a.set(0); b.set(0); }
 void delayed_sum::glue_buffer::add(unsigned h, unit & u)
 {
-    if (h > unit::size) throw nullptr;
+    if (h > unit::size) throw std::runtime_error("offsets beyond");
     const unsigned r = unit::size - h;
 
     std::transform(std::begin(u.y), std::begin(u.y) + r,
@@ -350,7 +354,8 @@ delayed_sum::delayed_sum()
 
 void delayed_sum::c(ug_ptr && g, double t)
 {
-    if (terms_.size() && terms_.back().t > t) throw 1;
+    if (terms_.size() && terms_.back().t > t)
+        throw std::runtime_error("terms out of chronology");
     terms_.emplace_back(t, std::move(g));
     pending_ = true;
 }

@@ -148,9 +148,11 @@ pan(PyObject * /*self*/, PyObject * args)
     if ( ! ugen->left) { // mono
         ugen->right->c(se.b->build(), p);
     } else { // stereo
+        const double pi = 3.141592653589;
+        const double r = p * pi * .5;
         std::shared_ptr<generator> g = P<ncopy>(2, se.b->build());
-        ugen->left->c(U<wrapshared>(g), 1 - p); // improve: shape arg (log?)
-        ugen->right->c(U<wrapshared>(g), p);    //          ^
+        ugen->left->c(U<wrapshared>(g), std::cos(r));
+        ugen->right->c(U<wrapshared>(g), std::sin(r));
     }
     Py_INCREF(Py_None);
     return Py_None;

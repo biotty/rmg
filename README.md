@@ -1,21 +1,5 @@
 # Random Media Generators
 
-## Prerequisites
-
-### To Compile
-
-* **nothing** for the graphics tools
-* **python3-dev** to build the **fuge** module
-* **python-pygame** available to python for **icons**
-* **libsdl2-dev** and **libncurses5-dev** for **amuse**
-
-### To Generate Media
-
-* **netpbm** used with a unix pipe in graphic tools internals
-* **pngquant** for **cfluid** which operates on a limited palette
-* **lame** for adding sound to videos like done with **karaoke**
-* **libav-tools** for generating video from images of f.ex  **border**
-
 ## Provided Tools
 
 ### Sound
@@ -37,3 +21,19 @@
 * **avrepr** a **pygame** module allowing non-text ``__repr__``
 * **icons** console using avrepr for tuples and lists saves video
 * **karaoke** assembles lyrics extracted from **mrender** onto video
+
+## Prerequisites
+
+### To Compile
+
+* **nothing** for the graphics tools
+* **python3-dev** to build the **fuge** module
+* **python-pygame** available to python for **icons**
+* **libsdl2-dev** and **libncurses5-dev** for **amuse**
+
+### To Generate Media
+
+* **netpbm** used with a unix pipe in graphic tools internals
+* **pngquant** for **cfluid** which operates on a limited palette
+* **lame** for adding sound to videos like done with **karaoke**
+* **libav-tools** for generating video from images of f.ex  **border**

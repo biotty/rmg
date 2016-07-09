@@ -85,7 +85,7 @@ compo = NoteComposition()
 compo.filters.append((CompositionFilter("comb",
         [rndlist(0, .4, 19), rndlist(0, 1./20, 19)])))
 notes = []
-for _ in range(64):
+for _ in range(16):
     cs = NoteComposition()
 
     cs.filters.append((CompositionFilter("echo",

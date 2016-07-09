@@ -1,9 +1,12 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
+#include "musicm.hpp"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
 #include <vector>
+#include <array>
 
 #define SR 44100
 
@@ -11,7 +14,6 @@ const double pi = 3.141592653589;
 double rnd(double a, double b) { return a + rand() * (b - a) / RAND_MAX; }
 double sine(double x) { return sin(x * 2 * pi); }
 double linear(double a, double b, double r) { return a * (1 - r) + b * r; }
-double frequency_of(double p) { return 440 * pow(2, (p - 69) / 12); }
 
 struct lfo
 {
@@ -64,7 +66,7 @@ struct worm_buffer : ring_buffer
         , n(n)
         , n_target(n)
         , step_progress()
-        , step_speed(.02)
+        , step_speed(.01)
     {}
 
     void grow()
@@ -88,10 +90,11 @@ struct worm_buffer : ring_buffer
 
 struct va_karpluss : worm_buffer
 {
-    void fill(double y)
+    void excite()
     {
+        const double y = rnd(.8, 1);
         for (size_t k=1; k<n; k++)
-            element(k) = .5 * (element(k - 1) + rnd(-y, y));
+            element(k) += rnd(-y, y);
     }
 
     double shift()
@@ -99,7 +102,7 @@ struct va_karpluss : worm_buffer
         grow();
 
         const unsigned k = n * linear(.99, .999, .5 * (1 + delay.y()));
-        const double r = 0.95 * linear(element(k - 1), element(k), .4);
+        const double r = .99 * linear(element(k - 1), element(k), .8);
         element() = r;
         ring_walk();
         return r;
@@ -234,6 +237,7 @@ struct recorder
         if (v > 1) v = 1;
         else if (v < -1) v = -1;
         int16_t b = v * 32767;
+        // on-need: swap bytes if be arch (detect in constructor)
         fwrite(&b, 2, 1, stdout);
     }
 };
@@ -247,13 +251,13 @@ struct arp_wire
 
     void move(double pitch)
     {
-        buf.n_target = SR / frequency_of(pitch);
+        buf.n_target = SR / f_of_just(pitch);
     }
 
     void touch()
     {
-        c_touch += SR/4;
-        buf.fill(rnd(.6, .9));
+        c_touch += std::floor(rnd(2, 8)) * SR/4;
+        buf.excite();
     }
 
     double get(unsigned c)
@@ -265,31 +269,63 @@ struct arp_wire
 
 struct arp_digitar
 {
-    arp_wire wires[3];
+    static const unsigned n_wires = 6;
+    arp_wire wires[n_wires];
+    using chord = std::array<unsigned, n_wires>;
 
-    void draw(double p, double b, double c)
+    void draw(chord pitches)
     {
-        wires[0].move(p);
-        wires[1].move(p + b);
-        wires[2].move(p + c);
+        const unsigned p = 36;
+        wires[5].move(pitches[0] + p + 4);
+        wires[4].move(pitches[1] + p + 9);
+        wires[3].move(pitches[2] + p + 14);
+        wires[2].move(pitches[3] + p + 19);
+        wires[1].move(pitches[4] + p + 23);
+        wires[0].move(pitches[5] + p + 28);
     }
 
     double get(unsigned c)
     {
-        double r = wires[0].get(c + 1*SR/16);
-        r += wires[1].get(c + 2*SR/16);
-        r += wires[2].get(c + 3*SR/16);
-        return r / 3;
+        double r = 0;
+        for (unsigned i=0; i<n_wires; ++i)
+            r += wires[i].get(c + (1 + i)*SR/64);
+        return r / n_wires;
     }
 };
 
-struct chord { unsigned p, b, c; };
 
-std::vector<chord> score = {
-    { 36, 0, 7 },
-    { 40, 3, 7 },
-    { 41, 7, 12 },
-    { 40, 3, 3 },
+std::vector<arp_digitar::chord> score = {
+    { 0, 0, 2, 2, 2, 0 }, //A
+    { 0, 2, 2, 1, 0, 0 }, //E
+    { 0, 0, 0, 2, 3, 2 }, //D
+
+    { 0, 0, 2, 2, 1, 0 }, //Am
+    { 0, 2, 2, 1, 0, 0 }, //E
+    { 1, 0, 0, 2, 3, 1 }, //Dm
+
+    { 0, 2, 2, 1, 0, 0 }, //E
+    { 2, 2, 1, 2, 0, 2 }, //B7
+    { 0, 0, 2, 2, 2, 0 }, //A
+
+    { 0, 2, 2, 0, 0, 0 }, //Em
+    { 2, 2, 1, 2, 0, 2 }, //B7
+    { 0, 0, 2, 2, 1, 0 }, //Am
+
+    { 0, 0, 0, 2, 3, 2 }, //D
+    { 0, 0, 2, 0, 2, 0 }, //A7
+    { 3, 2, 0, 0, 0, 3 }, //G
+
+    { 1, 0, 0, 2, 3, 1 }, //Dm
+    { 0, 0, 2, 2, 2, 0 }, //A
+    { 3, 0, 0, 3, 3, 3 }, //Gm
+
+    { 3, 2, 0, 0, 0, 3 }, //G
+    { 0, 0, 0, 2, 1, 2 }, //D7
+    { 0, 3, 2, 0, 1, 0 }, //C
+
+    { 0, 3, 2, 0, 1, 0 }, //C
+    { 3, 2, 0, 0, 0, 1 }, //G7
+    { 0, 3, 3, 2, 1, 1 }, //F
 };
 
 extern "C" int isatty(int);
@@ -303,16 +339,10 @@ int main()
     unsigned i = 0;
     arp_digitar aw;
     recorder rec;
-    double a = 0;
-    for (std::size_t c=0; c<SR*16; c++) {
-        if (c < SR*8 && a < 2) a += .2/SR;
-        if (c > SR*12 && a > 0) a -= .4/SR;
-        if (c % SR == 0) {
-            chord & n = score[i % score.size()];
-            aw.draw(n.p + 7, n.b, n.c);
-            ++i;
-        }
-        rec.put(aw.get(c) * a);
+    for (std::size_t c=0; c<SR*48; c++) {
+        if (c % (2*SR) == 0)
+            aw.draw(score[i++ % score.size()]);
+        rec.put(aw.get(c));
     }
 }
 
