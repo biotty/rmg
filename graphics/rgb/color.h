@@ -23,7 +23,7 @@ typedef struct color color;
 typedef struct compact_color compact_color;
 #endif
 
-static inline void saturated_add(compact_color * x, compact_color * y)
+static inline void saturated_add(compact_color * x, compact_color y)
 {
     const int r_ = x->r + y.r;
     const int g_ = x->g + y.g;

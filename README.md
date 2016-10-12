@@ -18,8 +18,8 @@
 * **fluid** traces a heterogenous viscous fluid in a plane
 * **follow** border-hunting zoomer for Mandelbrot and its Julia-set
 * **lindo** context-sensitive parametric bracketed L-system
-* **avrepr** a **pygame** module allowing non-text ``__repr__``
-* **icons** console using avrepr for tuples and lists saves video
+* **avrepr** a module allowing non-text ``__repr__``
+* **icons** console using **avrepr** for tuples and lists saves video
 * **karaoke** assembles lyrics extracted from **mrender** onto video
 
 ## Prerequisites
@@ -34,6 +34,6 @@
 ### To Generate Media
 
 * **netpbm** used with a unix pipe in graphic tools internals
-* **pngquant** for **cfluid** which operates on a limited palette
+* **pngquant** for **fluid** which operates on a limited palette
 * **lame** for adding sound to videos like done with **karaoke**
 * **libav-tools** for generating video from images of f.ex  **border**

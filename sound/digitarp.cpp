@@ -224,12 +224,14 @@ struct reverbr : ring_buffer
 struct recorder
 {
     reverbr re;
-    wah_wah ww;
+    wah_wah wa;
+    wah_wah wb;
     va_comb cb;
 
     void put(double v)
     {
-        v = ww.shift(v);
+        v = wa.shift(v);
+        v = wb.shift(v);
         v = cb.shift(v);
         v += re.get();
         re.put(v);

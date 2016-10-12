@@ -183,9 +183,9 @@ refraction_trace(ray ray_, const scene_object * so,
     static color
 ray_trace(const detector * detector_, world * w)
 {
-    color detected = {0, 0, 0};
-    if (0 == detector_->hop || ignorable_color(detector_->lens))
-        return detected;  // consider: return white in this case
+    if (0 == detector_->hop || ignorable_color(detector_->lens)) {
+        return (color){1, 1, 1};
+    }
 
     ray surface = detector_->ray_;
     assert(is_near(length(surface.head), 1));
@@ -193,71 +193,62 @@ ray_trace(const detector * detector_, world * w)
     const int detector_inside_i = ba_firstset(detector_->inside);
     const scene_object * closest_object
         = closest_surface(&surface, w->scene_, detector_->inside, &toggled);
-    if (closest_object == NULL) {
-        int rgb_clear = 0;
-        // problem:  artificial preference for three colors surviving infinity
+    if ( ! closest_object) {
         const int adinf_i = detector_inside_i;
         if (adinf_i >= 0) {
             compact_color f
                 = w->scene_.objects[adinf_i].optics.passthrough_filter;
-            if (f.r != 255) rgb_clear |= 0x1;
-            if (f.g != 255) rgb_clear |= 0x2;
-            if (f.b != 255) rgb_clear |= 0x4;
-            if (rgb_clear == 0x7) return detected;
-        }
-        detected = DIRECT_SKY;
-        if ( ! eliminate_direct_sky
-                || detector_->hop != max_hops)
-            detected = w->sky(detector_->ray_.head);
-        if (rgb_clear) {
-            if (rgb_clear & 0x1) detected.r = 0;
-            if (rgb_clear & 0x2) detected.g = 0;
-            if (rgb_clear & 0x4) detected.b = 0;
-        }
-    } else {
-        const ptrdiff_t i = closest_object - w->scene_.objects;
-        assert(i >= 0 && i < w->scene_.object_count);
-        const bool exits = 0 < scalar_product(
-                surface.head, detector_->ray_.head);
-        const object_optics * optics = &closest_object->optics;
-        object_optics auto_store;
-        if (closest_object->decoration) {
-            closest_object->decoration(&surface,
-                    closest_object->decoration_arg,
-                    &auto_store, &closest_object->optics);
-            optics = &auto_store;
-        }
-        const int inside_i = ba_firstset(detector_->inside);
-        if (inside_i < 0) {
-            const color absorbed = spot_absorption(
-                    &surface, optics, w, detector_->inside);
-            color_add(&detected, absorbed);
-        }
-        enum refraction_ret r = opaque;
-        compact_color reflection_filter = optics->reflection_filter;
-        if (optics->refraction_index_nano) {
-            color refraction_color;
-            r = refraction_trace(
-                    surface, closest_object, detector_, w, &refraction_color);
-            if (r == reflect || r == transparent) {
-                color_add(&detected, refraction_color);
-            } else if (r == total_reflect) {
-                saturated_add(&reflection_filter, optics->refraction_filter);
+            if (f.r != 255 || f.g != 255 || f.b != 255) {
+                return (color){0, 0, 0};
             }
         }
-        if (r != transparent) {
-            const color reflected = reflection_trace(reflection_filter,
-                    surface, exits, i, detector_, w);
-            color_add(&detected, reflected);
-        }
-        if (detector_inside_i >= 0) {
-            scene_object * io = w->scene_.objects + detector_inside_i;
-            passthrough_apply(&detected, &io->optics,
-                    distance(detector_->ray_.endpoint, surface.endpoint));
-        }
-        int toggled_i;
-        while ((toggled_i = st_pop(&toggled)) != STACK_VOID)
-            ba_toggle(detector_->inside, toggled_i);
+        return eliminate_direct_sky && detector_->hop == max_hops
+            ? DIRECT_SKY : w->sky(detector_->ray_.head)
     }
+
+    const ptrdiff_t i = closest_object - w->scene_.objects;
+    assert(i >= 0 && i < w->scene_.object_count);
+    const bool exits = 0 < scalar_product(
+            surface.head, detector_->ray_.head);
+    const object_optics * optics = &closest_object->optics;
+    object_optics auto_store;
+    if (closest_object->decoration) {
+        closest_object->decoration(&surface,
+                closest_object->decoration_arg,
+                &auto_store, &closest_object->optics);
+        optics = &auto_store;
+    }
+    const int inside_i = ba_firstset(detector_->inside);
+    if (inside_i < 0) {
+        const color absorbed = spot_absorption(
+                &surface, optics, w, detector_->inside);
+        color_add(&detected, absorbed);
+    }
+    enum refraction_ret r = opaque;
+    compact_color reflection_filter = optics->reflection_filter;
+    if (optics->refraction_index_nano) {
+        color refraction_color;
+        r = refraction_trace(
+                surface, closest_object, detector_, w, &refraction_color);
+        if (r == reflect || r == transparent) {
+            color_add(&detected, refraction_color);
+        } else if (r == total_reflect) {
+            saturated_add(&reflection_filter, optics->refraction_filter);
+        }
+    }
+    if (r != transparent) {
+        const color reflected = reflection_trace(reflection_filter,
+                surface, exits, i, detector_, w);
+        color_add(&detected, reflected);
+    }
+    if (detector_inside_i >= 0) {
+        scene_object * io = w->scene_.objects + detector_inside_i;
+        passthrough_apply(&detected, &io->optics,
+                distance(detector_->ray_.endpoint, surface.endpoint));
+    }
+    int toggled_i;
+    while ((toggled_i = st_pop(&toggled)) != STACK_VOID)
+        ba_toggle(detector_->inside, toggled_i);
+
     return detected;
 }
