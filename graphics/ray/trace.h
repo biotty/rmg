@@ -9,8 +9,7 @@
 static const bool debug = false;
 static const bool verbose = false;
 static const int max_hops = 6;
-static const bool transparent_refraction_on_equal_index = false;
-static const real reflection_on_inside = .9;
+static const bool transparent_on_equal_index = false;
 static const bool eliminate_direct_sky = false;
 static const color DIRECT_SKY = {.8, .8, .8};
 

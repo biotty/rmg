@@ -93,20 +93,58 @@ spot_absorption(const ray * surface, const object_optics * so,
 }
 
     static color
-refraction_trace(ray ray_, const scene_object * so,
+reflection_trace(compact_color reflection_filter, ray ray_, bool exits, int i,
         const detector * detector_, world * w)
 {
-    color detected = {0, 0, 0};
+    direction normal_ = ray_.head;
+    if (exits) {
+        scale(&normal_, -1);
+        if (debug && ! ba_isset(detector_->inside, i))
+            std::cerr << "hit from inside of surface "
+                "but book-keeped as outside-of " << i << std::endl;
+    } else {
+        if (debug && ba_isset(detector_->inside, i))
+            std::cerr << "hit from outside of surface "
+                "but book-keeped as inside-of " << i << std::endl;
+    }
+    const ray reflection_ = { ray_.endpoint,
+        reflection(normal_, detector_->ray_.head) };
+
+    return trace_hop(reflection_, reflection_filter,
+            detector_, w);
+}
+
+
+enum refraction_ret {
+    opaque,
+    reflect,
+    total_reflect,
+    transparent,
+};
+
+    static enum refraction_ret
+refraction_trace(ray ray_, const scene_object * so,
+        const detector * detector_, world * w, color * result)
+{
     const ptrdiff_t i = so - w->scene_.objects;
     int outside_i = ba_firstset(detector_->inside);
     const bool enters = (outside_i != i);
+
     class scoped_bit_toggler {
-        bitarray * a; int i; bool enters; public:
+        bitarray * const a; const int i; const bool enters;
+        public:
         scoped_bit_toggler(bitarray * a, int i, bool enters)
-            : a(a), i(i), enters(enters) { ba_assign(a, i, enters); }
-        ~scoped_bit_toggler() { ba_assign(a, i, !enters); }
+            : a(a), i(i), enters(enters)
+        {
+            ba_assign(a, i, enters);
+        }
+        ~scoped_bit_toggler()
+        {
+            ba_assign(a, i, !enters);
+        }
     };
     scoped_bit_toggler sbt(detector_->inside, i, enters);
+
     if ( ! enters) outside_i = ba_firstset(detector_->inside);
     unsigned long outside_refraction_index_nano = 1000000000;
     if (outside_i >= 0) {
@@ -117,8 +155,15 @@ refraction_trace(ray ray_, const scene_object * so,
                 if (detector_->hop != max_hops) /* (view _can_ happen to be inside) */
                     std::cerr << "we got inside opaque object " << i << std::endl;
             }
-            return detected;
+            return opaque;
         }
+    }
+    if (transparent_on_equal_index
+            && outside_refraction_index_nano
+            == so->optics.refraction_index_nano) {
+        compact_color transparent_ = {255, 255, 255};
+        *result = trace_hop(ray_, transparent_, detector_, w);
+        return transparent;
     }
     real refraction_index = outside_refraction_index_nano
             /(real) so->optics.refraction_index_nano;
@@ -129,14 +174,10 @@ refraction_trace(ray ray_, const scene_object * so,
     ray_.head = refraction(ray_.head, detector_->ray_.head,
             refraction_index, TINY_REAL);
     if (is_DISORIENTED(&ray_.head)) {
-        return detected;
+        return total_reflect;
     }
-    compact_color refraction_filter = {255, 255, 255};
-    if ( ! transparent_refraction_on_equal_index
-            || ! is_near(refraction_index, 1))
-        refraction_filter = so->optics.refraction_filter;
-    detected = trace_hop(ray_, refraction_filter, detector_, w);
-    return detected;
+    *result = trace_hop(ray_, so->optics.refraction_filter, detector_, w);
+    return reflect;
 }
 
     static color
@@ -144,7 +185,7 @@ ray_trace(const detector * detector_, world * w)
 {
     color detected = {0, 0, 0};
     if (0 == detector_->hop || ignorable_color(detector_->lens))
-        return detected;
+        return detected;  // consider: return white in this case
 
     ray surface = detector_->ray_;
     assert(is_near(length(surface.head), 1));
@@ -154,6 +195,7 @@ ray_trace(const detector * detector_, world * w)
         = closest_surface(&surface, w->scene_, detector_->inside, &toggled);
     if (closest_object == NULL) {
         int rgb_clear = 0;
+        // problem:  artificial preference for three colors surviving infinity
         const int adinf_i = detector_inside_i;
         if (adinf_i >= 0) {
             compact_color f
@@ -185,41 +227,28 @@ ray_trace(const detector * detector_, world * w)
                     &auto_store, &closest_object->optics);
             optics = &auto_store;
         }
-        if (exits) {
-            if (debug && ! ba_isset(detector_->inside, i))
-                std::cerr << "hit from inside of surface "
-                        "but book-keeped as outside-of " << i << std::endl;
-            if (reflection_on_inside > 0) {
-                direction normal_ = surface.head;
-                scale(&normal_, -1);
-                compact_color filter_ = optics->reflection_filter;
-                filter_.r *= reflection_on_inside;
-                filter_.g *= reflection_on_inside;
-                filter_.b *= reflection_on_inside;
-                const ray in_reflection_ = { surface.endpoint,
-                    reflection(normal_, detector_->ray_.head) };
-                detected = trace_hop(in_reflection_, filter_, detector_, w);
-            }
-        } else {
-            if (debug && ba_isset(detector_->inside, i))
-                std::cerr << "hit from outside of surface "
-                        "but book-keeped as inside-of " << i << std::endl;
-            const ray reflection_ = { surface.endpoint,
-                reflection(surface.head, detector_->ray_.head) };
-            detected = trace_hop(
-                    reflection_, optics->reflection_filter,
-                    detector_, w);
-        }
         const int inside_i = ba_firstset(detector_->inside);
         if (inside_i < 0) {
             const color absorbed = spot_absorption(
                     &surface, optics, w, detector_->inside);
             color_add(&detected, absorbed);
         }
+        enum refraction_ret r = opaque;
+        compact_color reflection_filter = optics->reflection_filter;
         if (optics->refraction_index_nano) {
-            const color refraction_color = refraction_trace(
-                    surface, closest_object, detector_, w);
-            color_add(&detected, refraction_color);
+            color refraction_color;
+            r = refraction_trace(
+                    surface, closest_object, detector_, w, &refraction_color);
+            if (r == reflect || r == transparent) {
+                color_add(&detected, refraction_color);
+            } else if (r == total_reflect) {
+                saturated_add(&reflection_filter, optics->refraction_filter);
+            }
+        }
+        if (r != transparent) {
+            const color reflected = reflection_trace(reflection_filter,
+                    surface, exits, i, detector_, w);
+            color_add(&detected, reflected);
         }
         if (detector_inside_i >= 0) {
             scene_object * io = w->scene_.objects + detector_inside_i;

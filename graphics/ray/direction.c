@@ -74,8 +74,8 @@ distance_vector(point from, point to)
 {
     return (direction){
         to.x - from.x,
-            to.y - from.y,
-            to.z - from.z
+        to.y - from.y,
+        to.z - from.z
     };
 }
 

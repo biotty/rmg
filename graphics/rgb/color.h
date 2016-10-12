@@ -23,10 +23,20 @@ typedef struct color color;
 typedef struct compact_color compact_color;
 #endif
 
-static inline bool similar(double e, const color * a, const color * b)
+static inline void saturated_add(compact_color * x, compact_color * y)
 {
-    color d = { fabs(a->r - b->r), fabs(a->g - b->g), fabs(a->b - b->b) };
-    return e * e > d.r * d.r + d.g * d.g + d.b * d.b;
+    const int r_ = x->r + y.r;
+    const int g_ = x->g + y.g;
+    const int b_ = x->b + y.b;
+    x->r = r_ < 256 ? r_ : 255;
+    x->g = g_ < 256 ? g_ : 255;
+    x->b = b_ < 256 ? b_ : 255;
+}
+
+static inline bool similar(double e, const color * x, const color * y)
+{
+    color w = { fabs(x->r - y->r), fabs(x->g - y->g), fabs(x->b - y->b) };
+    return e * e > w.r * w.r + w.g * w.g + w.b * w.b;
 }
 
 static inline color x_color(compact_color cc)
