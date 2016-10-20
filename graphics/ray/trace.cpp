@@ -186,7 +186,7 @@ ray_trace(const detector * detector_, world * w)
     if (0 == detector_->hop || ignorable_color(detector_->lens)) {
         return (color){1, 1, 1};
     }
-
+    color detected = {0, 0, 0};
     ray surface = detector_->ray_;
     assert(is_near(length(surface.head), 1));
     stack toggled = EMPTY_STACK;
@@ -199,11 +199,11 @@ ray_trace(const detector * detector_, world * w)
             compact_color f
                 = w->scene_.objects[adinf_i].optics.passthrough_filter;
             if (f.r != 255 || f.g != 255 || f.b != 255) {
-                return (color){0, 0, 0};
+                return detected;
             }
         }
         return eliminate_direct_sky && detector_->hop == max_hops
-            ? DIRECT_SKY : w->sky(detector_->ray_.head)
+            ? DIRECT_SKY : w->sky(detector_->ray_.head);
     }
 
     const ptrdiff_t i = closest_object - w->scene_.objects;
