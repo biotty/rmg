@@ -2,14 +2,22 @@ GRAPHICS=..
 CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -O2 -I$(GRAPHICS)/rgb
 LDFLAGS=-L$(GRAPHICS)/rgb -lrgb
 
+FLOW=flow.hpp cellular.hpp planar.hpp linear.hpp
+
 .PHONY:
 all: wave fluid
 
-wave: wave.o wave.hpp
+wave: wave.o
 	$(CXX) -o $@ $< $(LDFLAGS)
 
-fluid: fluid.o fluid.hpp
+wave.o: wave.cpp wave.hpp $(FLOW)
+	$(CXX) $(CXXFLAGS) -c $<
+
+fluid: fluid.o
 	$(CXX) -o $@ $< $(LDFLAGS)
+
+fluid.o: fluid.cpp fluid.hpp $(FLOW) tracer.hpp palette.hpp
+	$(CXX) $(CXXFLAGS) -c $<
 
 .PHONY:
 clean:
