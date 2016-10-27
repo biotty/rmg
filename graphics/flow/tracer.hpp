@@ -14,13 +14,13 @@ namespace {
 
 
 template<typename Y>
-std::pair<Y, int8_t> best_invader_simple(Neighborhood<Y> h)
+std::pair<Y, uint8_t> best_invader_simple(Neighborhood<Y> h)
 {
-    std::map<Y, int8_t> d;
+    std::map<Y, uint8_t> d;
     ++d[h.n]; ++d[h.s]; ++d[h.w]; ++d[h.e];
     ++d[h.nw]; ++d[h.ne]; ++d[h.sw]; ++d[h.se];
 
-    std::pair<Y, int8_t> r = {h.c, 0};
+    std::pair<Y, uint8_t> r = {h.c, 0};
     if (d[h.c] >= 3)  // quantity: immune-isle
         return r;
 
@@ -28,7 +28,7 @@ std::pair<Y, int8_t> best_invader_simple(Neighborhood<Y> h)
         if (e.first != h.c
                 && e.second >= r.second
                 && (e.second > r.second
-                    || (std::rand() & 1)))
+                    || (std::rand() & 1)))  // note: eq, randomize
             r = e;
     }
 
@@ -37,7 +37,7 @@ std::pair<Y, int8_t> best_invader_simple(Neighborhood<Y> h)
 
 
 template<typename Y>
-std::pair<Y, int8_t> best_invader(Neighborhood<Y> h)
+std::pair<Y, uint8_t> best_invader(Neighborhood<Y> h)
 {
     Y a[] = { h.n, h.s, h.w, h.e,
         h.nw, h.ne, h.sw, h.se };
@@ -51,7 +51,7 @@ std::pair<Y, int8_t> best_invader(Neighborhood<Y> h)
     uint8_t n = 0;
     uint8_t r = 0;
     for (int j=6; j>=-1; j--) {
-        const Y x = a[(i + j) % 8];
+        const Y x = a[(i + j) % 8];  // consider: randomize offset
         if (x == c) {
             ++r;
         } else {
@@ -74,31 +74,34 @@ template<typename Y>
 struct Candidate {
     uint16_t x;
     uint16_t y;
-    Y c;
-    int8_t n;
+    Y cc;
+    uint8_t n;
+    Candidate() : n() {}
+    Candidate(size_t _x, size_t _y, Y _cc, uint8_t _n)
+        : x((uint16_t)_x), y((uint16_t)_y), cc(_cc), n(_n)
+    {
+        assert(_n != 0);
+        assert(_x <= UINT16_MAX);
+        assert(_y <= UINT16_MAX);
+    }
 };
 
 
 template<class T>
-T pop_replacer(int n, std::vector<T> & candidates)
+T pop_replacer(std::vector<T> & candidates)
 {
-    T none = {0, 0, 0, -1};
-
-    if (candidates.empty())
-        return none;
-
-    int k = candidates.size();
-    int j = rand() % k;
-    for (int i=0; i<k; i++) {
-        T & c = candidates[(i + j) % k];
-        if (c.n >= n) {
-            T r = c;
-            c.n = -1;
+    for (T & c : candidates) {
+        if (c.n) {
+            // improve: intra-call cache offset to previously seen nonzero
+            //          rem that elements are also taken in main iteration
+            //          the cached iterator could live with the vector
+            const T r = c;
+            c.n = 0;
             return r;
         }
     }
 
-    return none;
+    return T();
 }
 
 
@@ -106,55 +109,51 @@ template<class Y>
 void descatter(Grid<Y> * image)
 {
     using T = Candidate<Y>;
-    std::map<int, std::vector<T>> replacers;
-    for (PositionIterator it = image->positions(); it.more(); ++it) {
-        std::pair<Y, int8_t> color_count = best_invader(image->neighborhood(it));
-        const int8_t n = color_count.second;
-        const Y w = image->cell(it);
-        if (w != color_count.first && n) {
+    std::map<Y, std::map<Y, std::vector<T>>> replacers;
+    PositionIterator it = image->positions();
+    for (; it.more(); ++it) {
+        std::pair<Y, uint8_t> color_count = best_invader(image->neighborhood(it));
+        const Y color = color_count.first;
+        const uint8_t n = color_count.second;
+        const Y cc = image->cell(it);
+        if (cc != color && n) {
             size_t x = it.position.i;
             size_t y = it.position.j;
-            assert(x <= UINT16_MAX);
-            assert(y <= UINT16_MAX);
-            replacers[color_count.first].push_back(
-                    T{(uint16_t)x, (uint16_t)y, w, n});
+            replacers[cc][color].emplace_back(x, y, cc, n);
         }
     }
-    std::map<Y, int8_t> nomore_replacers;
-    using E = std::pair<T *, int>;
+    using E = std::pair<T *, Y>;
     std::vector<E> a;
-    for (auto & color_candidates: replacers) {
-        Y color = color_candidates.first;
-        int8_t n = 0;
-        for (auto & candidate: color_candidates.second) {
-            a.push_back(std::make_pair(&candidate, color));
-            if (n < candidate.n)
-                n = candidate.n;
-        }
-        nomore_replacers[color] = n + 1;
-    }
-    std::shuffle(a.begin(), a.end(), std::mt19937(std::rand()));
-    std::sort(a.begin(), a.end(), [](E p, E q){return p.first->n < q.first->n;});
-
-    std::vector<std::array<uint16_t, 4>> swaps;
-    for (E candidate_color : a) {
-        T * const p = candidate_color.first;
-        if (p->n >= nomore_replacers[p->c]) continue;
-        std::vector<T> & r = replacers[candidate_color.second];
-        if (std::find_if(r.begin(), r.end(), [p](T & w){return w.n >= 0 && p == &w;})
-                != r.end())
-        {
-            T q = pop_replacer(p->n, replacers[p->c]);
-            if (q.n < 0) nomore_replacers[p->c] = p->n;
-            else {
-                swaps.push_back({p->x, p->y, q.x, q.y});
-                p->n = -1;
+    for (auto & cc_r: replacers) {
+        for (auto & color_r: cc_r.second) {
+            std::vector<T> & r = color_r.second;
+            std::sort(r.begin(), r.end(), [](T lhs, T rhs){ return lhs.n > rhs.n; });
+            for (auto & rc: r) {
+                a.push_back(std::make_pair(&rc, color_r.first));
             }
         }
     }
 
-    for (auto u : swaps)
+    // optional: shuffle ad sort improves fairness and further helps best invadors
+    std::shuffle(a.begin(), a.end(), std::mt19937(std::rand()));
+    std::sort(a.begin(), a.end(), [](E lhs, E rhs){ return lhs.first->n > rhs.first->n; });
+
+    std::vector<std::array<uint16_t, 4>> swaps;
+    for (E candidate_color : a) {
+        T * const p = candidate_color.first;
+        Y const color = candidate_color.second;
+        if (p->n) {
+            T q = pop_replacer(replacers[color][p->cc]);
+            if (q.n) {
+                swaps.push_back({p->x, p->y, q.x, q.y});
+                p->n = 0;
+            }
+        }
+    }
+
+    for (auto u : swaps) {
         std::swap(image->cell(u[0], u[1]), image->cell(u[2], u[3]));
+    }
 }
 
 
