@@ -9,7 +9,7 @@ from rmg.bodies import Manipulation
 from rmg.solids import intersect_regulars, sole_regular
 from rmg.space import Point, Direction, origo, random_orbit
 from rmg.color import Color, Optics, white, black
-from rmg.scene import SceneObject, LightSpot, Observer
+from rmg.scene import SceneObject, LightSpot, Observer, RgbSky
 from rmg.script import ParametricWorld, ScriptInvocation
 
 
@@ -50,7 +50,7 @@ d = Direction(0, 0, 1)
 def scene_objects(t): return [s(t) for s in param_scene_objects]
 def light_spots(t): return []
 def observer(t): return Observer(d*-2, d, view_opening = 0.65)
-def sky(t): return "rgb"
+def sky(t): return RgbSky()
 
 
 pw = ParametricWorld(scene_objects, light_spots, observer, sky)

@@ -95,14 +95,20 @@ private:
 struct SimpleFunction : FluidFunction
 {
     XY placement;
-    XY force;
+    double a;
+    double w;
+    double r;
 
-    SimpleFunction(XY p, XY f, FluidParameters & fp) : placement(p), force(f), params(fp) {}
+    SimpleFunction(XY p, double a, double w, double r, FluidParameters & fp)
+        : placement(p), a(a), w(w), r(r), params(fp)
+    {}
     bool operator()(Grid<FluidCell> * /*field_swap*/, Grid<FluidCell> * field, double step_t)
     {
         size_t i = field->h * placement.y;
         size_t j = field->w * placement.x;
+        XY force = XY(cos(a), sin(a)) * r;
         field->cell(i, j).velocity += force * (step_t / params.density(Position(i, j)));
+        a += w * step_t;
         return false;
     }
 
@@ -145,7 +151,7 @@ int main(int argc, char **argv)
     int n = 512;
 
     int opt;
-    while ((opt = getopt(argc, argv, "c:C:d:D:hi:m:n:p:q:s:v:V:x:")) != EOF)
+    while ((opt = getopt(argc, argv, "c:C:d:D:hi:m:n:p:q:s:v:V:x:")) >= 0)
     switch (opt) {
         default:
             return 1;
@@ -213,12 +219,12 @@ int main(int argc, char **argv)
     }
 
     if (d_exc.empty()) {
-        d_exc.push_back(ColorMatch(0.3, {0, 0, 0}));
+        d_exc.push_back(ColorMatch(0.2, {0, 0, 0}));
         std::cerr << "using dark colors as exceptional density\n";
     }
     if (v_exc.empty()) {
-        v_exc.push_back(ColorMatch(0.2, {0, 1, 1}));
-        std::cerr << "using cyan colors as exceptional viscosity\n";
+        v_exc.push_back(ColorMatch(0.2, {1, 1, 1}));
+        std::cerr << "using light colors as exceptional viscosity\n";
     }
     if (seed == 0) {
         std::time(&seed);
@@ -228,8 +234,8 @@ int main(int argc, char **argv)
     std::vector<FluidFunction *> functions;
     for (size_t k = 0; k < q; ++k) {
         XY placement(rnd(1), rnd(1));
-        XY force(rnd(2) - 1, rnd(2) - 1);
-        functions.push_back(new SimpleFunction(placement, force, p));
+        functions.push_back(new SimpleFunction(placement,
+                    rnd(6.283), rnd(.01), .1 + rnd(.9), p));
     }
     functions.push_back(new EdgeFunction<FluidCell>());
     CompositeFunction<FluidCell> f(functions);

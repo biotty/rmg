@@ -155,7 +155,7 @@ w = World(scene_objects,
           LightSpot(Point(0, 7, 0), Color(.4, .8, .4)),
           LightSpot(Point(0, 0,-7), Color(.4, .4, .8))
         ] if lightened_variant else [],
-        Observer(Direction.random(2.4), origo),
+        Observer(Direction.random(2.4), origo, rnd(0, 1)),
         RgbSky())
 
 if 1 == len(invocation.positional_args):

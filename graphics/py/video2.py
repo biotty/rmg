@@ -10,7 +10,7 @@ from rmg.bodies import Sphere
 from rmg.space import Point, Direction, origo, random_orbit
 from rmg.color import Color, Optics, white, black
 from rmg.mapping import Map, OpticsFactor
-from rmg.scene import SceneObject, LightSpot, Observer
+from rmg.scene import SceneObject, LightSpot, Observer, PhotoSky
 from rmg.script import ParametricWorld, ScriptInvocation
 from globe import GlobeMapRenderer
 import os
@@ -57,7 +57,7 @@ param_scene_objects = [RandomSceneObject(i) for i in range(count)]
 
 
 def scene_objects(t): return [s(t) for s in param_scene_objects]
-def sky(t): return "sky.pnm"
+def sky(t): return PhotoSky("sky.pnm")
 
 def observer(t):
     a = unit_angle(t)

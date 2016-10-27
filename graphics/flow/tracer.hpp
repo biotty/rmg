@@ -195,7 +195,7 @@ struct Tracer
             trace_swap->cell(it) = trace->cell(i, j);
         }
         std::swap(trace, trace_swap);
-        descatter(trace);
+        // descatter(trace);
     }
 };
 
