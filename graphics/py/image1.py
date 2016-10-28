@@ -176,9 +176,6 @@ def observer(t, w = Observer(Direction.random(2.4), origo, rnd(0, 1))):
 def sky(t): return RgbSky()
 
 script = ScriptInvocation.from_sys()
-n = int(script.positional_args[0])
-if 1 == len(script.positional_args):
-    script.tee(World(scene_objects(n, 0)(0), light_spots(0), observer(0), sky(0)))
-else:
-    d = float(script.positional_args[1])
-    script.sequence(ParametricWorld(scene_objects(n, d), light_spots, observer, sky))
+n = int(script.args.get(0, "9"))
+d = float(script.args.get(1, "1.5"))
+script.run(ParametricWorld(scene_objects(n, d), light_spots, observer, sky))

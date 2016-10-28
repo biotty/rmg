@@ -7,11 +7,13 @@
 from sys import stdout, stderr, exit
 from rmg.math_ import rnd
 from rmg.plane import XY, origo
+from math import cos, sin, atan2, log2, hypot
 
 
 if stdout.isatty():
     stderr.write("you should redirect stdout\n")
     exit(2)
+
 
 class PixelTransform:
     def __init__(self, previous_ab, ab):
@@ -22,7 +24,7 @@ class PixelTransform:
         c = r * 0.5
         result_xys = []
         for e in pixel_xys:
-            p = XY(*e) + XY(0.5, 0.5)  #center of pixel
+            p = XY(*e) + XY(0.5, 0.5)  # quantity: center of pixel
             p -= c
             p *= self.m
             p += c
@@ -34,14 +36,14 @@ class PixelTransform:
 
 
 class Fractal:
-    def __init__(self, a, b):
-        self.a = a   # min
-        self.b = b   # max
+    def __init__(self, min_, max_):
+        self.a = min_
+        self.b = max_
 
     def value(self, p):
         print('abstract')
-        #note: p must be in unit-square
-        #       and an integer is returned
+        # interface: p must be in unit-square
+        #            and an integer is returned
 
 
 class Mandel(Fractal):
@@ -75,9 +77,9 @@ class Julia(Fractal):
 
 
 class Block:
-    def __init__(self, a, b):
-        self.a = a   # min pixel-coordinates
-        self.b = b   # max
+    def __init__(self, _min, _max):
+        self.a = _min
+        self.b = _max
         self.a_value = None
         self.b_value = None
         self.of_interest = False
@@ -220,12 +222,16 @@ class Frame:
         self.r = r
         self.orient(c, z)
         self.setup(n, s)
+        self.fixed = None
 
     def orient(self, c, z):
         w = z * self.r.x / self.r.y
         h = z
         self.a = c - XY(w, h) * 0.5
         self.b = self.a + XY(w, h)
+
+    def aspect(self):
+        return (self.b.x - self.a.x) / (self.b.y - self.a.y)
 
     def setup(self, n, s):
         g_previous = g = None
@@ -245,26 +251,58 @@ class Frame:
                 transform(previous_edge, self.r))
 
     def target(self):
-        c = (self.a + self.b) * 0.5
-        block_offset = XY(self.g.s, self.g.s) * 0.5
-        c_as_block_pixel = \
-                c.onto_unit(self.a, self.b).onto_square(origo, self.r) \
-                - block_offset  # adjusted to just compare with block.a
-        min_pixel_distance = abs(self.r)
-        nearest_interesting_pixel = None
-        for (i, j) in self.g.interest:
+        if self.fixed:
+            nearest_interesting_pixel = self.fixed
+        else:
+            c = (self.a + self.b) * 0.5
+            block_offset = XY(self.g.s, self.g.s) * 0.5
+            c_as_block_pixel = \
+                    c.onto_unit(self.a, self.b).onto_square(origo, self.r) \
+                    - block_offset  # adjusted to just compare with block.a
+            min_pixel_distance = abs(self.r)
+            nearest_interesting_pixel = None
+            for (i, j) in self.g.interest:
+                block = self.g.rows[i][j]
+                if block.wk_interest:
+                    continue
+                block_pixel = block.a
+                pixel_distance = abs(block_pixel - c_as_block_pixel)
+                if pixel_distance < min_pixel_distance:
+                    min_pixel_distance = pixel_distance
+                    nearest_interesting_pixel = block_pixel
+            if nearest_interesting_pixel is None:
+                stderr.write("Nothing of interest in frame\n")
+                return  # err
+            nearest_interesting_pixel += block_offset
+        return nearest_interesting_pixel.onto_unit(
+                origo, self.r).onto_square(self.a, self.b)
+
+    def loose(self):
+        # bug: this is not doing it
+        mostlostblock = None
+        mads = 0
+        h = self.g.n_rows
+        w = self.g.n_columns
+        for _ in range(h * w // 2):  # quantity: tune
+            i = int(rnd(h))
+            j = int(rnd(w))
             block = self.g.rows[i][j]
-            if block.wk_interest:
-                continue
-            block_pixel = block.a
-            pixel_distance = abs(block_pixel - c_as_block_pixel)
-            if pixel_distance < min_pixel_distance:
-                min_pixel_distance = pixel_distance
-                nearest_interesting_pixel = block_pixel
-        if nearest_interesting_pixel is None:
-            stderr.write("Nothing of interest in frame\n")
-        return (nearest_interesting_pixel + block_offset) \
-                .onto_unit(origo, self.r).onto_square(self.a, self.b)
+            if not block.of_interest and block.a_value == 0:
+                dss = 0
+                for (ii, jj) in self.g.interest:
+                    dss += hypot(ii - i, jj - j)
+                ads = dss / len(self.g.interest)
+                if ads > mads:
+                    mads = ads
+                    mostlostblock = block
+        if mostlostblock:
+            block_offset = XY(self.g.s, self.g.s) * 0.5
+            return mostlostblock.a + block_offset
+        stderr.write("Gave up picking a contained block\n")
+        # note: still None, gets chance next iteration
+
+    def contained(self):
+        return self.g.rows[0][0].a_value == 0 and not self.g.interest
 
 
 class NullImage:
@@ -300,7 +338,7 @@ class EdgeDetect:
     def __init__(self, result):
         self.r = result.r
         self.out = result.put
-        self.edge = []  #pixel coordinates
+        self.edge = []  # note: pixel coordinates
         self.i = 0
         self.previous_row = None
         self.row = None
@@ -311,9 +349,9 @@ class EdgeDetect:
 
     def put(self, v):
         self.resent_row.append(v)
-        #note: the border-pixels are not edge-detected
-        #(doesn't matter now because area will be out of frame
-        #when edge is transformed to zoomed frame coordinates anyway.
+        # note: the border-pixels are not edge-detected
+        #       (doesn't matter now because area will be out of frame
+        #       when edge is transformed to zoomed frame coordinates anyway.
         if len(self.resent_row) == self.r.x:
             if self.i == 0:
                 pass
@@ -328,8 +366,8 @@ class EdgeDetect:
                             self.row[j-1:j+2], self.resent_row[j]):
                         self.out(255)
                         if self.i % 2 == 0 and j % 2 == 0:
-                            #note: take just a quarter of the points
-                            #      as that's enough to cover edge.
+                            # note: take just a quarter of the points
+                            #       as that's enough to cover edge.
                             self.edge.append((j, self.i))
                     else:
                         self.out(0)
@@ -371,21 +409,31 @@ class FractalMovie:
     def __init__(self, frame, w):
         self.zi = frame.b.y - frame.a.y
         self.counts = [frame.g.f.n]
+        fixed = None
+        n = w - int(log2(frame.g.n_rows))
         for i in range(1, w):
             previous = frame
             frame = previous.child()
+            if i >= n:
+                if previous.contained(): break
+                if not fixed: fixed = frame.loose()
+                frame.fixed = fixed
             c = (frame.a + frame.b) * 0.5
             stderr.write("%d #%d (%f, %f)@%G\r" % \
-                    (i + 1, frame.g.f.n, c.x, c.y,
+                    (i, frame.g.f.n, c.x, c.y,
                     frame.b.y - frame.a.y))
             self.counts.append(frame.g.f.n)
         self.f = frame
         stderr.write("\n")
 
     def generate(self, k):
+        c = (self.f.a + self.f.b) * 0.5
+        ang = atan2(c.y, c.x)
+        igp = XY(cos(ang) * 2, sin(ang) * (1 + self.f.aspect()))
+        igq = igp - c
+        igz = .05
         u = len(self.counts) - 1
         stderr.write("%d:\n" % (k * u,))
-        c = (self.f.a + self.f.b) * 0.5
         edge = []
         for i in range(u):
             n = self.counts[i]
@@ -396,7 +444,9 @@ class FractalMovie:
                 z = self.zi * 0.5 ** x
                 count = n + int(h * d)
                 stderr.write("%d #%d @%G\r" % (i*k+j, count, z))
-                self.f.reset(c, z, count, edge)
+                dc = igq * ((z - igz) / (self.zi - igz)) ** 2 \
+                        if z > igz else origo
+                self.f.reset(c + dc, z, count, edge)
                 image = Image(self.f.r)
                 ed = EdgeDetect(NullImage(image.r))
                 edge = ed.edge
@@ -415,9 +465,9 @@ mh = 2 # mandelbrot initial frame height in complex plane
 jc = XY(rnd(-1, 1), rnd(-1, 1)) # julia-set ^
 jh = 2 # julia-set ^
 
-stderr.write("Localizing Mandelbrot border coordinate\n")
-m = FractalMovie(MandelFrame(r, mc, mh, block_side),
-        zoom_steps).generate(images_per_step)
-stderr.write("Using final location as constant for Julia Set\n")
-m = FractalMovie(JuliaFrame(m.f.a, r, jc, jh, block_side),
-        zoom_steps).generate(images_per_step)
+stderr.write("Localizing Mandelbrot coordinate\n")
+m = FractalMovie(MandelFrame(r, mc, mh, block_side), zoom_steps)
+m.generate(images_per_step)
+stderr.write("Using location for Julia Set\n")
+j = FractalMovie(JuliaFrame(m.f.a, r, jc, jh, block_side), zoom_steps)
+j.generate(images_per_step)

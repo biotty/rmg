@@ -6,7 +6,7 @@ all: ray/gun flow/fluid
 
 media: image.jpeg
 
-heavy_media: video.mpeg fluid.mpeg mandelbrot.mpeg
+heavy_media: video.mp4 fluid.mp4 mandelbrot.mp4
 
 ray/gun: rgb/librgb.a
 	@$(MAKE) -C ray
@@ -20,17 +20,17 @@ rgb/librgb.a:
 image.jpeg: py/image1.py ray/gun
 	$< 12 |$(RAY_GUN) 1920x1080 |pnmtojpeg >$@
 
-video.mpeg: py/image1.py ray/gun
-	./movie_from_exec.sh $@ "$< -c 736 -C $(RAY_GUN) 10 1"
+video.mp4: py/image1.py ray/gun
+	./movie_from_exec.sh $@ "$< -c 736 -C $(RAY_GUN)"
 
-fluid.mpeg: img.png flow/fluid
-	./movie_from_exec.sh $@ "$(FLOW_FLUID)"
+fluid.mp4: flow/fluid img.png
+	./movie_from_exec.sh $@ "$(FLOW_FLUID) -n 2048"
 
-mandelbrot.mpeg: py/follow.py
+mandelbrot.mp4: py/follow.py
 	$< |./movie_from_pipe.sh $@
 
 img.png: py/globe.py
-	$< 192x108
+	$< 512x512
 	pnmtopng globe.pnm >$@
 
 .PHONY:
@@ -39,7 +39,7 @@ clean:
 
 .PHONY:
 sweep: clean
-	@rm -f *.png *.jpeg *.mpeg
+	@rm -f *.png *.jpeg *.mp4
 	@ls -d *.movie 2>/dev/null |xargs -i ./movie_directory.sh -D {}
 	@$(MAKE) -C rgb sweep
 	@$(MAKE) -C ray sweep

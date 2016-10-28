@@ -24,12 +24,12 @@ class ParametricWorld:
 class ScriptInvocation:
 
     def __init__(self, frame_resolution, frame_count,
-            trace_command, path_prefix, positional_args):
+            trace_command, path_prefix, args):
         self.frame_resolution = frame_resolution
         self.frame_count = frame_count
         self.trace_command = trace_command
         self.path_prefix = path_prefix
-        self.positional_args = positional_args
+        self.args = dict(enumerate(args))  # purpose: get with default
 
     @classmethod
     def from_sys(cls):
@@ -42,9 +42,6 @@ class ScriptInvocation:
         return cls(o.resolution, o.frame_count,
                 o.trace_command, o.path_prefix, a)
 
-    def tee(self, world):
-        stdout.write("%s\n" % (world,))
-
     def image(self, world, path):
         data = bytes(str(world), 'ascii')
         comm = (self.trace_command, self.frame_resolution, path)
@@ -54,11 +51,14 @@ class ScriptInvocation:
         if p.wait() != 0:
             raise Exception("Failure on %r" % (comm,))
 
-    def sequence(self, parametric_world):
+    def run(self, parametric_world):
         if not self.frame_count:
-            raise Exception("Script not invoked for sequence")
-        stderr.write("%d\n+" % (self.frame_count,))
-        for i in range(self.frame_count):
-            self.image(parametric_world(float(i) / self.frame_count),
-                   "%s%d.jpeg" % (self.path_prefix, i,))
-            stderr.write("\r%d" % (i,))
+            world = parametric_world(0)
+            if self.path_prefix: self.image(world, self.path_prefix)
+            else: stdout.write("%s\n" % (world,))
+        else:
+            stderr.write("%d\n+" % (self.frame_count,))
+            for i in range(self.frame_count):
+                self.image(parametric_world(float(i) / self.frame_count),
+                       "%s%d.jpeg" % (self.path_prefix, i,))
+                stderr.write("\r%d" % (i,))

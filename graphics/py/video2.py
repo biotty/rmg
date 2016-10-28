@@ -84,4 +84,4 @@ for n in names:
 
 pw = ParametricWorld(scene_objects, light_spots, observer, sky)
 script = ScriptInvocation.from_sys()
-script.sequence(pw)
+script.run(pw)
