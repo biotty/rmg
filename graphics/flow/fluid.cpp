@@ -94,21 +94,19 @@ private:
 
 struct SimpleFunction : FluidFunction
 {
-    XY placement;
+    Position pos;
     double a;
     double w;
     double r;
 
-    SimpleFunction(XY p, double a, double w, double r, FluidParameters & fp)
-        : placement(p), a(a), w(w), r(r), params(fp)
+    SimpleFunction(Position pos, double a, double w, double r, FluidParameters & fp)
+        : pos(pos), a(a), w(w), r(r), params(fp)
     {}
     bool operator()(Grid<FluidCell> * /*field_swap*/, Grid<FluidCell> * field, double step_t)
     {
-        size_t i = field->h * placement.y;
-        size_t j = field->w * placement.x;
         XY force = XY(cos(a), sin(a)) * r;
-        field->cell(i, j).velocity += force * (step_t / params.density(Position(i, j)));
         a += w * step_t;
+        field->cell(pos.i, pos.j).velocity += force * (step_t / params.density(pos));
         return false;
     }
 
@@ -233,8 +231,8 @@ int main(int argc, char **argv)
     FeedbackParameters p(h, w);
     std::vector<FluidFunction *> functions;
     for (size_t k = 0; k < q; ++k) {
-        XY placement(rnd(1), rnd(1));
-        functions.push_back(new SimpleFunction(placement,
+        Position pos(rnd(w), rnd(h));
+        functions.push_back(new SimpleFunction(pos,
                     rnd(6.283), rnd(.01), .1 + rnd(.9), p));
     }
     functions.push_back(new EdgeFunction<FluidCell>());
