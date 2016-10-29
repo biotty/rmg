@@ -96,6 +96,8 @@ class Block:
         self.a_value = v[0]
         self.b_value = v[3]
 
+    def allcorner(self, x):
+        return not self.of_interest and self.a_value == x
 
 
 class Grid:
@@ -252,7 +254,7 @@ class Frame:
 
     def target(self):
         if self.fixed:
-            nearest_interesting_pixel = self.fixed
+            return self.fixed
         else:
             c = (self.a + self.b) * 0.5
             block_offset = XY(self.g.s, self.g.s) * 0.5
@@ -272,34 +274,67 @@ class Frame:
                     nearest_interesting_pixel = block_pixel
             if nearest_interesting_pixel is None:
                 stderr.write("Nothing of interest in frame\n")
-                return  # err
+                return c
             nearest_interesting_pixel += block_offset
         return nearest_interesting_pixel.onto_unit(
                 origo, self.r).onto_square(self.a, self.b)
 
     def loose(self):
-        # bug: this is not doing it
-        mostlostblock = None
-        mads = 0
         h = self.g.n_rows
         w = self.g.n_columns
-        for _ in range(h * w // 2):  # quantity: tune
-            i = int(rnd(h))
-            j = int(rnd(w))
-            block = self.g.rows[i][j]
-            if not block.of_interest and block.a_value == 0:
-                dss = 0
-                for (ii, jj) in self.g.interest:
-                    dss += hypot(ii - i, jj - j)
-                ads = dss / len(self.g.interest)
-                if ads > mads:
-                    mads = ads
-                    mostlostblock = block
-        if mostlostblock:
-            block_offset = XY(self.g.s, self.g.s) * 0.5
-            return mostlostblock.a + block_offset
-        stderr.write("Gave up picking a contained block\n")
-        # note: still None, gets chance next iteration
+        rows = self.g.rows
+        a = []
+        a.extend([rows[i][0] for i in range(1, h)])
+        a.extend([rows[h - 1][j] for j in range(1, w)])
+        a.extend([rows[i][w - 1] for i in reversed(range(0, h - 1))])
+        a.extend([rows[0][j] for j in reversed(range(0, w - 1))])
+        for x, block in enumerate(a):
+            if not block.allcorner(0):
+                break
+        x += 1
+        a = a[x:] + a[:x]
+        maxcount = 0
+        mostlost = None
+        inlost = False
+        for x, block in enumerate(a):
+            if block.allcorner(0):
+                if inlost:
+                    count += 1
+                else:
+                    count = 1
+                    inlost = True
+            else:
+                if inlost:
+                    if count > maxcount:
+                        maxcount = count
+                        mostlost = a[x - count // 2]
+                    inlost = False
+
+        if not mostlost:
+            stderr.write("No lost on border\n")
+            n = 0
+            for _ in range(h * w // 3):
+                if n > 9:
+                    break
+                i = int(rnd(0, h))
+                j = int(rnd(0, w))
+                block = rows[i][j]
+                if block.allcorner(0):
+                    n += 1
+                    dss = 0
+                    for (ii, jj) in self.g.interest:
+                        dss += hypot(ii - i, jj - j)
+                    ads = dss / len(self.g.interest)
+                    if ads > mads:
+                        mads = ads
+                        mostlost = block
+
+        if not mostlost:
+            stderr.write("Gave up loose this round\n")
+            return None
+
+        p = (mostlost.a + mostlost.b) * 0.5
+        return p.onto_unit(origo, self.r).onto_square(self.a, self.b)
 
     def contained(self):
         return self.g.rows[0][0].a_value == 0 and not self.g.interest
@@ -410,7 +445,7 @@ class FractalMovie:
         self.zi = frame.b.y - frame.a.y
         self.counts = [frame.g.f.n]
         fixed = None
-        n = w - int(log2(frame.g.n_rows))
+        n = int(w - log2(frame.g.n_rows)) - 1
         for i in range(1, w):
             previous = frame
             frame = previous.child()
@@ -429,9 +464,10 @@ class FractalMovie:
     def generate(self, k):
         c = (self.f.a + self.f.b) * 0.5
         ang = atan2(c.y, c.x)
-        igp = XY(cos(ang) * 2, sin(ang) * (1 + self.f.aspect()))
+        igp = XY(cos(ang) * 2, sin(ang) * (1 + self.f.aspect())) * 1.1
+        # quantity: factor is dependent of subject to get outside it ^
         igq = igp - c
-        igz = .05
+        igz = .01
         u = len(self.counts) - 1
         stderr.write("%d:\n" % (k * u,))
         edge = []
@@ -468,6 +504,7 @@ jh = 2 # julia-set ^
 stderr.write("Localizing Mandelbrot coordinate\n")
 m = FractalMovie(MandelFrame(r, mc, mh, block_side), zoom_steps)
 m.generate(images_per_step)
+# todo: need to split to separate movies, no current aparatus
 stderr.write("Using location for Julia Set\n")
 j = FractalMovie(JuliaFrame(m.f.a, r, jc, jh, block_side), zoom_steps)
 j.generate(images_per_step)
