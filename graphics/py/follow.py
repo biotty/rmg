@@ -279,24 +279,39 @@ class Frame:
         return nearest_interesting_pixel.onto_unit(
                 origo, self.r).onto_square(self.a, self.b)
 
+    def contained(self):
+        return self.g.rows[0][0].a_value == 0 and not self.g.interest
+
     def loose(self):
+        if not self.g.interest:
+            return None
+        rows = self.g.rows
+        def lostarea(i, j):
+            return rows[i][j].allcorner(0) and \
+                    rows[i - 1][j].allcorner(0) and \
+                    rows[i + 1][j].allcorner(0) and \
+                    rows[i][j - 1].allcorner(0) and \
+                    rows[i][j + 1].allcorner(0)
         h = self.g.n_rows
         w = self.g.n_columns
-        rows = self.g.rows
         a = []
-        a.extend([rows[i][0] for i in range(1, h)])
-        a.extend([rows[h - 1][j] for j in range(1, w)])
-        a.extend([rows[i][w - 1] for i in reversed(range(0, h - 1))])
-        a.extend([rows[0][j] for j in reversed(range(0, w - 1))])
-        for x, block in enumerate(a):
+        a.extend([(i, 1) for i in range(2, h - 1)])
+        a.extend([(h - 2, j) for j in range(2, w - 1)])
+        a.extend([(i, w - 2) for i in reversed(range(1, h - 2))])
+        a.extend([(1, j) for j in reversed(range(1, w - 2))])
+        for x, (i, j)  in enumerate(a):
+            block = rows[i][j]
             if not block.allcorner(0):
                 break
+        else:
+            return None
         x += 1
         a = a[x:] + a[:x]
         maxcount = 0
         mostlost = None
         inlost = False
-        for x, block in enumerate(a):
+        for x, (i, j) in enumerate(a):
+            block = rows[i][j]
             if block.allcorner(0):
                 if inlost:
                     count += 1
@@ -306,20 +321,21 @@ class Frame:
             else:
                 if inlost:
                     if count > maxcount:
-                        maxcount = count
-                        mostlost = a[x - count // 2]
+                        mi, mj = a[x - count // 2]
+                        if lostarea(mi, mj):
+                            mostlost = rows[mi][mj]
+                            maxcount = count
                     inlost = False
 
         if not mostlost:
-            stderr.write("No lost on border\n")
+            mads = 0
             n = 0
-            for _ in range(h * w // 3):
+            for _ in range(h * w // 5):
                 if n > 9:
                     break
-                i = int(rnd(0, h))
-                j = int(rnd(0, w))
-                block = rows[i][j]
-                if block.allcorner(0):
+                i = int(rnd(1, h - 1))
+                j = int(rnd(1, w - 1))
+                if lostarea(i, j):
                     n += 1
                     dss = 0
                     for (ii, jj) in self.g.interest:
@@ -327,17 +343,14 @@ class Frame:
                     ads = dss / len(self.g.interest)
                     if ads > mads:
                         mads = ads
-                        mostlost = block
+                        mostlost = rows[i][j]
 
         if not mostlost:
-            stderr.write("Gave up loose this round\n")
+            stderr.write("Gave up loose\n")
             return None
 
         p = (mostlost.a + mostlost.b) * 0.5
         return p.onto_unit(origo, self.r).onto_square(self.a, self.b)
-
-    def contained(self):
-        return self.g.rows[0][0].a_value == 0 and not self.g.interest
 
 
 class NullImage:
@@ -445,13 +458,14 @@ class FractalMovie:
         self.zi = frame.b.y - frame.a.y
         self.counts = [frame.g.f.n]
         fixed = None
-        n = int(w - log2(frame.g.n_rows)) - 1
+        n_loose = int(w - log2(frame.g.n_rows)) - 1
         for i in range(1, w):
             previous = frame
             frame = previous.child()
-            if i >= n:
+            if i >= n_loose:
                 if previous.contained(): break
-                if not fixed: fixed = frame.loose()
+                lost = frame.loose()
+                if lost: fixed = lost
                 frame.fixed = fixed
             c = (frame.a + frame.b) * 0.5
             stderr.write("%d #%d (%f, %f)@%G\r" % \

@@ -21,10 +21,10 @@ image.jpeg: py/image1.py ray/gun
 	$< 12 |$(RAY_GUN) 1920x1080 |pnmtojpeg >$@
 
 video.mp4: py/image1.py ray/gun
-	./movie_from_exec.sh $@ "$< -c 736 -C $(RAY_GUN)"
+	./movie_from_exec.sh $@ "$< -n 736 -C $(RAY_GUN)"
 
 fluid.mp4: flow/fluid img.png
-	./movie_from_exec.sh $@ "$(FLOW_FLUID) -n 2048"
+	./movie_from_exec.sh $@ "$(FLOW_FLUID) -n 2048 1920x1080"
 
 mandelbrot.mp4: py/follow.py
 	$< |./movie_from_pipe.sh $@
@@ -39,7 +39,7 @@ clean:
 
 .PHONY:
 sweep: clean
-	@rm -f *.png *.jpeg *.mp4
+	@rm -f globe.pnm *.png *.jpeg *.mp4
 	@ls -d *.movie 2>/dev/null |xargs -i ./movie_directory.sh -D {}
 	@$(MAKE) -C rgb sweep
 	@$(MAKE) -C ray sweep

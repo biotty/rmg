@@ -60,6 +60,14 @@ struct Painting
         std::remove(qpath.c_str());  // unlink, but we still have file open
     }
 
+    std::pair<size_t, size_t> dim()
+    {
+        std::pair<size_t, size_t> r;
+        r.first = ph->width;
+        r.second = ph->height;
+        return r;
+    }
+
     std::vector<color> print(Grid<palette_index_type> * board)
     {
         std::vector<color> palette(n, {0, 0, 0});
@@ -100,18 +108,18 @@ private:
 
 struct PhotoColorizer : Colorizer
 {
-    const std::string path;
-    const size_t n;
+    Painting * painting;
 
     PhotoColorizer(std::string path, std::string filename_prefix,
             size_t n = 256)
         : Colorizer(filename_prefix)
-        , path(path)
-        , n(n)
+        , painting(new Painting(path, n))
     {}
     void initialize(Grid<palette_index_type> * grid)
     {
-        palette = Painting(path, n).print(grid);
+        palette = painting->print(grid);
+        delete painting;
+        painting = NULL;
     }
 };
 

@@ -127,7 +127,7 @@ void help()
 "-i PATH    filename of PNG image to start with\n"
 "-m N>0     output-image pixel-widths per fluid-cell\n"
 "-n N>0     count of output-images to produce\n"
-"-p PATH    prefix for path to JPEG output-files\n"
+"-o PATH    prefix for path to JPEG output-files\n"
 "-q N>0     number of force-spots applied to fluid\n"
 "-s N>0     seed for random-number-generator\n"
 "-v REAL    normal and exceptional viscosity, respectively\n"
@@ -142,14 +142,14 @@ void help()
 int main(int argc, char **argv)
 {
     time_t seed = 0;
-    unsigned q = 9, w = 256, h = 256, m = 3;
+    unsigned q = 9, m = 4;
     std::vector<ColorMatch> d_exc, v_exc;
     double z = 0.1, d = 0.08, D = 0.2, v = 0.4, V = 1.0;
     const char *image_prefix = "", *photo_filename = "img.png";
     int n = 512;
 
     int opt;
-    while ((opt = getopt(argc, argv, "c:C:d:D:hi:m:n:p:q:s:v:V:x:")) >= 0)
+    while ((opt = getopt(argc, argv, "c:C:d:D:hi:m:n:o:q:s:v:V:")) >= 0)
     switch (opt) {
         default:
             return 1;
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
                 return 1;
             }
             break;
-        case 'p':
+        case 'o':
             image_prefix = optarg; break;
         case 'q':
             if ((q = std::atoi(optarg)) <= 0) {
@@ -207,15 +207,25 @@ int main(int argc, char **argv)
             break;
         case 'v': std::sscanf(optarg, "%lf", &v); break;
         case 'V': std::sscanf(optarg, "%lf", &V); break;
-        case 'x':
-            if (std::sscanf(optarg, "%u,%u", &w, &h) != 2) {
-                std::cerr << "illegal optarg of -x\n"
-                    "please use two numbers separated by a ','\n";
-                return 1;
-            }
-            break;
     }
 
+    PhotoColorizer c(photo_filename, image_prefix);
+    auto dim = c.painting->dim();
+    unsigned w_image = dim.first;
+    unsigned h_image = dim.second;
+    if (optind < argc) {
+        if (std::sscanf(argv[optind], "%ux%u", &w_image, &h_image) != 2) {
+            std::cerr << "illegal optarg of -x\n"
+                "please use two numbers separated by a 'x'\n";
+            return 1;
+        }
+    }
+    if (w_image % m || h_image % m) {
+        std::cerr << "illegal dimentions "
+            << w_image << "x" << h_image << " for -m " << m << "\n"
+            "please use a number that divides both dimentions\n";
+        return 1;
+    }
     if (d_exc.empty()) {
         d_exc.push_back(ColorMatch(0.2, {0, 0, 0}));
         std::cerr << "using dark colors as exceptional density\n";
@@ -227,21 +237,22 @@ int main(int argc, char **argv)
     if (seed == 0) {
         std::time(&seed);
     }
-    std::srand(seed);
+
+    Tracer<palette_index_type> tracer(h_image, w_image);
+    ColorTracer color_tracer(&tracer, &c);
+    size_t h = h_image / m;
+    size_t w = w_image / m;
     FeedbackParameters p(h, w);
     std::vector<FluidFunction *> functions;
+    std::srand(seed);
     for (size_t k = 0; k < q; ++k) {
-        Position pos(rnd(w), rnd(h));
+        Position pos(rnd(h), rnd(w));
         functions.push_back(new SimpleFunction(pos,
                     rnd(6.283), rnd(.01), .1 + rnd(.9), p));
     }
     functions.push_back(new EdgeFunction<FluidCell>());
     CompositeFunction<FluidCell> f(functions);
     FluidAnimation a(h, w, p, f);
-
-    PhotoColorizer c(photo_filename, image_prefix);
-    Tracer<palette_index_type> tracer(h * m, w * m);
-    ColorTracer color_tracer(&tracer, &c);
 
     p.configure(color_tracer, d, v, d_exc, D, v_exc, V);
     a.run(n, color_tracer);

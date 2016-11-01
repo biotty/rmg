@@ -206,7 +206,7 @@ struct FluidAnimation
             delete functions[aspect];
     }
 
-    FluidAnimation(size_t w, size_t h, FluidParameters & p, FluidFunction & f)
+    FluidAnimation(size_t h, size_t w, FluidParameters & p, FluidFunction & f)
             : flow(h, w), params(p)
     {
         for (size_t aspect = 0; aspect < 3; ++aspect)

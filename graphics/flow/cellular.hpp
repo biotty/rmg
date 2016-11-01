@@ -186,7 +186,7 @@ template<typename Y>
 void quantize(Grid<Y> & dst, Grid<Y> & src)
 {
     assert(dst.h < src.h);
-    assert(dst.w < src.h);
+    assert(dst.w < src.w);
     Position tile(src.h / dst.h, src.w / dst.w);  // assume dst divides src
     for (PositionIterator it = dst.positions(); it.more(); ++it) {
         Position & p = it.position;

@@ -77,6 +77,7 @@ struct Candidate {
     Y cc;
     uint8_t n;
     Candidate() : n() {}
+    Candidate(const Candidate & o) : x(o.x), y(o.y), cc(o.cc), n(o.n) {}
     Candidate(size_t _x, size_t _y, Y _cc, uint8_t _n)
         : x((uint16_t)_x), y((uint16_t)_y), cc(_cc), n(_n)
     {
@@ -110,16 +111,15 @@ void descatter(Grid<Y> * image)
 {
     using T = Candidate<Y>;
     std::map<Y, std::map<Y, std::vector<T>>> replacers;
-    PositionIterator it = image->positions();
-    for (; it.more(); ++it) {
+    for (PositionIterator it = image->positions(); it.more(); ++it) {
         std::pair<Y, uint8_t> color_count = best_invader(image->neighborhood(it));
         const Y color = color_count.first;
         const uint8_t n = color_count.second;
         const Y cc = image->cell(it);
         if (cc != color && n) {
-            size_t x = it.position.i;
-            size_t y = it.position.j;
-            replacers[cc][color].emplace_back(x, y, cc, n);
+            size_t x = it.position.j;
+            size_t y = it.position.i;
+            replacers[cc][color].push_back(T(x, y, cc, n));
         }
     }
     using E = std::pair<T *, Y>;
@@ -145,7 +145,7 @@ void descatter(Grid<Y> * image)
         if (p->n) {
             T q = pop_replacer(replacers[color][p->cc]);
             if (q.n) {
-                swaps.push_back({p->x, p->y, q.x, q.y});
+                swaps.push_back({p->y, p->x, q.y, q.x});
                 p->n = 0;
             }
         }
