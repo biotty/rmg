@@ -33,10 +33,14 @@ static inline void saturated_add(compact_color * x, compact_color y)
     x->b = b_ < 256 ? b_ : 255;
 }
 
-static inline bool similar(double e, const color * x, const color * y)
+static inline bool similar(double esq, const color * x, const color * y)
 {
-    color w = { fabs(x->r - y->r), fabs(x->g - y->g), fabs(x->b - y->b) };
-    return e * e > w.r * w.r + w.g * w.g + w.b * w.b;
+    if ( ! esq) {
+        return x->r == y->r && x->r == y->r && x->r == y->r;
+    } else {
+        color w = { x->r - y->r, x->g - y->g, x->b - y->b };
+        return esq > w.r * w.r + w.g * w.g + w.b * w.b;
+    }
 }
 
 static inline color x_color(compact_color cc)

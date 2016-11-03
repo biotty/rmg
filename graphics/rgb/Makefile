@@ -1,8 +1,9 @@
+CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -O2
 CFLAGS=-Wall -Wextra -Werror -std=c99 -O2
 LDFLAGS=-lm
 
 bluf: bluf.o librgb.a
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 librgb.a: color.o photo.o image.o
 	$(AR) rc $@ $^

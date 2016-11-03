@@ -29,13 +29,13 @@ struct ColorTracer : FluidIndicator
 
 struct ColorMatch
 {
-    double e;
+    double esq;
     color c;
 
-    ColorMatch(double e, color c) : e(e), c(c) {}
+    ColorMatch(double e, color c) : esq(e * e), c(c) {}
 
     bool operator()(color m) {
-        return similar(e, &c, &m);
+        return similar(esq, &c, &m);
     }
 };
 
