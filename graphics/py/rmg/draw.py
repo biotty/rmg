@@ -1,7 +1,7 @@
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
-from rmg.plane import XY
+from rmg.plane import XY, XYBox
 from rmg.math_ import Rx, Ry, Rz, matrix_multiply, unit_angle
 from rmg.space import Point, Direction, Box, origo
 from rmg.color import Color
@@ -21,7 +21,6 @@ class Stroke:
 
 class StrokesPath:
     def __init__(self, at, strokes = None):
-        assert isinstance(at, Point)
         self.at = at.copy()
         self.strokes = strokes or []
 
@@ -51,6 +50,9 @@ class Drawing:
                 points.append(s.to)
         return points
 
+    def rescale(self):
+        self.scale(*self.transformation())
+
     def transformation(self):
         box = Box()
         for p in self.all_points():
@@ -64,8 +66,7 @@ class Drawing:
             adjust += self.frame_adapt[0] * (1 / factor)
         return (adjust, factor)
 
-    def rescale(self):
-        a, m = self.transformation()
+    def scale(self, a, m):
         for p in self.all_points():
             p.__init__(*((p + a) * m).xyz())
 
@@ -76,6 +77,23 @@ class Drawing:
     def copy(self):
         paths = [p.copy() for p in self.paths]
         return Drawing(paths, self.frame_adapt)
+
+
+class Drawing2(Drawing):
+    def transformation(self, z=1):
+        box = XYBox()
+        for p in self.all_points():
+            box.update(*p.pair())
+        box.zoom(z)
+        m = max(*box.dims())
+        if not m: m = 1
+        adjust = XY(*box.mins()) * -1
+        factor = 1.0 / m
+        return (adjust, factor)
+
+    def scale(self, a, m):
+        for p in self.all_points():
+            p.__init__(*((p + a) * m).pair())
 
 
 class Turtle:

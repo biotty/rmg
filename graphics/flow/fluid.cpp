@@ -92,14 +92,14 @@ private:
 };
 
 
-struct SimpleFunction : FluidFunction
+struct JetFunction : FluidFunction
 {
     Position pos;
     double a;
     double w;
     double r;
 
-    SimpleFunction(Position pos, double a, double w, double r, FluidParameters & fp)
+    JetFunction(Position pos, double a, double w, double r, FluidParameters & fp)
         : pos(pos), a(a), w(w), r(r), params(fp)
     {}
     bool operator()(Grid<FluidCell> * /*field_swap*/, Grid<FluidCell> * field, double step_t)
@@ -112,6 +112,22 @@ struct SimpleFunction : FluidFunction
 
 private:
     FluidParameters & params;
+};
+
+
+struct ExtraFunction : FluidFunction
+{
+    Position pos;
+    double e;
+
+    ExtraFunction(Position pos, double e)
+        : pos(pos), e(e)
+    {}
+    bool operator()(Grid<FluidCell> * /*field_swap*/, Grid<FluidCell> * field, double step_t)
+    {
+        field->cell(pos.i, pos.j).pressure *= step_t * e;
+        return false;
+    }
 };
 
 
@@ -142,14 +158,14 @@ void help()
 int main(int argc, char **argv)
 {
     time_t seed = 0;
-    unsigned q = 9, m = 4;
+    unsigned p = 9, q = 9, m = 4;
     std::vector<ColorMatch> d_exc, v_exc;
     double z = 0.1, d = 0.08, D = 0.2, v = 0.4, V = 1.0;
     const char *image_prefix = "", *photo_filename = "img.png";
     int n = 512;
 
     int opt;
-    while ((opt = getopt(argc, argv, "c:C:d:D:hi:m:n:o:q:s:v:V:")) >= 0)
+    while ((opt = getopt(argc, argv, "c:C:d:D:hi:m:n:o:p:q:s:v:V:")) >= 0)
     switch (opt) {
         default:
             return 1;
@@ -191,15 +207,9 @@ int main(int argc, char **argv)
                 return 1;
             }
             break;
-        case 'o':
-            image_prefix = optarg; break;
-        case 'q':
-            if ((q = std::atoi(optarg)) <= 0) {
-                std::cerr << "q zero means to apply no forces to flow\n"
-                    "the images would all be alike\n";
-                return 1;
-            }
-            break;
+        case 'o': image_prefix = optarg; break;
+        case 'p': p = std::atoi(optarg); break;
+        case 'q': q = std::atoi(optarg); break;
         case 's':
             if ((seed = std::atoi(optarg)) <= 0) {
                 std::cerr << "will use time as random-seed\n";
@@ -242,19 +252,24 @@ int main(int argc, char **argv)
     ColorTracer color_tracer(&tracer, &c);
     size_t h = h_image / m;
     size_t w = w_image / m;
-    FeedbackParameters p(h, w);
+    FeedbackParameters fp(h, w);
     std::vector<FluidFunction *> functions;
     std::srand(seed);
-    for (size_t k = 0; k < q; ++k) {
+    for (unsigned _ = 0; _ < p; ++_) {
         Position pos(rnd(h), rnd(w));
-        functions.push_back(new SimpleFunction(pos,
-                    rnd(6.283), rnd(.01), .1 + rnd(.9), p));
+        functions.push_back(new ExtraFunction(pos, .98 + rnd(.04)));
     }
-    functions.push_back(new EdgeFunction<FluidCell>());
-    CompositeFunction<FluidCell> f(functions);
-    FluidAnimation a(h, w, p, f);
+    for (unsigned _ = 0; _ < q; ++_) {
+        Position pos(rnd(h), rnd(w));
+        functions.push_back(new JetFunction(
+                    pos, rnd(6.283), rnd(.01), .1 + rnd(.9), fp));
+    }
 
-    p.configure(color_tracer, d, v, d_exc, D, v_exc, V);
-    a.run(n, color_tracer);
+    functions.push_back(new EdgeFunction<FluidCell>());
+    CompositeFunction<FluidCell> cf(functions);
+    FluidAnimation anim(h, w, fp, cf);
+
+    fp.configure(color_tracer, d, v, d_exc, D, v_exc, V);
+    anim.run(n, color_tracer);
     for (size_t k = 0; k <=/*counting edge-function*/ q; ++k) delete functions[k];
 }

@@ -5,8 +5,8 @@
 #note:  pure black-white not supported (P4); only gray (P5) and color (P6)
 
 
-from rmg.plane import XY, XYBox
-from rmg.color import Color, black
+from rmg.plane import XY
+from rmg.color import Color
 from copy import deepcopy
 from array import array
 import sys, os, re
@@ -111,7 +111,7 @@ class Image:
             self.outs.buffer.write(b)
         else:
             self.outs.buffer.write(color.binary_rgb())
-        
+
     def close(self):
         if self.outs != sys.stdout: self.outs.close()
         else: self.outs.flush()
@@ -151,7 +151,7 @@ class Board:
 
     def color_at(self, column, row):
         return Color.from_int_rgb(self.int_at(column, row))
-    
+
     def set_color(self, column, row, color):
         self.data[self.n_columns * row + column] = color.int_rgb()
 
@@ -159,7 +159,7 @@ class Board:
         image = Image(self.n_columns, self.n_rows, path, gray)
         for i in self.data: image.put(Color.from_int_rgb(i))
         image.close()
-    
+
     def to_stream(self, gray = False):
         self.save(None, gray)
 
@@ -181,7 +181,7 @@ class Pencil:
         x, y = xy
         if self.board.contains(x, y):
             self.board.set_color(x, y, color)
-    
+
     def touch_pixel_careful(self, xy, color):
         if xy != self.last_touched_xy:
             self.touch_pixel(xy, color)
