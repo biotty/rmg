@@ -70,8 +70,6 @@ struct Painting
 
     std::vector<color> print(Grid<palette_index_type> * board)
     {
-        std::vector<color> palette(n, {0, 0, 0});
-        if ( ! ph) return palette;
         double h_m = ph->height /(double) board->h;
         double w_m = ph->width /(double) board->w;
         std::map<unsigned, palette_index_type> indices;
@@ -87,15 +85,15 @@ struct Painting
             }
             board->cell(it) = indices[rgb];
         }
-        for (std::map<unsigned, palette_index_type>::iterator me = indices.begin();
-                me != indices.end(); ++me) {
-            unsigned rgb = me->first;
+        std::vector<color> palette(indices.size());
+        for (auto & e : indices) {
+            unsigned rgb = e.first;
             const color c = {
                 (rgb & 0xff) / 255.0,
                 ((rgb >> 8) & 0xff) / 255.0,
                 (rgb >> 16) / 255.0
             };
-            palette[me->second] = c;
+            palette[e.second] = c;
         }
         return palette;
     }

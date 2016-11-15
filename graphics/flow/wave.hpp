@@ -67,7 +67,7 @@ struct WaveFlowAnimation
         delete functions[0];
     }
 
-    WaveFlowAnimation(size_t w, size_t h, WaveFlowParameters & p, WaveFlowFunction & f)
+    WaveFlowAnimation(size_t h, size_t w, WaveFlowParameters & p, WaveFlowFunction & f)
             : flow(h, w), params(p)
     {
         functions.push_back(new WaveFunction(params));

@@ -28,7 +28,7 @@ typedef struct {
 
 static cache_entry cache_entries[16];
 
-    char *
+    static char *
 path_hash(const char * path)
 {
     static char hash[hash_len]; //todo: rewrite to not return static buffer
@@ -42,7 +42,7 @@ path_hash(const char * path)
     return hash;
 }
 
-    cache_entry *
+    static cache_entry *
 alloc_entry(const char * path)
 {
     char * hash = path ? path_hash(path) : NULL;
@@ -53,7 +53,17 @@ alloc_entry(const char * path)
     return NULL;
 }
 
-    void
+    static void
+free_entry(const photo * ph)
+{
+    for (int i = 0; i < n_entries; i++)
+        if (cache_entries[i].photo == ph) {
+            cache_entries[i].path_hash[0] = '\0';
+            break;
+        }
+}
+
+    static void
 insert_entry(const char * path, photo * ph)
 {
     cache_entry * e = alloc_entry(NULL);
@@ -67,7 +77,7 @@ insert_entry(const char * path, photo * ph)
     ph->ref_count_ = 1;
 }
 
-    photo *
+    static photo *
 cached_photo(const char * path)
 {
     cache_entry * e = alloc_entry(path);
@@ -143,9 +153,10 @@ photo_delete(photo * ph)
 {
     if ( ! ph) return;
     const int count = -- ph->ref_count_;
-    if (count == 0)
+    if (count == 0) {
+        free_entry(ph);
         free(ph);
-    else if (count < 0)
+    } else if (count < 0)
         fprintf(stderr, "ref-count underflow\n");
 }
 

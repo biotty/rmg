@@ -54,7 +54,7 @@ class Ball:
 
 
 class GlobeMapRenderer:
-    
+
     def __init__(self, dashes, balls):
         self.dashes = dashes
         self.balls = balls
@@ -64,7 +64,7 @@ class GlobeMapRenderer:
         dashes = [Dash.random(r) for i in range(n_dashes)]
         balls =  [Ball.random(r * golden_ratio) for i in range(n_balls)]
         return cls(dashes, balls)
-    
+
     def get_ground(self, x, y):
         ink = copy(white_ink)
         theta = y * pi
@@ -97,8 +97,8 @@ class GlobeMapRenderer:
 
 if __name__ == "__main__":
     options = OptionParser()
-    options.add_option("-d", "--dash-count", default="4")
-    options.add_option("-b", "--ball-count", default="9")
+    options.add_option("-d", "--dash-count", default="6")
+    options.add_option("-b", "--ball-count", default="16")
     options.add_option("-p", "--pen-thickness", default="15")
     (opts, args) = options.parse_args()
     size = args[0].split("x")
@@ -109,7 +109,7 @@ if __name__ == "__main__":
             int(opts.dash_count),
             int(opts.ball_count),
             int(opts.pen_thickness) * 2 * pi / 360)
-    
+
     def status(m):
         stderr.write(m)
 

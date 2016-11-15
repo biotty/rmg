@@ -54,23 +54,30 @@ struct FeedbackParameters : FluidParameters
     {
         const std::vector<color> & palette = color_tracer.colorizer->palette;
         tracer = color_tracer.tracer;
+        int dc = 0;
+        int vc = 0;
         for (size_t i = 0; i < palette.size(); ++i) {
             const color & c = palette[i];
             double d = density;
             double v = viscosity;
-            for (size_t j = 0; j < density_cms.size(); ++j)
+            for (size_t j = 0; j < density_cms.size(); ++j) {
                 if (density_cms[j](c)) {
                     d = density_e;
+                    dc++;
                     break;
                 }
-            for (size_t k = 0; k < viscosity_cms.size(); ++k)
+            }
+            for (size_t k = 0; k < viscosity_cms.size(); ++k) {
                 if (viscosity_cms[k](c)) {
                     v = viscosity_e;
+                    vc++;
                     break;
                 }
+            }
             densities[i] = d;
             viscosities[i] = v;
         }
+        std::cerr << "pal-exc-dens:" << dc << " pal-exc-visc:" << vc << std::endl;
     }
     double density(const Position & p) { return densities.at(quantized->cell(p.i, p.j)); }
     double viscosity(const Position & p) { return viscosities.at(quantized->cell(p.i, p.j)); } 
@@ -147,8 +154,8 @@ void help()
 "-q N>0     number of force-spots applied to fluid\n"
 "-s N>0     seed for random-number-generator\n"
 "-v REAL    normal and exceptional viscosity, respectively\n"
-"-V REAL\n"
-"-x W,H     dimentions of the fluid grid\n";
+"-V REAL\n\n"
+"-x W,H     resolution override\n";
 }
 
 // todo: smooth-out borders between colors.  advanced detection must
@@ -237,11 +244,11 @@ int main(int argc, char **argv)
         return 1;
     }
     if (d_exc.empty()) {
-        d_exc.push_back(ColorMatch(0.2, {0, 0, 0}));
+        d_exc.push_back(ColorMatch(0.85, {0, 0, 0}));
         std::cerr << "using dark colors as exceptional density\n";
     }
     if (v_exc.empty()) {
-        v_exc.push_back(ColorMatch(0.2, {1, 1, 1}));
+        v_exc.push_back(ColorMatch(0.85, {1, 1, 1}));
         std::cerr << "using light colors as exceptional viscosity\n";
     }
     if (seed == 0) {
@@ -255,15 +262,19 @@ int main(int argc, char **argv)
     FeedbackParameters fp(h, w);
     std::vector<FluidFunction *> functions;
     std::srand(seed);
-    for (unsigned _ = 0; _ < p; ++_) {
-        Position pos(rnd(h), rnd(w));
-        functions.push_back(new ExtraFunction(pos, .98 + rnd(.04)));
+    std::vector<Position> pos;
+    for (size_t k = 0; k < p + q; ++k) {
+        size_t i = rnd(h);
+        size_t j = rnd(w);
+        pos.push_back(Position(i, j));
+        // ^ pick prng sequence for just positions
     }
-    for (unsigned _ = 0; _ < q; ++_) {
-        Position pos(rnd(h), rnd(w));
-        functions.push_back(new JetFunction(
-                    pos, rnd(6.283), rnd(.01), .1 + rnd(.9), fp));
-    }
+    for (unsigned k = 0; k < p; ++k)
+        functions.push_back(new ExtraFunction(pos[k], .98 + rnd(.04)));
+    for (unsigned k = p; k < p + q; ++k)
+        functions.push_back(new JetFunction(pos[k],
+                    rnd(6.283), rnd(.01), .1 + rnd(.9), fp));
+    pos.clear(); // nice: done with these
 
     functions.push_back(new EdgeFunction<FluidCell>());
     CompositeFunction<FluidCell> cf(functions);
