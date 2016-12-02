@@ -505,10 +505,14 @@ class FractalMovie:
         stderr.write("\n")
 
 
+# note: mandel or julia
+do_mandel = False
+
+
 r = XY(1280, 720)
-block_side = 32 # granularity for grid used to seach border
+block_side = 24 # granularity for grid used to seach border
 zoom_steps = 47 # zoom to half frame width this total count
-images_per_step = 16
+images_per_step = 24
 
 stderr.write("Initiating focus on random location\n")
 mc = XY(rnd(-1, 1), rnd(-1, 1)) # mandelbrot frame center
@@ -518,8 +522,9 @@ jh = 2 # julia-set ^
 
 stderr.write("Localizing Mandelbrot coordinate\n")
 m = FractalMovie(MandelFrame(r, mc, mh, block_side), zoom_steps)
-m.generate(images_per_step)
-# todo: need to split to separate movies, no current aparatus
-# stderr.write("Using location for Julia Set\n")
-# j = FractalMovie(JuliaFrame(m.f.a, r, jc, jh, block_side), zoom_steps)
-# j.generate(images_per_step)
+if do_mandel:
+    m.generate(images_per_step)
+else:
+    stderr.write("Using location for Julia Set\n")
+    j = FractalMovie(JuliaFrame(m.f.a, r, jc, jh, block_side), zoom_steps)
+    j.generate(images_per_step)

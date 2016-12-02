@@ -11,13 +11,15 @@ from math import atan2, sin, cos, pi
 from sys import stderr
 
 
-wind_s = 9
 detach_r = 2.6
-attach_r = 2.3
+attach_r = 2.4
 spring_r = 2.2
-spring_k = 200
-delta_t = .005
-steps_n = 8
+spring_k = 150
+spring_f = .05
+vecorr_d = .7
+delta_t = .01
+steps_n = 20
+spoon_s = .1
 
 
 def polar(f):
@@ -28,21 +30,14 @@ def par(p, a, r):
     return p + XY(cos(a), sin(a)) * r
 
 
-def attraction(p, q, f):
-    r = q - p
-    d = abs(r)
-    #note: cut (flatten) peak, assuming assymptote of f is in 0
-    return r * (f(max(.05, d)) / d)
-
-
 class Nucleus:
-    def __init__(self, max_bond, e, m, p):
-        self.e = e
+    def __init__(self, max_bond, m, p):
         self.m_inv = 1 / m
         self.p = p
         self.v = XY(0, 0)
         self.bond = []
         self.max_bond = max_bond
+        self.c = Color.from_hsv(self.max_bond * pi/3, 1, 1)
 
     def work(self, ft):
         self.v += ft * self.m_inv
@@ -50,46 +45,30 @@ class Nucleus:
     def n_free(self):
         return self.max_bond - len(self.bond)
 
-    def color(self):
-        return Color.from_hsv(self.max_bond * pi/3, 1, 1)
-
     def paths(self):
         r = []
-        c = self.color()
-        r.append(StrokesPath(self.p - XY(.1, 0),
-                    [Stroke(self.p + XY(.1, 0), c)]))
-        r.append(StrokesPath(self.p - XY(0, .1),
-                    [Stroke(self.p + XY(0, .1), c)]))
+        r.append(StrokesPath(self.p - XY(.5, 0),
+                    [Stroke(self.p + XY(.5, 0), self.c)]))
+        r.append(StrokesPath(self.p - XY(0, .5),
+                    [Stroke(self.p + XY(0, .5), self.c)]))
         for b in self.bond:
             if id(self) < id(b):
-                mix = Color.mix(c, b.color())
+                mix = Color.mix(self.c, b.c)
                 r.append(StrokesPath(self.p, [Stroke(b.p, mix)]))
         return r
 
 
-def world_nucleus(a, r, s):
-    # to origo, like gravity, mass cancels
-    a.v += (attraction(a.p, origo, lambda d: s * .1 * delta_t * d / r))
-
-    # central jet wind
-    d = abs(a.p - origo)
-    if d < r:
-        a.v.x += (1 - d / r) * delta_t * a.m_inv * wind_s * s
-
-    # friction, as laying on surface.  m for normal force cancels
-    e = a.v * (1 / -abs(a.v))
-    a.v += e * delta_t * s * .05
-
-    # todo: consider above neater, and using a.work
-
-
-def nucleus_nucleus(a, b, y):
-    def f(d):
-        w = (a.e * b.e) * -delta_t / d**2
-        if y or d < spring_r:
-            w += (d - spring_r) * spring_k * delta_t
-        return w
-    ft = attraction(a.p, b.p, f)
+def nucleus_nucleus(a, b):
+    r = b.p - a.p
+    d = abs(r)
+    if b in a.bond:
+        s = (d - spring_r) * spring_k
+        if s > spring_f: s -= spring_f
+        elif s < -spring_f: s += spring_f
+    elif d < attach_r:
+        s = (d - attach_r) * spring_k
+    else: return
+    ft = r * (s / d) * delta_t
     a.work(ft)
     b.work(ft * -1)
 
@@ -105,36 +84,84 @@ def detach_bond(a, b):
 
 
 def attachable_angle(a, z):
+    q = XY(cos(z), sin(z))
     s = cos(2 * pi / (1 + a.max_bond))
     for b in a.bond:
         w = b.p - a.p
-        if w.x * cos(z) + w.y * sin(z) > s:
+        if w.x * q.x + w.y * q.y > s * abs(w):
             return False
     return True
 
 
 class Lab:
-    def __init__(self, outres, atoms):
-        self.oi = 0
-        self.xform = None
+    def __init__(self, outres, r, blend_r, blend_s):
         self.ow, self.oh = outres
-        self.atoms = atoms
-        self.r = sum(abs(a.p - origo) for a in atoms) / len(atoms)
-        self.s = len(atoms) ** .5
+        self.r = r
+        self.oi = -64
+        self.atoms = []
+        self.xform = None
+        self.blend_a = 0
+        self.blend_r = blend_r
+        self.blend_s = blend_s
+        self.spoon_a = 0
+        self.dominant = 0
+
+    def inject(self):
+        if self.oi % 256 == 0:
+            self.dominant += 1
+            self.dominant %= 6
+            self.blend_a = rnd(pi * 2)
+        if self.oi % 2 == 0:
+            w = [1] * 6
+            w[self.dominant] = 11
+            a = [
+                    lambda p: Nucleus(1, 1, p),
+                    lambda p: Nucleus(2, 2, p),
+                    lambda p: Nucleus(3, 3, p),
+                    lambda p: Nucleus(4, 4, p),
+                    lambda p: Nucleus(5, 5, p),
+                    lambda p: Nucleus(6, 6, p)]
+            q = rnd(pi * 2)
+            p = XY(cos(q), sin(q)) * rnd(self.blend_r)
+            self.atoms.append(rnd_weighted(a, w)(p))
+
+    def intrinsics(self):
+        spoon_h = (self.r + self.blend_r) * .5
+        spoon_r = (self.r - self.blend_r) * .5
+        spoon_a = self.spoon_a
+        self.spoon_a += spoon_s * delta_t
+        for a in self.atoms:
+            d = abs(a.p)
+            if d < self.blend_r:
+                b = self.blend_a
+                a.v += XY(cos(b), sin(b)) * (1 - d / self.blend_r) \
+                        * a.m_inv * delta_t * self.blend_s
+            elif d > self.r:
+                n = a.p * (1 / d) * .9999  # quantity: ensure captured inside r
+                a.v *= XY(-n.y, n.x)  # math: trigo, proj to angle pluss pi/2
+                a.v -= n * .0001  # note: ensure ^ to untrap numeric-due outside
+                a.p = n * self.r
+            else:
+                so = XY(cos(spoon_a), sin(spoon_a)) * spoon_h
+                su = a.p - so
+                sd = abs(su)
+                if sd < spoon_r:
+                    n = su * (1 / sd)
+                    a.v *= XY(-n.y, n.x)  # math: ^
+                    a.p = so + n * spoon_r
 
     def accelerate(self):
         for a in self.atoms:
-            world_nucleus(a, self.r, self.s)
             for b in self.atoms:
                 if id(a) < id(b):
-                    nucleus_nucleus(a, b, b in a.bond)
+                    nucleus_nucleus(a, b)
 
     def displace(self):
-        #note: error-corrections are not energy-conserving
         for a in self.atoms:
-            if abs(a.v) * delta_t * steps_n > .4:
-                a.v *= .4 / (abs(a.v) * delta_t * steps_n)
-                stderr.write("a\n")
+            if abs(a.v) * delta_t * steps_n > vecorr_d:
+                # note: error-corrections are not energy-conserving
+                a.v *= vecorr_d / (abs(a.v) * delta_t * steps_n)
+                #stderr.write("a\n")
             a.p += a.v * delta_t
 
     def restruct(self):
@@ -153,38 +180,31 @@ class Lab:
                                 attach_bond(a, b)
 
     def output(self):
-        stderr.write("%d\r" % (self.oi,))
-        name = "%d.jpeg" % (self.oi,)
         self.oi += 1
-        board = Board.mono(self.ow, self.oh, black)
-        pencil = Pencil(board)
+        if self.oi < 0:
+            return
+
         paths = []
         for a in self.atoms:
             paths.extend(a.paths())
         drawing = Drawing2(paths)
-        if not self.xform:
-            self.xform = drawing.transformation(4)
+        if self.oi % 256 == 0:
+            self.xform = drawing.transformation(1.1)
         drawing.scale(*self.xform)
+
+        stderr.write("%d\r" % (self.oi,))
+        name = "%d.jpeg" % (self.oi,)
+        board = Board.mono(self.ow, self.oh, black)
+        pencil = Pencil(board)
         drawing.render(pencil)
         board.save(name)
 
-a = [
-        lambda p: Nucleus(1, 0, 1, p),
-        lambda p: Nucleus(2, 0, 2, p),
-        lambda p: Nucleus(3, 0, 3, p),
-        lambda p: Nucleus(4, 0, 4, p),
-        lambda p: Nucleus(5, 0, 5, p),
-        lambda p: Nucleus(6, 0, 6, p)]
-w = [1] * 6
 
-
-lab = Lab((512, 512),
-        [rnd_weighted(a, w)(XY(rnd(-10, 10), rnd(-10, 10)))
-            for _ in range(200)])
-
-
-for _i in range(1024):
+lab = Lab((512, 512), 50, 25, .7)
+for _i in range(2048):
+    lab.inject()
     for _q in range(steps_n):
+        lab.intrinsics()
         lab.accelerate()
         lab.displace()
     lab.restruct()

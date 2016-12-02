@@ -26,10 +26,10 @@ class XY:
     def __ne__(self, o):
         return not self.__eq__(o)
 
-    def rotated(self, u):
+    def rotation(self, u):
         a = unit_angle(u)
         R = [[cos(a), -sin(a)], [sin(a), cos(a)]]
-        return XY(*matrix_multiply(R, [self.x, self.y]))
+        return self.__class__(*matrix_multiply(R, [self.x, self.y]))
 
     def __add__(self, p):
         return XY(self.x + p.x, self.y + p.y)
@@ -67,6 +67,12 @@ class XY:
 
 
 origo = XY(0, 0)
+
+
+class XYDirection(XY):
+    @classmethod
+    def random(cls, h = 1):
+        return cls(0, h).rotation(rnd(1))
 
 
 class XYBox:
@@ -126,10 +132,9 @@ class XYEllipse:
         a = unit_angle(t - self.u)
         x = self.w * cos(a)
         y = self.h * sin(a)
-        return XY(x, y).rotated(self.r) + self.c
+        return XY(x, y).rotation(self.r) + self.c
 
 
 class XYCircle(XYEllipse):
     def __init__(self, c, h, u = 0):
         XYEllipse.__init__(self, c, h, h, 0, u)
-

@@ -11,6 +11,9 @@
 #include <getopt.h>
 
 
+constexpr double exaggerate = 5;
+
+
 struct SqueezeIndicator : WaveIndicator
 {
     const Picture & picture;
@@ -28,7 +31,7 @@ struct SqueezeIndicator : WaveIndicator
             squeezes.cell(it) = pr;
             bounds.update(pr);
         }
-        const double s_m = bounds.factor() * 7;  // exaggerate
+        const double s_m = bounds.factor() * exaggerate;
         std::ostringstream oss;
         oss << prefix << i << ".jpeg";
         image out = image_create(oss.str().c_str(), w, h);

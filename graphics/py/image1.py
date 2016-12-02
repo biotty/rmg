@@ -170,7 +170,7 @@ def light_spots(t):
           LightSpot(Point(0, 0,-7), Color(.4, .4, .8))
         ] if lightened_variant else []
 
-def observer(t, w = Observer(Direction.random(2.4), origo, rnd(0, 1))):
+def observer(t, w = Observer(Direction.random(3), origo, rnd(1))):
     return w
 
 def sky(t): return RgbSky()

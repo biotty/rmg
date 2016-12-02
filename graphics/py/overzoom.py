@@ -12,7 +12,7 @@ u = 0.02
 
 
 def rotate(xy, xy_center):
-    return (xy - xy_center).rotated(u) + xy_center
+    return (xy - xy_center).rotation(u) + xy_center
 
 
 path = sys.argv[1]
@@ -21,7 +21,7 @@ while 1:
     b = Board.from_photo(p)
     bw = b
 
-    xy_center = XY(b.width * 0.35, b.height * 0.55)
+    xy_center = XY(b.n_columns * 0.35, b.n_rows * 0.55)
     mix_factor = 0.4
     iterations = 3
     zf = 0.7
@@ -31,19 +31,19 @@ while 1:
         bw, b = b, bw.copy()
         zf -= 0.1
         assert zf>0
-        for y in range(b.height):
-            for x in range(b.width):
+        for y in range(b.n_rows):
+            for x in range(b.n_columns):
                 xy = XY(x, y)
                 xyr = rotate(xy, xy_center)
                 xy_src = xyr * zf + xy_center * (1 - zf)
                 xy_src.x = int(xy_src.x)
-                if xy_src.x < 0 or xy_src.x >= b.width:
+                if xy_src.x < 0 or xy_src.x >= b.n_columns:
                     continue
                 xy_src.y = int(xy_src.y)
-                if xy_src.y < 0 or xy_src.y >= b.height:
+                if xy_src.y < 0 or xy_src.y >= b.n_rows:
                     continue
-                uncentral = abs(x - xy_center.x) / float(b.width) \
-                        + abs(y - xy_center.y) / float(b.height)
+                uncentral = abs(x - xy_center.x) / float(b.n_columns) \
+                        + abs(y - xy_center.y) / float(b.n_rows)
                 t = b.color_at(x, y)
                 s = b.color_at(int(xy_src.x), int(xy_src.y))
                 bw.set_color(x, y, t.mix(s, mix_factor * uncentral))

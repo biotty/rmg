@@ -111,6 +111,10 @@ void descatter(Grid<Y> * image)
 {
     using T = Candidate<Y>;
     std::map<Y, std::map<Y, std::vector<T>>> replacers;
+    // consider: perform descatter for parts of the image at a time
+    //           so that we swap more related color-areas.  in this
+    //           manner the color-conservation in swaping-algorithm
+    //           makes more sense.  say rects 8th width and height.
     for (PositionIterator it = image->positions(); it.more(); ++it) {
         std::pair<Y, uint8_t> color_count = best_invader(image->neighborhood(it));
         const Y color = color_count.first;
