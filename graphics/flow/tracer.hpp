@@ -139,7 +139,8 @@ void descatter(Grid<Y> * image)
     }
 
     // optional: shuffle ad sort improves fairness and further helps best invadors
-    std::shuffle(a.begin(), a.end(), std::mt19937(std::rand()));
+    static unsigned r;
+    std::shuffle(a.begin(), a.end(), std::default_random_engine(++r));
     std::sort(a.begin(), a.end(), [](E lhs, E rhs){ return lhs.first->n > rhs.first->n; });
 
     std::vector<std::array<uint16_t, 4>> swaps;
