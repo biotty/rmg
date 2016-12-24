@@ -159,7 +159,7 @@ struct wah_wah
     lfo pedal;
     lfo mix;
 
-    wah_wah() : pedal(.9/SR), mix(3.1/SR) {}
+    wah_wah() : pedal(9/SR), mix(31/SR) {}
     
     double shift(double v)
     {
@@ -248,8 +248,9 @@ struct arp_wire
 {
     va_karpluss buf;
     unsigned c_touch;
+    bool enabled;
 
-    arp_wire() : c_touch() {}
+    arp_wire() : c_touch(), enabled() {}
 
     void move(double pitch)
     {
@@ -258,8 +259,8 @@ struct arp_wire
 
     void touch()
     {
-        c_touch += std::floor(rnd(2, 8)) * SR/4;
-        buf.excite();
+        c_touch += std::floor(rnd(1, 4)) * SR/8;
+        if (enabled) buf.excite();
     }
 
     double get(unsigned c)
@@ -273,61 +274,76 @@ struct arp_digitar
 {
     static const unsigned n_wires = 6;
     arp_wire wires[n_wires];
-    using chord = std::array<unsigned, n_wires>;
+    using chord = std::array<int, n_wires>;
 
     void draw(chord pitches)
     {
-        const unsigned p = 36;
-        wires[5].move(pitches[0] + p + 4);
-        wires[4].move(pitches[1] + p + 9);
-        wires[3].move(pitches[2] + p + 14);
-        wires[2].move(pitches[3] + p + 19);
-        wires[1].move(pitches[4] + p + 23);
-        wires[0].move(pitches[5] + p + 28);
+        constexpr unsigned p = 36;
+        constexpr unsigned a[] = {
+            p + 4, p + 9,
+            p + 14, p + 19,
+            p + 23, p + 28 };
+
+        for (unsigned i=0; i<n_wires; i++) {
+            arp_wire & w = wires[n_wires - 1 - i];
+            if (pitches[i] >= 0) {
+                w.enabled = true;
+                w.move(a[i] + pitches[i]);
+            } else {
+                w.enabled = false;
+                w.move(a[i]);
+            }
+        }
     }
 
     double get(unsigned c)
     {
         double r = 0;
         for (unsigned i=0; i<n_wires; ++i)
-            r += wires[i].get(c + (1 + i)*SR/64);
+            r += wires[i].get(c);
         return r / n_wires;
     }
 };
 
+constexpr int X = -1;
 
 std::vector<arp_digitar::chord> score = {
-    { 0, 0, 2, 2, 2, 0 }, //A
-    { 0, 2, 2, 1, 0, 0 }, //E
-    { 0, 0, 0, 2, 3, 2 }, //D
+    { X, X, X, X, X, X },
 
-    { 0, 0, 2, 2, 1, 0 }, //Am
+    { X, 0, 2, 2, 2, 0 }, //A
     { 0, 2, 2, 1, 0, 0 }, //E
-    { 1, 0, 0, 2, 3, 1 }, //Dm
+    { X, X, 0, 2, 3, 2 }, //D
+
+    { X, 0, 2, 2, 1, 0 }, //Am
+    { 0, 2, 2, 1, 0, 0 }, //E
+    { X, X, 0, 2, 3, 1 }, //Dm
 
     { 0, 2, 2, 1, 0, 0 }, //E
-    { 2, 2, 1, 2, 0, 2 }, //B7
-    { 0, 0, 2, 2, 2, 0 }, //A
+    { X, 2, 1, 2, 0, 2 }, //B7
+    { X, 0, 2, 2, 2, 0 }, //A
 
     { 0, 2, 2, 0, 0, 0 }, //Em
-    { 2, 2, 1, 2, 0, 2 }, //B7
-    { 0, 0, 2, 2, 1, 0 }, //Am
+    { X, 2, 1, 2, 0, 2 }, //B7
+    { X, 0, 2, 2, 1, 0 }, //Am
 
-    { 0, 0, 0, 2, 3, 2 }, //D
-    { 0, 0, 2, 0, 2, 0 }, //A7
+    { X, X, 0, 2, 3, 2 }, //D
+    { X, 0, 2, 0, 2, 0 }, //A7
     { 3, 2, 0, 0, 0, 3 }, //G
 
-    { 1, 0, 0, 2, 3, 1 }, //Dm
-    { 0, 0, 2, 2, 2, 0 }, //A
+    { X, X, 0, 2, 3, 1 }, //Dm
+    { X, 0, 2, 2, 2, 0 }, //A
     { 3, 0, 0, 3, 3, 3 }, //Gm
 
     { 3, 2, 0, 0, 0, 3 }, //G
-    { 0, 0, 0, 2, 1, 2 }, //D7
-    { 0, 3, 2, 0, 1, 0 }, //C
+    { X, X, 0, 2, 1, 2 }, //D7
+    { X, 3, 2, 0, 1, 0 }, //C
 
-    { 0, 3, 2, 0, 1, 0 }, //C
+    { X, 3, 2, 0, 1, 0 }, //C
     { 3, 2, 0, 0, 0, 1 }, //G7
-    { 0, 3, 3, 2, 1, 1 }, //F
+    { X, X, 3, 2, 1, 1 }, //F
+
+    { X, X, X, X, X, X },
+    { X, X, X, X, X, X },
 };
 
 extern "C" int isatty(int);
@@ -338,13 +354,17 @@ int main()
         fprintf(stderr, "redirect stdout and i'll write 1ch 16/le audio\n");
         return 1;
     }
-    unsigned i = 0;
     arp_digitar aw;
     recorder rec;
-    for (std::size_t c=0; c<SR*48; c++) {
-        if (c % (2*SR) == 0)
-            aw.draw(score[i++ % score.size()]);
-        rec.put(aw.get(c));
+    unsigned i = 0;
+    unsigned c = 0;
+    constexpr unsigned r = SR * 4;
+    while (true) {
+        if (c % r == 0) {
+            if (i == score.size()) break;
+            aw.draw(score[i++]);
+        }
+        rec.put(aw.get(c++));
     }
 }
 
