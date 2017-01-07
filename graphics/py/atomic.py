@@ -27,6 +27,15 @@ def dotprod(a, b):
     return a.x * b.x + a.y * b.y
 
 
+def anglediff(u, w):
+    assert u > -pi and u <= pi
+    assert w > -pi and w <= pi
+    d = w - u + pi
+    if d < 0:
+        d += 2 * pi
+    return d - pi
+
+
 class Atom:
     def __init__(self, max_bond, m, p):
         self.m_inv = 1 / m
@@ -271,17 +280,25 @@ class Hue6Shift:
 
 
 class Bulb:
-    def __init__(self, r):
-        self.r = r
-        self.offsets = list(product(*[range(-r, r+1)]*2))
-        a = []
-        for x, y in self.offsets:
-            d = hypot(x, y)
+    def __init__(self, ra, ea, rb, eb):
+        self.r = rb
+        self.offsets = list(product(*[range(-rb, rb+1)]*2))
+        def f(d, r, e):
             if not d: v = 1
             elif d > r: v = 0
-            else: v = (1 - (d / r)) ** 1.83
-            a.append(v)
-        self.values = a
+            else: v = (1 - (d / r)) ** e
+            return v
+        u = []
+        a = []
+        b = []
+        for y, x in self.offsets:
+            d = hypot(x, y)
+            u.append(atan2(y, x))
+            a.append(f(d, ra, ea))
+            b.append(f(d, rb, eb))
+        self.angles = u
+        self.v_bare = a
+        self.v_bond = b
 
 
 def plane_partition(a, r, off, rows = 10, columns = 10):
@@ -301,8 +318,9 @@ class Lab:
         self.par = par
         self.delta_t = delta_t
         self.corner = dim * .5
-        self.bulb = Bulb(int(par.spring_r * .5 * printer.height / dim.y - .5))
-        self.line_n = int(par.spring_r * printer.height / dim.y)
+        w = lambda r: int(r * printer.height / dim.y - .5)
+        self.bulb = Bulb(w(par.spring_r * .5), 1.9, w(par.detach_r * .8), 1.7)
+        # consider: bulb belongs in printer
         self.atoms = []
         self.blend = blend
         self.spoon = spoon
@@ -379,12 +397,7 @@ class Lab:
             shift = self.hue6shift(a.p)
             hue6 = shift - a.max_bond
             p = self._scaled(a.p)
-            frame.put_bulb(p, hue6, self.bulb)
-            for b in a.bond:
-                if id(b) < id(a):
-                    q = self._scaled(b.p)
-                    h6q = shift - b.max_bond
-                    frame.put_line(p, q, hue6, h6q, self.line_n)
+            frame.put_bulb(p, hue6, self.bulb, a)
 
     def run(self, n):
         overlay = Overlay(lambda i, j:
@@ -505,27 +518,21 @@ class Frame:
             j = self.dim.x - 1
         return i, j
 
-    def put_line(self, p, q, h6p, h6q, n):
-        c = Color.from_hsv(h6p * pi/3, 1, line_v)
-        if h6p == h6q: cstp = None
-        else:
-            cq = Color.from_hsv(h6q * pi/3, 1, line_v)
-            cstp = (cq - c) * (1 / (n - 2))
-        self.roll.advance(self._pixel(p)[0])
-        self.roll.advance(self._pixel(q)[0])
-        step = (q - p) * (1 / n)
-        for z in range(1, n - 1):
-            p += step
-            if cstp: c += cstp
-            i, j = self._pixel(p)
-            i -= self.roll.offset
-            self.roll.add_el(i, j, c)
-
-    def put_bulb(self, p, hue6, bulb):
+    def put_bulb(self, p, hue6, bulb, a):
+        bus = [atan2(b.p.y - a.p.y, b.p.x - a.p.x) for b in a.bond]
+        # note: other coordinate base, but angles hold
         i, j = self._pixel(p)
         i -= self.roll.advance(i + bulb.r)
         for q, (y, x) in enumerate(bulb.offsets):
-            c = Color.from_hsv(hue6 * pi/3, 1, bulb.values[q])
+            if not bulb.v_bond[q]:
+                continue  # assume: bond zero ==> bare zero
+            for b in bus:
+                if abs(anglediff(bulb.angles[q], b)) < pi/12:
+                    values = bulb.v_bond
+                    break
+            else:
+                values = bulb.v_bare
+            c = Color.from_hsv(hue6 * pi/3, 1, values[q])
             self.roll.add_el(i + y, j + x, c)
 
     def close(self):
@@ -550,13 +557,12 @@ class Printer:
 
 _d = XY(640, 360)
 _h, _ar = 86, _d.x / _d.y
-line_v = .3958
-shade_m = .046
-cast_r = 5.512
+shade_m = .047
+cast_r = 5.54
 intro_n = 123
-par = PhysPars(1.19, 1.67, 475, 4.09)
-lab = Lab(XY(_h * _ar, _h), par, .0148,
-        Blend(_h * .16, _h * .26, 142, 6.3),
+par = PhysPars(1.15, 1.65, 480, 4.3)
+lab = Lab(XY(_h * _ar, _h), par, .015,
+        Blend(_h * .16, _h * .26, 140, 6.1),
         Spoon(.55, _h * .35, .4, _h * .15, par.bounce_c, 1),
         Fork(XY(_ar, 1) * _h * .48, XY(.19416, .12) * _h, 4.9, par.bounce_c, 1),
         Hue6Shift(_h * _ar * 1.19, .8), Printer(_d, "%d.jpeg", intro_n))
