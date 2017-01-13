@@ -16,8 +16,8 @@ if stdout.isatty():
 
 
 class PixelTransform:
-    def __init__(self, previous_ab, ab):
-        self.m = (previous_ab[1].x - previous_ab[0].x) \
+    def __init__(self, prev_ab, ab):
+        self.m = (prev_ab[1].x - prev_ab[0].x) \
                 / (ab[1].x - ab[0].x)
 
     def __call__(self, pixel_xys, r):
@@ -138,7 +138,7 @@ class Grid:
             assert j < self.n_columns
             block = self.rows[i][j]
             if not block.of_interest:
-                #stderr.write("previous-edge gave interest\n")
+                #stderr.write("prev-edge gave interest\n")
                 block.of_interest = True
                 self.interest.append((i, j))
 
@@ -150,10 +150,10 @@ class Grid:
         c = len(set(self.interest) & set(other.interest))
         return n == 0 or c > n / (3 - similarity)
 
-    def points_check(self, neighbor, reference_value, points):
+    def points_check(self, value, points):
         for point in points:
             p = point.onto_unit(origo, self.r)
-            if self.f.value(p) != reference_value:
+            if self.f.value(p) != value:
                 return True
         return False
 
@@ -164,28 +164,29 @@ class Grid:
         i += i_adj
         j += j_adj
         assert i_adj == 0 or j_adj == 0
+        if i_adj and (i < 0 or i >= self.n_rows): return
+        if j_adj and (j < 0 or j >= self.n_columns): return
+        neighbor = self.rows[i][j]
+        if neighbor.of_interest: return
+
         if i_adj+j_adj < 0:
             corner = block.a
             corner_value = block.a_value
         else:
             corner = block.b
             corner_value = block.b_value
+
         if j_adj == 0:
-            if i < 0 or i >= self.n_rows:
-                return None
             r = [XY(x, corner.y) for x in range(block.a.x, block.b.x)]
         else:
-            if j < 0 or j >= self.n_columns:
-                return None
             r = [XY(corner.x, y) for y in range(block.a.y, block.b.y)]
-        neighbor = self.rows[i][j]
-        if not neighbor.of_interest:
-            #improve: otherwise we didn'r need to generate r
-            if self.points_check(neighbor, corner_value, r):
-                neighbor.of_interest = True
-                neighbor.wk_interest = True
-                return (i, j)
-        return None
+
+        if not self.points_check(corner_value, r):
+            return
+
+        neighbor.of_interest = True
+        neighbor.wk_interest = True
+        return (i, j)
 
     def check(self):
         discovered = []
@@ -202,20 +203,19 @@ class Grid:
         return len(discovered) != 0
 
     def generate(self, out):
-        for i in range(len(self.rows)):
-            row = self.rows[i]
-            for y in range(self.ya[i], self.ya[i + 1]):
-                for x in range(self.r.x):
-                    j = x // self.s
-                    block = row[j]
-                    if not block.of_interest:
-                        w = block.a_value
-                    else:
-                        w = self.f.value(XY(x, y).onto_unit(
-                            origo, self.r))
+        for y in range(self.r.y):
+            i = y // self.s
+            for x in range(self.r.x):
+                j = x // self.s
+                block = self.rows[i][j]
+                if not block.of_interest:
+                    w = block.a_value
+                else:
+                    w = self.f.value(XY(x, y).onto_unit(
+                        origo, self.r))
 
-                    if w: out(255)
-                    else: out(0)
+                if w: out(255)
+                else: out(0)
 
 
 class Frame:
@@ -236,21 +236,21 @@ class Frame:
         return (self.b.x - self.a.x) / (self.b.y - self.a.y)
 
     def setup(self, n, s):
-        g_previous = g = None
+        prev_g = g = None
         while True:
             g = Grid(self.fractal(n), self.r, s, [])
-            if g_previous and g_previous.similar_to(g):
+            if prev_g and prev_g.similar_to(g):
                 break
             n += 1
-            g_previous = g
+            prev_g = g
         self.g = g
 
-    def reset(self, c, z, n, previous_edge):
-        previous_ab = self.a, self.b
+    def reset(self, c, z, n, prev_edge):
+        prev_ab = self.a, self.b
         self.orient(c, z)
-        transform = PixelTransform(previous_ab, (self.a, self.b))
+        transform = PixelTransform(prev_ab, (self.a, self.b))
         self.g = Grid(self.fractal(n), self.r, self.g.s,
-                transform(previous_edge, self.r))
+                transform(prev_edge, self.r))
 
     def target(self):
         if self.fixed:
@@ -388,19 +388,19 @@ class EdgeDetect:
         self.out = result.put
         self.edge = []  # note: pixel coordinates
         self.i = 0
-        self.previous_row = None
+        self.prev_row = None
         self.row = None
-        self.resent_row = []
+        self.curr_row = []
 
     def on_edge(self, a, m, b):
         return m[1] == 0 and a + b + m[0] + m[2] > 0
 
     def put(self, v):
-        self.resent_row.append(v)
+        self.curr_row.append(v)
         # note: the border-pixels are not edge-detected
         #       (doesn't matter now because area will be out of frame
         #       when edge is transformed to zoomed frame coordinates anyway.
-        if len(self.resent_row) == self.r.x:
+        if len(self.curr_row) == self.r.x:
             if self.i == 0:
                 pass
             elif self.i == 1:
@@ -410,8 +410,8 @@ class EdgeDetect:
                 assert self.i < self.r.y
                 self.out(0)
                 for j in range(1, self.r.x - 1):
-                    if self.on_edge(self.previous_row[j],
-                            self.row[j-1:j+2], self.resent_row[j]):
+                    if self.on_edge(self.prev_row[j],
+                            self.row[j-1:j+2], self.curr_row[j]):
                         self.out(255)
                         if self.i % 2 == 0 and j % 2 == 0:
                             # note: take just a quarter of the points
@@ -420,9 +420,9 @@ class EdgeDetect:
                     else:
                         self.out(0)
                 self.out(0)
-            self.previous_row = self.row
-            self.row = self.resent_row
-            self.resent_row = []
+            self.prev_row = self.row
+            self.row = self.curr_row
+            self.curr_row = []
             self.i += 1
             if self.i == self.r.y:
                 for j in range(self.r.x):
@@ -460,10 +460,10 @@ class FractalMovie:
         fixed = None
         self.n_loose = int(w - log2(frame.g.n_rows)) - 1
         for i in range(1, w):
-            previous = frame
-            frame = previous.child()
+            prev = frame
+            frame = prev.child()
             if i >= self.n_loose:
-                if previous.contained(): break
+                if prev.contained(): break
                 lost = frame.loose()
                 if lost: fixed = lost
                 frame.fixed = fixed

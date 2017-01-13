@@ -7,7 +7,7 @@ echo "touch $d/k # to keep"
 
 cd $d
 touch r
-while sleep 4 && test -e r
+while sleep 3 && test -e r
 do
     find . -name '*.pnm' |
     while read f
@@ -17,6 +17,7 @@ do
     done
 done &
 pnmsplit - %d.pnm 2> t
+sleep 4
 rm r
 cd $h
 ./assemble_movie.sh $d $o || exit 1
