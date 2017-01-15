@@ -1,5 +1,6 @@
 RAY_GUN=$(CURDIR)/ray/gun
 FLOW_FLUID=$(CURDIR)/flow/fluid
+CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -O2
 
 .PHONY:
 all: ray/gun flow/fluid
@@ -13,6 +14,9 @@ ray/gun: rgb/librgb.a
 
 flow/fluid: rgb/librgb.a
 	@$(MAKE) -C flow fluid
+
+follow: follow.cpp
+	$(CXX) $(CXXFLAGS) -o $@ -Irgb -Iflow $<
 
 rgb/librgb.a:
 	@$(MAKE) -C rgb
