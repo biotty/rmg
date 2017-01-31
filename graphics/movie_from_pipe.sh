@@ -3,8 +3,6 @@
 o=$1
 h=$PWD
 d=$(./movie_directory.sh)
-echo "touch $d/k # to keep"
-
 cd $d
 touch r
 while sleep 3 && test -e r

@@ -115,8 +115,7 @@ photo_create(const char * path)
     photo * ph = NULL;
     char pnm_type;
     int width, height, depth;
-    const int n = fscanf(file, "P%c %d %d %d\n",
-            &pnm_type, &width, &height, &depth);
+    const int n = fscanf(file, "P%c %d %d %d", &pnm_type, &width, &height, &depth);
     if (n != 4 || !isdigit(pnm_type)) {
         fprintf(stderr, "'%s' is not PNM\n", name);
         goto e;
@@ -129,6 +128,9 @@ photo_create(const char * path)
         fprintf(stderr, "'%s' depth is not 255\n", name);
         goto e;
     }
+    int c;
+    while ('\n' != (c = fgetc(file)))
+        ;  // note: file may be open in "r" mode, so scanf "\n" would eat a trailing CR
     const int tup = (pnm_type == '5') ? 1 : 3;
     ph = malloc((sizeof *ph) + tup * width * height);
     ph->width = width;

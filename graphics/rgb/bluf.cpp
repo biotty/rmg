@@ -8,9 +8,13 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <algorithm>
 #include <map>
 
 #include <unistd.h>
+
+
+constexpr static const double ALL = 3;
 
 
 struct fillin {
@@ -26,15 +30,18 @@ static std::vector<fillin> fillins;
 
 static bool init(int argc, char **argv);
 static void stats();
+static void do_fillins(int x, int y, color & c, bool skip_first = false);
+static void do_gradient(int x, int y, color & c);
 
     int
 main(int argc, char **argv)
 {
 
     if (argc <= 1) {
-        std::cerr << "Provide a maskable* photo file.\n* "
-                "some monochrome areas; to be used to fill-in photo(s).\n"
-                "Provide no fill-ins to list colors in file\n";
+        std::cerr << "Usage:\tProvide a maskable* photo file.\n\t* "
+                "some (~) monochrome areas to be used to fill-in photo(s).\n"
+                "\t  or a use slash to v-gradient itself or the following fill-in(s)\n"
+                "Alt.usage:\tProvide no fill-ins to list colors in file\n";
         return 1;
     }
     orig = photo_create(argv[1]);
@@ -54,19 +61,10 @@ main(int argc, char **argv)
     image i = image_create(NULL, orig->width, orig->height);
     for (int y=0; y<orig->height; y++) {
         for (int x=0; x<orig->width; x++) {
-            compact_color cc = photo_color(orig, x, y);
-            color c = x_color(cc);
-            for (const auto & f : fillins) {
-                if (similar(f.esq, &c, &f.c)) {
-                    if (f.p) {
-                        cc = photo_color(f.p, x, y);
-                        c = x_color(cc);
-                    } else {
-                        c = f.r;
-                    }
-                    break;
-                }
-            }
+            color c = x_color(photo_color(orig, x, y));
+            if (fillins[0].esq < 0) do_gradient(x, y, c);
+            else do_fillins(x, y, c);
+            // ^^ todo: only when only one fillin, handle when two too (rest-gradient replace)
             image_write(i, c);
         }
     }
@@ -97,7 +95,7 @@ init(int argc, char **argv)
         fillin & f = fillins.back();
         const char * name = strchr(a, ':');
         if (name == NULL) {
-            std::cerr << i << ": not color[~e]:[path|=color]\n";
+            std::cerr << i << ": not [color[~e]|/]:[path|=color]\n";
             goto err;
         }
         ++name;
@@ -110,17 +108,22 @@ init(int argc, char **argv)
             }
             f.esq = e * e;
         }
-        f.c = parse_color(a);
+        if (*a == '/') {
+            if (a[1] != ':') {
+                std::cerr << i << ": trailer after slash\n";
+                goto err;
+            }
+            f.esq = -1;
+        } else if (*a == '+') {
+            f.esq = ALL;
+        } else {
+            f.c = parse_color(a);
+        }
+
         if (*name == '=') {
             f.r = parse_color(name + 1);
         } else {
-            const photo * p = f.p = photo_create(name);
-            if ( ! p) goto err;
-            if (p->width != orig->width || p->height != orig->height) {
-                std::cerr << name << " is " << p->width << "x" << p->height
-                    << " while original is " << orig->width << "x" << orig->height << "\n";
-                goto err;
-            }
+            f.p = photo_create(name);
         }
     }
     return true;
@@ -148,4 +151,51 @@ stats()
             << std::setw(2) << (255 & rgb) << "\n";
 
     }
+}
+
+    static int
+scale(int value, int from, int to)
+{
+    if (from == to) return value;
+
+    return value * (to /(double) from);
+}
+
+    static color
+photo_inter(photo * p, int orig_x, int orig_y)
+{
+    const int x = scale(orig_x, orig->width, p->width);
+    const int y = scale(orig_y, orig->height, p->height);
+    return x_color(photo_color(p, x, y));
+}
+
+    static void
+do_fillins(int x, int y, color & c, bool skip_first)
+{
+    for (const auto & f : fillins) {
+        if (skip_first) skip_first = false;
+        if (f.esq >= ALL || similar(f.esq, &c, &f.c)) {
+            c = f.p ? photo_inter(f.p, x, y) : f.r;
+            break;
+        }
+    }
+}
+
+    static void
+do_gradient(int x, int y, color & c)
+{
+    const double rgb[] = { c.r, c.g, c.b };
+    double v = *std::max_element(std::begin(rgb), std::end(rgb));
+    if (fillins.size() > 1) {
+        do_fillins(x, y, c, true);
+        c.r *= v;
+        c.g *= v;
+        c.b *= v;
+    }
+    const auto & f = fillins[0];
+    const color d = f.p ? photo_inter(f.p, x, y) : f.r;
+    v = 1 - v;
+    c.r += d.r * v;
+    c.g += d.g * v;
+    c.b += d.b * v;
 }

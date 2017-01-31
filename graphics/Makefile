@@ -34,7 +34,7 @@ mandelbrot.mp4: follow
 	./follow |./movie_from_pipe.sh $@
 
 img.png: py/globe.py
-	$< 512x512
+	$< 1280x720
 	pnmtopng globe.pnm >$@
 
 .PHONY:
@@ -43,7 +43,7 @@ clean:
 
 .PHONY:
 sweep: clean
-	@rm -f globe.pnm *.png *.jpeg *.mp4
+	@rm -f follow globe.pnm *.png *.jpeg *.mp4
 	@ls -d *.movie 2>/dev/null |xargs -i ./movie_directory.sh -D {}
 	@$(MAKE) -C rgb sweep
 	@$(MAKE) -C ray sweep

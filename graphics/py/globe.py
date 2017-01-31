@@ -102,6 +102,7 @@ if __name__ == "__main__":
     options.add_option("-p", "--pen-thickness", default="15")
     (opts, args) = options.parse_args()
     size = args[0].split("x")
+    oname = args[1] if len(args) > 1 else "globe.pnm"
     width = int(size[0])
     height = int(size[1])
 
@@ -113,7 +114,4 @@ if __name__ == "__main__":
     def status(m):
         stderr.write(m)
 
-    path = "globe.pnm"
-    globe.render(width, height, path)
-    stderr.write("wrote " + path)
-
+    globe.render(width, height, oname)
