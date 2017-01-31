@@ -8,33 +8,34 @@
 #include <ctime>
 #include <iostream>
 #include <vector>
+#include <stack>
 #include <complex>
 #include <algorithm>
 #include <memory>
 
 
-XY onto_square(XY self, XY a, XY b)
+XY onto_square(XY p, XY a, XY b)
 {
-    // self is in unit, and is transformed onto square (a, b)
+    // note: p in unit, and is transformed onto square (a, b)
     return XY(
-        b.x * self.x + a.x * (1 - self.x),
-        b.y * self.y + a.y * (1 - self.y));
+        b.x * p.x + a.x * (1 - p.x),
+        b.y * p.y + a.y * (1 - p.y));
 }
 
 
-XY onto_unit(XY self, XY a, XY b)
+XY onto_unit(XY p, XY a, XY b)
 {
-    // inverse of onto_square (a, b)
+    // note: inverse of onto_square (a, b)
     return XY(
-        (self.x - a.x) / (b.x - a.x),
-        (self.y - a.y) / (b.y - a.y));
+        (p.x - a.x) / (b.x - a.x),
+        (p.y - a.y) / (b.y - a.y));
 }
 
 
 struct JI
 {
-    const int j;
-    const int i;
+    const short j;
+    const short i;
 
     JI(int j, int i) : j(j), i(i) {}
 
@@ -75,6 +76,8 @@ struct Fractal
 {
     virtual ~Fractal() {};
 
+    typedef unsigned short value_type;
+
     const XY a;
     const XY b;
     const int n;
@@ -83,7 +86,7 @@ struct Fractal
         : a(a) , b(b), n(n), binary(binary)
     {}
 
-    virtual int value(XY p) const = 0;
+    virtual value_type value(XY p) const = 0;
 };
 
 
@@ -91,7 +94,7 @@ struct Mandel : Fractal
 {
     Mandel(XY a, XY b, int n, bool binary) : Fractal(a, b, n, binary) {}
 
-    int value(XY p) const
+    value_type value(XY p) const
     {
         const XY q = onto_square(p, a, b);
         const std::complex<double> c(q.x, q.y);
@@ -116,7 +119,7 @@ struct Julia : Fractal
         , j(j.x, j.y)
     {}
 
-    int value(XY p) const
+    value_type value(XY p) const
     {
         const XY q = onto_square(p, a, b);
         std::complex<double> z(q.x, q.y);
@@ -135,33 +138,27 @@ struct Block
 {
     const JI a;
     const JI b;
-    int a_value;
-    int b_value;
-    int m_value;
+    Fractal::value_type a_value;
+    Fractal::value_type b_value;
+    Fractal::value_type m_value;
     bool of_interest;
     bool env_checked;
     bool wk_interest;
 
-    Block(JI a, JI b)
+    Block(JI a, JI b,
+            Fractal::value_type v0, Fractal::value_type v1,
+            Fractal::value_type v2, Fractal::value_type v3)
         : a(a)
         , b(b)
         , of_interest()
         , env_checked()
         , wk_interest()
-    {}
-
-    void setup(const Fractal & f, int width, int height)
     {
-        const JI r(width, height);
-        const XY c0 = onto_unit(a, xy::zero, r);
-        const XY c3 = onto_unit(b, xy::zero, r);
-        const XY c1 = XY(c3.x, c0.y);
-        const XY c2 = XY(c0.x, c3.y);
-        int v[] = { f.value(c0), f.value(c1), f.value(c2), f.value(c3) };
-        of_interest = v[0] != v[1] || v[1] != v[2] || v[2] != v[3];
+        of_interest = v0 != v1 || v1 != v2 || v2 != v3;
+        a_value = v0;
+        b_value = v3;
+        const Fractal::value_type v[] = { v0, v1, v2, v3 };
         m_value = *std::max_element(v, v + 4);
-        a_value = v[0];
-        b_value = v[3];
     }
 
     bool contained()
@@ -184,9 +181,9 @@ struct Grid
     const std::unique_ptr<Fractal> f;
     const int width;
     const int height;
-    const int s;
-    const int n_rows;
-    const int n_columns;
+    const short s;
+    const short n_rows;
+    const short n_columns;
     std::vector<JI> interest;
 
     Block & block(int i, int j)
@@ -204,24 +201,31 @@ struct Grid
         , n_columns(width / s)
         , max_value()
     {
+        const XY scale(1 /(double) n_columns, 1 /(double) n_rows);
+        std::vector<Fractal::value_type> m;
+        m.reserve(n_rows * n_columns);
         for (int i=0; i<n_rows; i++) {
-            const int y = i * s;
             for (int j=0; j<n_columns; j++) {
-                const int x = j * s;
-                blocks.push_back(Block(JI(x, y), JI(x + s, y + s)));
+                m.push_back(f->value(XY(j, i) * scale));
             }
         }
-
         for (int i=0; i<n_rows; i++) {
+            const int si = s * i;
             for (int j=0; j<n_columns; j++) {
-                Block & b = block(i, j);
-                b.setup(*f.get(), width, height);
-                // improve: each corner is now calculated four times
-                //          -- rather share calc to set them at once
-                if (b.m_value > max_value) max_value = b.m_value;
-                if (b.of_interest) {
+                const int sj = s * j;
+                const int ii = i == n_rows - 1 ? i : i + 1;
+                const int jj = j == n_columns - 1 ? j : j + 1;
+
+                const auto v0 = m[n_columns * i + j];
+                const auto v1 = m[n_columns * i + jj];
+                const auto v2 = m[n_columns * ii + j];
+                const auto v3 = m[n_columns * ii + jj];
+                Block blk(JI(sj, si), JI(sj + s, si + s), v0, v1, v2, v3);
+                if (blk.m_value > max_value) max_value = blk.m_value;
+                if (blk.of_interest) {
                     interest.push_back(JI(j, i));
                 }
+                blocks.push_back(blk);
             }
         }
 
@@ -281,7 +285,7 @@ struct Grid
         if (nbr.of_interest) return false;
 
         const JI * corner;
-        int corner_value;
+        Fractal::value_type corner_value;
         if (adj.i + adj.j < 0) {
             corner = &blk.a;
             corner_value = blk.a_value;
@@ -348,9 +352,9 @@ struct Grid
         }
     }
 
+    Fractal::value_type max_value;
 private:
     std::vector<Block> blocks;
-    int max_value;
 };
 
 
@@ -361,7 +365,6 @@ struct Frame
     std::unique_ptr<Grid> g;
     XY a;
     XY b;
-    XY c;
     XY * fixed;
 
     Frame() : fixed() {}
@@ -377,6 +380,8 @@ struct Frame
         b = a + XY(w, h);
     }
 
+    void orient(XY c, double z) { orient(c, z, g->width, g->height); }
+
     void setup(int width, int height, int n, int s, double similarity)
     {
         --n;
@@ -386,20 +391,22 @@ struct Frame
             if (prev_g && prev_g->similar_to(*g.get(), similarity))
                 return;
             ++n;
+            // ^ optim: could jmp exp'ly (or 10) on adjacent pairs
+            //          and then bisect back when hit similar pair
             prev_g = std::move(g);
         }
     }
 
     double aspect()
     {
-        return (b.x - a.x) / (b.y - a.y);
+        return g->width / g->height;
     }
 
     void reset(XY c, double z, int n, const std::vector<JI> & prev_edge)
     {
         XY prev_a = a;
         XY prev_b = b;
-        orient(c, z, g->width, g->height);
+        orient(c, z);
         auto transform = PixelTransform(prev_a, prev_b, a, b);
         g.reset(new Grid(fractal(n, false), g->width, g->height, g->s,
                 transform(prev_edge, g->width, g->height)));
@@ -409,20 +416,20 @@ struct Frame
     {
         if (fixed) return *fixed;
 
-        c = (a + b) * .5;
-        XY block_offset = XY(g->s, g->s) * .5;
-        XY c_as_block_pixel = onto_square(
+        const XY c = (a + b) * .5;
+        const XY block_offset = XY(g->s, g->s) * .5;
+        const XY c_as_block_pixel = onto_square(
                 onto_unit(c, a, b), xy::zero, XY(g->width, g->height))
-                - block_offset;  // adjusted to just compare with block.a
-        double min_pixel_distance = g->width + g->height;  // quantity: some big
+                - block_offset;  // note: adjusted to just compare with block.a
+        double min_pixel_distance = g->width + g->height;  // note: some big
         XY nearest_interesting_pixel;
         bool found_interesting_pixel = false;
         for (JI kk : g->interest) {
-            Block & blk = g->block(kk.i, kk.j);
+            const Block & blk = g->block(kk.i, kk.j);
             if (blk.wk_interest)
                 continue;
-            XY block_pixel = blk.a;
-            double pixel_distance = (block_pixel - c_as_block_pixel).abs();
+            const XY block_pixel = blk.a;
+            const double pixel_distance = (block_pixel - c_as_block_pixel).abs();
             if (min_pixel_distance > pixel_distance) {
                 min_pixel_distance = pixel_distance;
                 nearest_interesting_pixel = block_pixel;
@@ -438,21 +445,42 @@ struct Frame
                 a, b);
     }
 
-    bool contained()
+    void rnd_targets(std::vector<XY> & targets)
     {
-        return g->block(0, 0).a_value == 0 && g->interest.size() == 0;
+        const int n = g->interest.size();
+        for (XY & p : targets) {
+            XY block_c;
+            int i = n;  // note: probably
+            while (--i) {
+                const JI kk = g->interest[static_cast<int>(rnd(n))];
+                const Block & blk = g->block(kk.i, kk.j);
+                if ( ! blk.wk_interest) {
+                    block_c = static_cast<XY>(blk.a) + XY(g->s, g->s) * .5;
+                    break;
+                }
+            }
+            if ( ! i) throw 0;
+            p = onto_square(onto_unit(block_c,
+                        xy::zero, XY(g->width, g->height)),
+                    a, b);
+        }
     }
+
+    bool contained() { return g->interest.size() == 0 && g->block(0, 0).a_value == 0; }
+    bool lost() { return g->interest.size() == 0 && g->block(0, 0).a_value != 0; }
 
     double enter(XY & contained)
     {
-        if (g->interest.size() == 0) return 0;
+        if (g->interest.size() == 0) {
+            throw 0.0;
+        }
 
         double max_dist = 0;
         Block * most = nullptr;
         for (int i=0; i<g->n_rows; i++) {
             for (int j=0; j<g->n_columns; j++) {
                 if (g->block(i, j).contained()) {
-                    double dist = g->n_columns + g->n_rows;  // quantity: some big
+                    double dist = g->n_columns + g->n_rows;  // note: some big
                     for (auto kk : g->interest) {
                         const double d = std::hypot<double>(kk.i - i, kk.j - j);
                         if (dist > d)
@@ -594,50 +622,105 @@ struct EdgeDetect : Image
 
 struct FractalMovie
 {
+    static const int RETRIES_PER_CHILD = 3;
     std::unique_ptr<Frame> frame;
     const double zi;
     std::vector<int> counts;
+    int entered;
     
-    FractalMovie(std::unique_ptr<Frame> && _frame, int w)
+    FractalMovie(std::unique_ptr<Frame> && _frame, int w, double similarity)
         : frame(std::move(_frame))
         , zi(frame->b.y - frame->a.y)
+        , entered()
     {
         counts.push_back(frame->g->f->n);
-        auto i = 1;
-        const int i_enter = w - std::log2(frame->g->n_rows);
-        const int i_break = w * 1.2;
+        int i = 1;
+
+        const int k = std::log2(frame->g->n_rows);
+        const int i_break = w;
+        const int i_enter = w - k;
+        const int i_break_entered = w + k;
         std::cerr << w << std::endl
             << i << " " << frame->g->f->n << " iters" << std::endl;
         double enter = 0;
         XY fixed;
-        while ( ! frame->contained() && i < i_break) {
+        struct retry {
+            int i;
+            XY c;
+            double z;
+        };
+        bool retrying = false;
+        std::stack<retry> retries;
+        while ( ! frame->contained()) {
+            const bool lost = frame->lost();
+            if (( ! entered && i >= i_break)
+                    || (entered && i >= i_break_entered) || lost) {
+                if (retries.empty()) throw "";
+                if ( ! retrying) {
+                    while (retries.top().i >= i_enter) retries.pop();
+                    retrying = true;
+                }
+                auto r = retries.top();
+                counts.resize(i = r.i);
+                frame->orient(r.c, r.z);
+                frame->g.reset(new Grid(frame->fractal(counts.back(), true),
+                            frame->g->width, frame->g->height, frame->g->s, {}));
+                retries.pop();
+                auto p = std::cerr.precision();
+                std::cerr.precision(9);
+                std::cerr << i << ":RETRY";
+                if (lost) std::cerr << " ^LOST";
+                std::cerr << " target " << std::fixed
+                    << r.c.x << std::showpos
+                    << r.c.y << std::noshowpos << "i" << std::endl;
+                std::cerr.precision(p);
+                enter = entered = 0;
+            }
+
+            if ( ! retrying) {
+                const double z = frame->b.y - frame->a.y;
+                std::vector<XY> alts(RETRIES_PER_CHILD);
+                frame->rnd_targets(alts);
+                for (auto c : alts) {
+                    retries.push({i, c, z});
+                }
+            }
+
             if (i >= i_enter) {
                 XY r;
                 if (double d = frame->enter(r)) {
+                    if ( ! entered) {
+                        entered = i;
+                    }
                     if (enter < d) {
                         enter = d;
                         fixed = r;
                     }
                 }
 
-                if (enter) {
+                if (entered) {
                     frame->fixed = &fixed;
                 }
             }
             std::unique_ptr<Frame> prev = std::move(frame);
-            frame = prev->child(enter ? .4 : .993);
+            frame = prev->child(entered ? similarity * .6 : similarity);
             XY c = (frame->a + frame->b) * .5;
             counts.push_back(frame->g->f->n);
             i = counts.size();
-            std::cerr << i << " ("
-                << std::scientific << (frame->b.y - frame->a.y) << ") ";
-            std::cerr.unsetf(std::ios_base::floatfield);
+            std::cerr << i << " (" << std::scientific
+                << (frame->b.y - frame->a.y) << ") ";
             std::cerr << frame->g->f->n << " iters";
-            if (enter) std::cerr << " enter " << enter;
+            auto p = std::cerr.precision();
+            std::cerr << std::fixed;
+            if (entered) {
+                std::cerr.precision(2);
+                std::cerr << " enter " << std::fixed << enter;
+            }
+            std::cerr.precision(9);
             std::cerr << " target " << c.x << std::showpos
                 << c.y << std::noshowpos << "i" << std::endl;
+            std::cerr.precision(p);
         }
-        if (i == i_break) throw "broken";
     }
 
     void generate(int k)
@@ -650,22 +733,34 @@ struct FractalMovie
         const double igz = .01;
         const int u = counts.size() - 1;
         std::vector<JI> edge;
+        int n = 0; // <-- tech: only to silence compiler warn
+        int h = 0; //           ^
+        int fixed_max = 0;
+        std::cerr << (k*u) << std::endl;
         for (int i=0; i<u; i++) {
-            const int n = counts[i];
-            const int h = counts[i + 1] - n;
+            if (i < entered) {
+                n = counts[i];
+                h = counts[i + 1] - n;
+            } else if (i == entered) {
+                fixed_max = frame->g->max_value;
+                n = counts[entered];
+                h = 0;
+            }
             for (int j=0; j<k; j++) {
                 const double d = j /(double) k;
                 const double x = i + d;
                 const double z = zi * std::pow(.5, x);
-                const int cnt = n + static_cast<int>(h * d);
-                std::cerr << (i*k+j) << "/" << (u*k) << " count " << cnt << "\r";
-                std::cerr.unsetf(std::ios_base::floatfield);
+                const int count = n + static_cast<int>(h * d);
+                std::cerr << (k*i+j) << " " << count << "\r";
                 XY dc = xy::zero;
                 if (z > igz) {
                     const double b = (z - igz) / (zi - igz);
                     dc = igq * (b * b);
                 }
-                frame->reset(c + dc, z, cnt, edge);
+                frame->reset(c + dc, z, count, edge);
+                if (fixed_max) {
+                    frame->g->max_value = fixed_max;
+                }
                 PnmImage img(frame->g->width, frame->g->height);
                 EdgeDetect e(frame->g->width, frame->g->height);
                 Tee tee(e, img);
@@ -686,15 +781,15 @@ int main()
         return 2;
     }
 
-    // note: mandel or julia
-    bool do_mandel = true;
+    bool do_mandel = false;  // note: mandel or julia
 
-    int width = 1280;
-    int height = 720;
+    int width = 1280;  // <-- pixel resolution
+    int height = 720;  // <-- ^ y
 
-    int block_side = 16;  // granularity for grid used to seach border
-    int zoom_steps = 32;  // zoom to half frame width this total count
-    int images_per_step = 24;
+    double similarity = .99;
+    int block_side = 16;   // granularity for grid used to seach border
+    int zoom_steps = 32;   // zoom to half frame width this total count
+    int images_per_step = 24;   // generates images each half zoom step
 
     std::srand(std::time(nullptr));
 
@@ -706,15 +801,16 @@ int main()
 
     std::cerr << "Localizing Mandelbrot coordinate" << std::endl;
     FractalMovie m(std::unique_ptr<Frame>(
-                new MandelFrame(width, height, mc, mh, block_side, 32, .5)),
-            zoom_steps);
+                new MandelFrame(width, height, mc, mh, block_side, 30, .6)),
+            do_mandel ? zoom_steps : .4 * zoom_steps,
+            do_mandel ? similarity : .9 * similarity);
     if (do_mandel) {
         m.generate(images_per_step);
     } else {
         std::cerr << "Using location for Julia Set" << std::endl;
         FractalMovie j(std::unique_ptr<Frame>(
-                    new JuliaFrame(m.frame->a, width, height, jc, jh, block_side, 32, .5)),
-                zoom_steps);
+                    new JuliaFrame(m.frame->a, width, height, jc, jh, block_side, 90, .5)),
+                zoom_steps, similarity);
         j.generate(images_per_step);
     }
 }

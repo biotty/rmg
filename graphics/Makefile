@@ -30,8 +30,8 @@ video.mp4: py/image1.py ray/gun
 fluid.mp4: flow/fluid img.png
 	./movie_from_exec.sh $@ "$(FLOW_FLUID) -n 2048 1920x1080"
 
-mandelbrot.mp4: py/follow.py
-	$< |./movie_from_pipe.sh $@
+mandelbrot.mp4: follow
+	./follow |./movie_from_pipe.sh $@
 
 img.png: py/globe.py
 	$< 512x512
