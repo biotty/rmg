@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
@@ -119,7 +120,7 @@ class Blend:
 
         c = nc - 1 - n // self.q
         w = [1] * nc
-        w[c] = (nc - 1) * 7
+        w[c] = (nc - 1) * 4
         p = cpos(rnd(pi * 2), rnd(self.h))
         return rnd_weighted(self.atoms_c, w)(p)
 
@@ -319,7 +320,7 @@ class Lab:
         self.delta_t = delta_t
         self.corner = dim * .5
         w = lambda r: int(r * printer.height / dim.y - .5)
-        self.bulb = Bulb(w(par.spring_r * .5), 1.9, w(par.detach_r * .8), 1.7)
+        self.bulb = Bulb(w(par.spring_r * .5), 1.9, w(par.detach_r * .6), 1.2)
         # consider: bulb belongs in printer
         self.atoms = []
         self.blend = blend
@@ -405,6 +406,7 @@ class Lab:
                     (i / self.printer.height - .5) * 2 * self.corner.y),
                 self.spoon.overlay_f,
                 self.fork.overlay_f)
+        sys.stderr.write("%d\n" % (n,))
         for _ in range(n - self.printer.i):
             lab._inject()
             lab.t += self.delta_t
@@ -414,7 +416,7 @@ class Lab:
                 lab._work()
                 lab._displace()
 
-            sys.stderr.write("#%d@" % (self.printer.i,))
+            sys.stderr.write("%d" % (self.printer.i,))
             sys.stderr.flush()
             frame = self.printer.frame(overlay)
             if frame:
@@ -425,7 +427,7 @@ class Lab:
             realt = time()
             calct = realt - self.realt
             self.realt = realt
-            sys.stderr.write("%.2fs in %.2fs\r" % (self.t, calct))
+            sys.stderr.write(" at %.2fs used %.2fs\r" % (self.t, calct))
 
 
 
@@ -555,15 +557,15 @@ class Printer:
         return Frame(self.width, self.height, overlay, name)
 
 
-_d = XY(640, 360)
-_h, _ar = 86, _d.x / _d.y
-shade_m = .047
-cast_r = 5.54
-intro_n = 123
-par = PhysPars(1.15, 1.65, 480, 4.3)
-lab = Lab(XY(_h * _ar, _h), par, .015,
-        Blend(_h * .16, _h * .26, 140, 6.1),
-        Spoon(.55, _h * .35, .4, _h * .15, par.bounce_c, 1),
-        Fork(XY(_ar, 1) * _h * .48, XY(.19416, .12) * _h, 4.9, par.bounce_c, 1),
-        Hue6Shift(_h * _ar * 1.19, .8), Printer(_d, "%d.jpeg", intro_n))
+_d = XY(1280, 720)
+_h, _ar = 160, _d.x / _d.y
+shade_m = .1
+cast_r = 5.5
+intro_n = 20
+par = PhysPars(rnd(1.1, 1.2), rnd(1.4, 1.5), rnd(450, 550), rnd(4, 6))
+lab = Lab(XY(_h * _ar, _h), par, .03,
+        Blend(_h * .16, _h * .26, int(rnd(250, 350)), rnd(9, 11)),
+        Spoon(rnd(.55, .75), _h * .35, rnd(.4, .7), _h * .15, par.bounce_c, 1),
+        Fork(XY(_ar, 1) * _h * .46, XY(.19416, .12) * _h, rnd(6, 8), par.bounce_c, 1),
+        Hue6Shift(_h * _ar, rnd(.5, .9)), Printer(_d, "%d.jpeg", intro_n))
 lab.run(4096)
