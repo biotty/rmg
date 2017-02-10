@@ -23,6 +23,7 @@ struct SqueezeIndicator : WaveIndicator
 
     SqueezeIndicator(Picture & p, size_t h, size_t w, std::string prefix = "")
         : picture(p), h(h), w(w), prefix(prefix) {}
+
     void lapse(double /*delta_t*/, Grid<WaveCell> * grid, size_t i) {
         Grid<double> squeezes(grid->h, grid->w);
         for (PositionIterator it = grid->positions(); it.more(); ++it) {

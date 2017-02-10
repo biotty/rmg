@@ -7,6 +7,7 @@
 #include <cassert>
 #include <ctime>
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <stack>
 #include <complex>
@@ -666,14 +667,13 @@ struct FractalMovie
                 frame->g.reset(new Grid(frame->fractal(counts.back(), true),
                             frame->g->width, frame->g->height, frame->g->s, {}));
                 retries.pop();
-                auto p = std::cerr.precision();
-                std::cerr.precision(9);
                 std::cerr << i << ":RETRY";
-                if (lost) std::cerr << " ^LOST";
-                std::cerr << " target " << std::fixed
-                    << r.c.x << std::showpos
-                    << r.c.y << std::noshowpos << "i" << std::endl;
-                std::cerr.precision(p);
+                if (lost) {
+                    std::cerr << " ^LOST";
+                }
+                std::cerr << " target " << std::fixed << std::setprecision(9)
+                    << r.c.x << std::showpos << r.c.y << std::noshowpos
+                    << "i" << std::endl /* << std::defaultfloat */;
                 enter = entered = 0;
             }
 
@@ -708,18 +708,14 @@ struct FractalMovie
             counts.push_back(frame->g->f->n);
             i = counts.size();
             std::cerr << i << " (" << std::scientific
-                << (frame->b.y - frame->a.y) << ") ";
-            std::cerr << frame->g->f->n << " iters";
-            auto p = std::cerr.precision();
-            std::cerr << std::fixed;
+                << std::setprecision(3) << (frame->b.y - frame->a.y)
+                << ") " << frame->g->f->n << " iters" << std::fixed;
             if (entered) {
-                std::cerr.precision(2);
-                std::cerr << " enter " << std::fixed << enter;
+                std::cerr << " enter " << std::setprecision(2) << enter;
             }
-            std::cerr.precision(9);
-            std::cerr << " target " << c.x << std::showpos
-                << c.y << std::noshowpos << "i" << std::endl;
-            std::cerr.precision(p);
+            std::cerr << " target " << std::setprecision(9) << c.x << std::showpos
+                << c.y << std::noshowpos << "i" << std::endl
+                /* << std::defaultfloat */;
         }
     }
 
