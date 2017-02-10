@@ -79,6 +79,7 @@ spot_absorption(const ray * surface, const object_optics * so,
         if (ignorable_color(color_)) continue;
         direction to_spot = distance_vector(surface->endpoint, lamp->spot);
         normalize(&to_spot);
+        // consider: inv-scale with up to |to_spot|^2 (global setting 0-1)
         const real a = scalar_product(surface->head, to_spot);
         if (a <= 0) continue;
         ray s = { .endpoint = surface->endpoint, .head = to_spot };
@@ -176,6 +177,8 @@ refraction_trace(ray ray_, const scene_object * so,
     if (is_DISORIENTED(&ray_.head)) {
         return total_reflect;
     }
+    // consider: light density changes with angle, so that
+    //           we must scale the result proportionally.
     *result = trace_hop(ray_, so->optics.refraction_filter, detector_, w);
     return reflect;
 }
@@ -222,6 +225,9 @@ ray_trace(const detector * detector_, world * w)
     if (inside_i < 0) {
         const color absorbed = spot_absorption(
                 &surface, optics, w, detector_->inside);
+        // consider: function of angle so that up at angle_max
+        //           gives 1/cos(a) factor and stays there up
+        //           to a right angle.
         color_add(&detected, absorbed);
     }
     enum refraction_ret r = opaque;
