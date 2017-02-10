@@ -148,7 +148,7 @@ pan(PyObject * /*self*/, PyObject * args)
     if ( ! ugen->left) { // mono
         ugen->right->c(se.b->build(), p);
     } else { // stereo
-        const double pi = 3.141592653589;
+        const double pi = 3.14159265;
         const double r = p * pi * .5;
         std::shared_ptr<generator> g = P<ncopy>(2, se.b->build());
         ugen->left->c(U<wrapshared>(g), std::cos(r));
@@ -164,13 +164,7 @@ just(PyObject * /*self*/, PyObject * args)
     double pitch;
     if ( ! PyArg_ParseTuple(args, "d", &pitch))
         return NULL;
-    long lower = pitch;
-    double fraction = pitch - lower;
-    double f = f_of_just(lower);
-    if (fraction > 0.0001) {
-        const double g = f_of_just(lower + 1) - f;
-        f += fraction * g;
-    }
+    double f = f_of_just(static_cast<unsigned>(pitch));
     return PyFloat_FromDouble(f);
 }
 

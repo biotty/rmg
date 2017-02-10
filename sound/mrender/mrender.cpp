@@ -385,7 +385,7 @@ public:
         // obervation: we use overtone-n semantics instead of frequency, which would
         // be more readily adapted to phenomena like the human vocal tract, as resonance
         // it what mainly causes the formants.  the conversion is of-course pitch-
-        // dependent, so instrument needs to consider (todo) when note play()ed
+        // dependent, so instrument needs to consider when note play()ed
         a.resize(n);
         for (unsigned i=0; i<n; i++) {
             double ymax = 0;
@@ -572,12 +572,14 @@ public:
 // indepedent files (building-blocks, instruments and parsing).
 struct orchestra
 {
-    synth s;
-    vowel v;
-    hihat h;
     drum d;
     wind w;
+    hihat h;
+
     string g;
+    synth s;
+    vowel v;
+
     instrument * get_program(midi::codepoint i)
     {
         if (i.is_percussion)
