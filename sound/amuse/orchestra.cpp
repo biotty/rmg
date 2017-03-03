@@ -29,9 +29,9 @@ sound_entry mouthao(instruction ii)
     pe_ptr ahe = P<punctual>();
     ahe->p(.5, 1);
     bu_ptr ah = U<harmonics>(P<constant>(ii.f),
-            m, P<stretched>(ahe, m), ii.p.get(0));
+            m, P<stretched>(ahe, m), 0);
     bu_ptr bh = U<harmonics>(P<constant>(ii.f),
-            m, P<stretched>(P<punctual>(.5, 0), m), ii.p.get(0));
+            m, P<stretched>(P<punctual>(.5, 0), m), 0);
     bu_ptr s = U<cross>(std::move(ah), std::move(bh), ii.d,
             P<stretched>(P<punctual>(0, 1), ii.d));
     return sound_entry(U<attack>(a, ii.h, ii.d, std::move(s)), a);
@@ -42,9 +42,9 @@ sound_entry fmfi(instruction ii)
     double a = 1 / ii.f;
     ii.d += a;
 
-    pe_ptr ip = P<punctual>(ii.p.get(0), 0);
-    en_ptr ie = make_stroke(ip, (ii.p.get(1)+.5) * ii.d, ii.d);
-    bu_ptr ms = U<wave>(P<constant>(ii.f * (ii.p.get(2)+.5)), P<sine>(0));
+    pe_ptr ip = P<punctual>(0, 0);
+    en_ptr ie = make_stroke(ip, .5 * ii.d, ii.d);
+    bu_ptr ms = U<wave>(P<constant>(ii.f * .5), P<sine>(0));
     bu_ptr s = U<fm>(std::move(ms), ii.d, ie, P<constant>(ii.f));
     return sound_entry(U<attack>(a, ii.h, ii.d, std::move(s)), a);
 }
@@ -54,8 +54,7 @@ sound_entry guitar(instruction ii)
     double a = 4 / ii.f;
     ii.d += a;
 
-    bu_ptr s = U<karpluss_strong>(P<constant>(ii.f),
-            ii.p.get(0), ii.p.get(1));
+    bu_ptr s = U<karpluss_strong>(P<constant>(ii.f), 0, 0);
     return sound_entry(U<attack>(a, ii.h, ii.d, std::move(s)), a);
 }
 
@@ -78,7 +77,7 @@ sound_entry shaperw(instruction ii)
     {
         double p;
         double operator()(double y) { return spow(y, p); }
-    } qf = { exp(linear(-2, 2, ii.p.get(0))) };
+    } qf = { 1 };
 
     struct w_fun
     {
@@ -88,7 +87,7 @@ sound_entry shaperw(instruction ii)
             if (x < 0) x += 1;
             return (spow(2 * (x - .5), p) + 1) * .5;
         }
-    } wf = { exp(linear(-2, 2, ii.p.get(1))) };
+    } wf = { 1 };
 
     double a = 1 / ii.f;
     ii.d += a;
@@ -132,8 +131,8 @@ sound_entry::sound_entry(bu_ptr && s) : s(std::move(s)), a() {}
 sound_entry::sound_entry() : a() {}
 sound_entry::operator bool() { return bool(s); }
 
-instruction::instruction(double f, double d, double h, instruction::params p)
-    : f(f), d(d), h(h), p(p)
+instruction::instruction(double f, double d, double h)
+    : f(f), d(d), h(h)
 {}
 
 orchestra::orchestra() : a({

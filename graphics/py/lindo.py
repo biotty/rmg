@@ -10,7 +10,7 @@ from rmg.draw import Drawing, TreeBuilder
 from rmg.ls import Settings, System, OperationsVisitor
 from rmg.color import Optics, Color, white, black
 from rmg.scene import World, WorldPencil, SceneObject, LightSpot, RgbSky
-from rmg.bodies import Sphere, Cylinder, Plane, Intersection
+from rmg.bodies import Sphere
 from rmg.space import Point, Direction
 from optparse import OptionParser
 from subprocess import Popen, PIPE

@@ -20,13 +20,11 @@ struct page
     unsigned o;
     unsigned m;
     struct ruler {
-        instruction::params saved_q;
         unsigned i;
         unsigned l;
         unsigned u;
         struct cell {
             unsigned p;
-            instruction::params q;
             cell();
         };
         std::map<unsigned, cell> e;
@@ -41,7 +39,6 @@ struct page
     void print_i(int k);
     void print_u(int k);
     void print_l(int k);
-    void print_w();
     void draw();
     const char * decoration(unsigned i);
     void print_cell(unsigned k, unsigned i);
@@ -53,8 +50,6 @@ struct page
     void set_i();
     void set_u();
     void set_l();
-    void set_w();
-    void save_w();
     void move_p(int j);
     void swap_r();
     void handle(int e);

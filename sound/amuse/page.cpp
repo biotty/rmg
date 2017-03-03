@@ -64,7 +64,7 @@ sound_entry page::play(unsigned k, unsigned i)
     if (ruler::cell * e = cell(k, i)) {
         sound_entry se = s->o->play(a[k].i,
                 instruction(f_of_just(e->p), a[k].u * s->duration() / BE,
-                    a_of(-double(a[k].l)), e->q));
+                    a_of(-double(a[k].l))));
         return se;
         // observation: treated as rvalue ref when return,
         //              so that move-semantics takes place --
@@ -87,13 +87,6 @@ void page::print_l(int k)
     mvprintw(k, 4, "%02d", a[k].l);
     mvchgat(k, 4, 2, A_REVERSE, 0, NULL);
 }
-void page::print_w()
-{
-    if (ruler::cell * e = cell(c, t))
-        for (unsigned i=0; i<8; i++)
-            mvprintw(a.size(), 6+i*4, "%2d%d#", e->q.a[i], 1 + i);
-    else mvprintw(a.size(), 6, " 01# 02# 03# 04# 05# 06# 07# 08#");
-}
 
 void page::draw()
 {
@@ -104,7 +97,6 @@ void page::draw()
         for (unsigned i=0; i<BE; i++)
             print_cell(k, i);
     }
-    print_w();
     cursor();
 }
 
@@ -126,14 +118,7 @@ void page::print_cell(unsigned k, unsigned i)
 void page::write_p(unsigned p)
 {
     if ( ! p) a[c].e.erase(t);
-    else {
-        bool existed = cell(c, t);
-        a[c].e[t].p = p;
-        if ( ! existed) {
-            a[c].e[t].q = a[c].saved_q;
-            print_w();
-        }
-    }
+    else a[c].e[t].p = p;
     print_cell(c, t);
 }
 
@@ -156,7 +141,6 @@ void page::move_t(int i)
     no_cursor();
     t = u;
     cursor();
-    print_w();
 }
 
 void page::move_c(int i)
@@ -167,39 +151,11 @@ void page::move_c(int i)
     no_cursor();
     c = u;
     cursor();
-    print_w();
 }
 
 void page::set_i() { a[c].i = s->consume_n(); print_i(c); }
 void page::set_u() { a[c].u = s->consume_n(); print_u(c); }
 void page::set_l() { a[c].l = s->consume_n(); print_l(c); }
-void page::set_w() {
-    ruler::cell * e = cell(c, t);
-    if ( ! e) {
-        write_p(12 * o);
-        cursor();
-        e = cell(c, t);
-    }
-
-    unsigned n = s->consume_n();
-    if (n == 0) {
-        e->q = a[c].saved_q;
-        print_w();
-    } else {
-        div_t d = div(n, 10);
-        unsigned i = d.rem;
-        if (i == 0 || i == 9) return;
-        e->q.a[i - 1] = d.quot % 100;
-    }
-    print_w();
-    if (sound_entry y = play(c, t)) s->speak(y.s->build());
-}
-
-void page::save_w()
-{
-    ruler::cell * e = cell(c, t);
-    if (e) a[c].saved_q = e->q;
-}
 
 void page::move_p(int j)
 {
@@ -247,8 +203,6 @@ void page::handle(int ch)
     else if (ch == 'i') set_i();
     else if (ch == 'u') set_u();
     else if (ch == 'l') set_l();
-    else if (ch == 'w') set_w();
-    else if (ch == 's') save_w();
     else if (ch == '<') move_p(-1);
     else if (ch == '>') move_p(1);
     else if (ch == '.') swap_r();
