@@ -6,13 +6,15 @@
 #include "real.h"
 #include <stdbool.h>
 
-struct color {
+#define GAMMA 2.2  // sRGB
+
+struct color {  // linear
 	real r;
 	real g;
 	real b;
 };
 
-struct compact_color {
+struct compact_color {  // gamma-corrected values
     unsigned char r;
     unsigned char g;
     unsigned char b;
@@ -43,6 +45,13 @@ static inline bool similar(double esq, const color * x, const color * y)
     }
 }
 
+static inline void gamma(color * color_, real e)
+{
+    color_->r = rpow(color_->r, e);
+    color_->g = rpow(color_->g, e);
+    color_->b = rpow(color_->b, e);
+}
+
 static inline color x_color(compact_color cc)
 {
     color ret = {
@@ -50,11 +59,13 @@ static inline color x_color(compact_color cc)
         cc.g /(real) 255,
         cc.b /(real) 255
     };
+    gamma(&ret, GAMMA);
     return ret;
 }
 
 static inline compact_color z_color(color c)
 {
+    gamma(&c, 1 /(real) GAMMA);
     compact_color ret = {
         (unsigned char)nearest(c.r * 255),
         (unsigned char)nearest(c.g * 255),
