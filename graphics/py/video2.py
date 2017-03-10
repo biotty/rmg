@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#       © Christian Sommerfeldt Øien
+#       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 
 from math import cos, sin
@@ -57,7 +57,7 @@ param_scene_objects = [RandomSceneObject(i) for i in range(count)]
 
 
 def scene_objects(t): return [s(t) for s in param_scene_objects]
-def sky(t): return PhotoSky("sky.pnm")
+def sky(t): return PhotoSky("globe.pnm")
 
 def observer(t):
     a = unit_angle(t)

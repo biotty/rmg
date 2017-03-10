@@ -1,5 +1,5 @@
 #
-#       © Christian Sommerfeldt Øien
+#       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 
 from rmg.space import Point, Direction, origo

@@ -1,5 +1,5 @@
 #
-#       © Christian Sommerfeldt Øien
+#       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 from rmg.plane import XY, XYBox
 from rmg.math_ import Rx, Ry, Rz, matrix_multiply, unit_angle

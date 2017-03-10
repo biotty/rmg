@@ -1,5 +1,5 @@
 #
-#       © Christian Sommerfeldt Øien
+#       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 
 from math import pi, acos, asin
@@ -51,10 +51,10 @@ class XYZ:
     def xyz(self):
         return (self.x, self.y, self.z)
     def rotation(self, theta, phi):
-        v = matrix_multiply(Ry(theta), [self.x, self.y, self.z])    
+        v = matrix_multiply(Ry(theta), [self.x, self.y, self.z])
         return self.__class__(*matrix_multiply(Rz(phi), v))
     def inverse_rotation(self, theta, phi):
-        v = matrix_multiply(Rz(-phi), [self.x, self.y, self.z])    
+        v = matrix_multiply(Rz(-phi), [self.x, self.y, self.z])
         return self.__class__(*matrix_multiply(Ry(-theta), v))
     def rotation_on_axis(self, axis, angle):
         (t_r, t_theta, t_phi) = axis.spherical()

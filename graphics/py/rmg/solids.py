@@ -1,5 +1,5 @@
 #
-#       © Christian Sommerfeldt Øien
+#       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 from rmg.bodies import Intersection, Sphere, Plane, Manipulation
 from rmg.space import Point, origo, mean

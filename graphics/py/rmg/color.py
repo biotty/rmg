@@ -1,5 +1,5 @@
 #
-#       © Christian Sommerfeldt Øien
+#       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 
 from math import floor, pi, cos, sin
@@ -7,7 +7,7 @@ from rmg.math_ import rnd, matrix_multiply
 
 
 class Color:
-    
+
     def __init__(self, r, g, b):
         self.r = r
         self.g = g
@@ -18,19 +18,19 @@ class Color:
             return Color(self.r * o.r, self.g * o.g, self.b * o.b)
         else:
             return Color(self.r * o, self.g * o, self.b * o)
-    
+
     def __pow__(self, e):
         return Color(self.r ** e, self.g ** e, self.b ** e)
-    
+
     def __add__(self, o):
             return Color(self.r + o.r, self.g + o.g, self.b + o.b)
-    
+
     def __sub__(self, o):
             return self + o*-1
-    
+
     def mix(self, o, f = 0.5):
         return self * (1 - f) + o * f
-   
+
     def cap(self):
         if self.r > 1: self.r = 1
         elif self.r < 0: self.r = 0
@@ -42,7 +42,7 @@ class Color:
     @staticmethod
     def gray(v):
         return Color(v, v, v)
-    
+
     @staticmethod
     def random(saturation = None, value = None):
         if saturation is None and value is None:
@@ -52,34 +52,35 @@ class Color:
         elif value is None:
             value = rnd(1 - saturation, 1)
         return Color.from_hsv(rnd(0, 2 * pi), saturation, value)
-    
+
     @staticmethod
     def random_gray():
         return Color.gray(rnd(0, 1))
-    
+
     def rgb(self):
         return (self.r, self.g, self.b)
-    
+
     @staticmethod
     def from_binary_rgb(data):
         return Color(
                 data[0] / 255.0,
                 data[1] / 255.0,
-                data[2] / 255.0)
-    
+                data[2] / 255.0) ** 2.2  # note: gamma
+
     def binary_rgb(self):
+        y = self ** (1 / 2.2)  # note: gamma
         return bytes([
-               int(round(self.r * 255)),
-               int(round(self.g * 255)),
-               int(round(self.b * 255))])
-    
+               int(round(y.r * 255)),
+               int(round(y.g * 255)),
+               int(round(y.b * 255))])
+
     @staticmethod
     def from_int_rgb(i):
         return Color(
                 ((i      ) & 1023) / 1023.0,
                 ((i >> 10) & 1023) / 1023.0,
                 ((i >> 20) & 1023) / 1023.0)
-    
+
     def int_rgb(self):
         return (int(round(self.r * 1023))      ) \
              + (int(round(self.g * 1023)) << 10) \
@@ -104,7 +105,7 @@ class Color:
             h = 0
         h *= pi / 3
         return (h, s, v)
-    
+
     @staticmethod
     def from_hsv(h, s = 1, v = 1):
         if s == 0:
@@ -123,10 +124,11 @@ class Color:
         elif i == 4: rgb = (t, p, v)
         elif i == 5: rgb = (v, p, q)
         return Color(*rgb)
-    
+
     def intensity(self):
-        return (self.r + self.g + self.b) / 3
-    
+        y = self ** (1 / 2.2)  # note: gamma
+        return (y.r + y.g + y.b) / 3
+
     def __str__(self):
         return "%LG %LG %LG" % (self.r, self.g, self.b)
 
@@ -254,7 +256,7 @@ class TvColor:  # YUV for HDTV
 
 
 class Optics:
-    
+
     def __init__(self, reflection, absorption, index = -1,
             refraction = black, passthrough = black):
         self.reflection_filter = reflection

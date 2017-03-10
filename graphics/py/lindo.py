@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#       © Christian Sommerfeldt Øien
+#       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 
 from math import pi
@@ -120,7 +120,9 @@ opts.add_option("-s", "--random-seed", type="int")
 opts.add_option("-t", "--ray-trace-mode", action="store_true", default=False)
 opts.add_option("-u", "--unit-turn-degrees", type="float", default=360)
 opts.add_option("-C", "--trace-command", type="string", default="ray/gun")
+opts.add_option("-G", "--display-mode", action="store_true", default=False)
 opts.add_option("-H", "--expression-help", action="store_true", default=False)
+opts.add_option("-I", "--order-independent", action="store_true", default=False)
 (options, args) = opts.parse_args()
 if options.expression_help:
     stderr.write("See examples() in this file\n")
@@ -156,7 +158,13 @@ tree_builder = TreeBuilder(drawing,
         hook = Hook(options.palette_breadth, options.palette_index))
 ls.axiom.visit_by(operating_visitor(tree_builder))
 
-if not options.ray_trace_mode:
+if options.display_mode:
+    from rmg.display import Display
+    d = Display(options.order_independent)
+    drawing.rescale()
+    drawing.render(d.pencil())
+    d.run()
+elif not options.ray_trace_mode:
     stderr.write("Rendering drawing at %s\n" % (options.resolution,))
     width, height = [int(s) for s in options.resolution.split("x")]
     board = Board.mono(width, height, white)

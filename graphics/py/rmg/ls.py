@@ -1,5 +1,5 @@
 #
-#       © Christian Sommerfeldt Øien
+#       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 """Parametric Context-Sensitive Bracketed Lindenmayer System"""
 
@@ -430,7 +430,7 @@ class Rule:
         left, sym, right = self.parse_match_expr(scanner)
         m = Matcher(left, sym, right, context_ignore)
         m.parse_parameters(scanner)
-        
+
         self.matcher = m
         self.replacement_possibilities = []
         self.parse_replacement_expr(scanner)
@@ -441,7 +441,7 @@ class Rule:
         if len(self.replacement_possibilities) == 1:
             return "%s %s" % (self.matcher, repr_possible_replacement(self.replacement_possibilities[0]))
         else:
-            return "%s {%s}" % (self.matcher, 
+            return "%s {%s}" % (self.matcher,
                     "}{".join(repr_possible_replacement(self.replacement_possibilities)))
 
     def parse_match_expr(self, scanner):
@@ -460,7 +460,7 @@ class Rule:
         assert not scanner.halted()
         assert scanner.get_lexeme() == ")"
         return left, sym, right
-    
+
     def parse_replacement_expr(self, scanner):
         if scanner.peek_lexeme() != "{":
             self.replacement_possibilities.append((None, parse_replacement(scanner)))
@@ -585,7 +585,7 @@ class System:
     def parse_axiom(self, scanner):
         self.axiom = Axiom(None)
         self.axiom.parse_nodes(scanner)
-    
+
     def __str__(self):
         return str(self.axiom) + "\n" \
                 + "\n".join([str(r) for r in self.rules])
@@ -613,7 +613,7 @@ if __name__ == "__main__":
             ls.derive()
             print("%d:  %s" % (n, ls.axiom))
     else:
-        print("selftest:", end=' ')
+        print("selftest:")
         ls = System("a () a () a [b] (a[) b ([c]) B [d] e [f X [z z][z]] " \
                          "(a[) b () b [c] (B [] e [f) X ([z][z]) Y")
         for n in range(4):

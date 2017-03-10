@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#       © Christian Sommerfeldt Øien
+#       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 
 from rmg.math_ import rnd, unit_angle, rnd_weighted

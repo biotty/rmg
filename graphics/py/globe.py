@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#       © Christian Sommerfeldt Øien
+#       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 
 from rmg.color import Color, InkColor, white_ink
