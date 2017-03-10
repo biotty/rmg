@@ -23,6 +23,12 @@
 
 #include <unistd.h>
 
+#ifdef USE_JUST_INTONATION
+#define F_OF_JUST f_of_just
+#else // equal temperament
+#define F_OF_JUST f_of
+#endif
+
 double const lim_amp = .8;
 double const amp_per_sec = 1;
 double const ear_secs = .0007;
@@ -309,7 +315,7 @@ struct stringwave : sourcewave
     samples a;
     unsigned i;
     stringwave(double p, wavefunptr s, filter::biquad f)
-        : f(f), s(s), a(SAMPLERATE / f_of_just(p)), i()
+        : f(f), s(s), a(SAMPLERATE / F_OF_JUST(p)), i()
     {
         const unsigned n = a.size();
         for (unsigned i=0; i<n; i++)
@@ -433,7 +439,7 @@ public:
     double z;
     sound(double t, double p, double l, double o, waveptr w,
             vibrato v, tremolo r, envelope e)
-        : d(f_of_just(p) / SAMPLERATE), a(a_of(l))
+        : d(F_OF_JUST(p) / SAMPLERATE), a(a_of(l))
         , m(linear(dist_amp, 1, fabs(sin(o))))
         , w(w), v(v), r(r), e(e), t(t)
     {
@@ -472,7 +478,7 @@ struct hihat : instrument
         tremolo r;
         envelope e = envelope(0, .01, .5, .01, .04);
         whitenoisewave * y = new whitenoisewave();
-        p.insert(sound(n.t, 33, n.l - 6, n.o, waveptr(y), v, r, e));
+        p.insert(sound(n.t, 33, n.l - 12, n.o, waveptr(y), v, r, e));
     }
 };
 
@@ -502,19 +508,8 @@ public:
         vibrato v = vibrato(n.p, rnd(0, .1), rnd(1, 16), w());
         tremolo r = tremolo(rnd(0, -6), rnd(1, 16), w());
         envelope es = envelope(rnd(0, .03), rnd(.05, .1), rnd(.5, .7), n.d, rnd(.03, .1));
-        envelope en = envelope(rnd(0, .2), rnd(.1, .2), rnd(.7, 1), n.d, rnd(.1, .5));
-        double f = 1;
-        switch (unsigned(rnd(0, 4))) {
-        case 0: f *= .5; break;
-        case 1: f *= 1.5; break;
-        case 2: f *= 2; break;
-        case 3: f *= 3; break;
-        }
-        f *= rnd(0.98, 1.02);
-        fmwave * y = new fmwave(rnd(1.7, 7.9), f, w());
-        bandnoisewave * z = new bandnoisewave(4, .1);
-        p.insert(sound(n.t, n.p, n.l - 18, n.o, waveptr(y), v, r, es));
-        p.insert(sound(n.t, n.p, n.l - 9, n.o, waveptr(z), v, r, en));
+        fmwave * y = new fmwave(1.5, 1, w());
+        p.insert(sound(n.t, n.p, n.l - 6, n.o, waveptr(y), v, r, es));
     }
 };
 

@@ -136,7 +136,7 @@ void channel::compile(std::vector<note> & s)
                     n.p = ek.op;
                     double d = 0;
                     for (unsigned z=k+1; z<e.size(); z++) {
-                        if (e[z].command == 8 || e[z].command == 9) { //on-off
+                        if (e[z].command == 8 || e[z].command == 9) { // on-off
                             if (e[z].t - ek.t > 16) {
                                 d = 16;  // *some* max-duration
                                 break;
