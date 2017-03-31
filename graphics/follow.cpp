@@ -35,12 +35,16 @@ XY onto_unit(XY p, XY a, XY b)
 
 struct JI
 {
-    const short j;
-    const short i;
+    short j;
+    short i;
 
     JI(int j, int i) : j(j), i(i) {}
 
     operator XY() const { return XY(j, i); }
+    bool operator<(const JI & other) const
+    {
+        return i < other.i || (i == other.i && j < other.j);
+    }
 };
 
 
@@ -229,7 +233,6 @@ struct Grid
                 blocks.push_back(blk);
             }
         }
-
         for (auto e : edge) {
             const int i = e.i / s;
             const int j = e.j / s;
@@ -241,6 +244,7 @@ struct Grid
                 interest.push_back(JI(j, i));
             }
         }
+        std::sort(interest.begin(), interest.end());
 
         while (check())
             ;
@@ -248,13 +252,11 @@ struct Grid
 
     bool similar_to(const Grid & other, double similarity)
     {
-        auto cmp = [](const JI & a, const JI & b)
-        { return a.i < b.i || (a.i == b.i && a.j < b.j); };
         const int n = interest.size() + other.interest.size();
         std::vector<JI> intersection;
         std::set_intersection(interest.begin(), interest.end(),
                 other.interest.begin(), other.interest.end(),
-                std::back_inserter(intersection), cmp);
+                std::back_inserter(intersection));
         const int c = intersection.size();
         return n == 0 || c > n / (3 - similarity);
     }
