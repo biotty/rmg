@@ -33,7 +33,7 @@ operator>>(std::istream & ist, compact_color & cc)
 {
     color c;
     ist >> c;
-    cc = z_color(c);
+    cc = z_filter(c);
     return ist;
 }
 
@@ -159,7 +159,7 @@ get_object_optics(real first)
     std::cin >> c.g;
     std::cin >> c.b;
     object_optics ret;
-    ret.reflection_filter = z_color(c);
+    ret.reflection_filter = z_filter(c);
     std::cin >> ret.absorption_filter;
     real r;
     std::cin >> r;

@@ -63,15 +63,27 @@ static inline color x_color(compact_color cc)
     return ret;
 }
 
-static inline compact_color z_color(color c)
+static inline compact_color z_rgb_(color c)
 {
-    gamma(&c, 1 /(real) GAMMA);
     compact_color ret = {
         (unsigned char)nearest(c.r * 255),
         (unsigned char)nearest(c.g * 255),
         (unsigned char)nearest(c.b * 255)
     };
     return ret;
+}
+
+static inline compact_color z_color(color c)
+{
+    gamma(&c, 1 /(real) GAMMA);  // note: gamma-correct
+    return z_rgb_(c);
+}
+
+// note: internal representation assumed by filter
+//       is linear, so do not gamma-correct values
+static inline compact_color z_filter(color c)
+{
+    return z_rgb_(c);
 }
 
 static inline compact_color str_color(unsigned char * rgb)

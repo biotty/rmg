@@ -6,7 +6,7 @@
 from rmg.color import Color, InkColor, white_ink
 from rmg.space import Direction
 from rmg.math_ import rnd, golden_ratio
-from rmg.board import Photo, Image
+from rmg.board import Image
 from math import pi
 from copy import copy
 from sys import exit, stderr
@@ -78,7 +78,7 @@ class GlobeMapRenderer:
                 ink += b.ink
                 count += 1
         if count > 1:
-            ink *= 1/float(count)
+            ink *= count ** -.7
             ink.cap()
         return Color.from_hsv(*ink.hsv())
 
