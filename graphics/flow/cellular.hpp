@@ -71,8 +71,31 @@ struct PositionIterator {
             || position.i == 0 || position.i == h - 1;
     }
 
-private:
+protected:
     bool more_;
+};
+
+
+struct AreaPositionIterator : PositionIterator {
+    const size_t h_skip;
+    const size_t w_skip;
+
+    AreaPositionIterator(size_t h_skip, size_t w_skip, size_t h_end, size_t w_end)
+        : PositionIterator(h_end, w_end)
+        , h_skip(h_skip), w_skip(w_skip)
+    {
+        more_ = h != h_skip && w != w_skip;
+    }
+
+    void operator++()
+    {
+        if ( ++ position.j == w) {
+            position.j = w_skip;
+            if ( ++ position.i == h) more_ = false;
+        }
+    }
+
+    bool edge() const = delete;
 };
 
 

@@ -107,15 +107,11 @@ T pop_replacer(std::vector<T> & candidates)
 
 
 template<class Y>
-void descatter(Grid<Y> * image)
+void descatter(Grid<Y> * image, AreaPositionIterator it)
 {
     using T = Candidate<Y>;
     std::map<Y, std::map<Y, std::vector<T>>> replacers;
-    // consider: perform descatter for parts of the image at a time
-    //           so that we swap more related color-areas.  in this
-    //           manner the color-conservation in swaping-algorithm
-    //           makes more sense.  say rects 8th width and height.
-    for (PositionIterator it = image->positions(); it.more(); ++it) {
+    for (; it.more(); ++it) {
         std::pair<Y, uint8_t> color_count = best_invader(image->neighborhood(it));
         const Y color = color_count.first;
         const uint8_t n = color_count.second;
@@ -199,7 +195,13 @@ struct Tracer
             trace_swap->cell(it) = trace->cell(i, j);
         }
         std::swap(trace, trace_swap);
-        descatter(trace);
+
+        const size_t s = 20;
+        assert(trace->h % s == 0);
+        assert(trace->w % s == 0);
+        for (size_t i = 0; i < trace->h; i += s)
+            for (size_t j = 0; j < trace->w; j += s)
+                descatter(trace, AreaPositionIterator(i, j, i + s, j + s));
     }
 };
 

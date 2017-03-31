@@ -88,12 +88,12 @@ struct Painting
         std::vector<color> palette(indices.size());
         for (auto & e : indices) {
             unsigned rgb = e.first;
-            const color c = {
-                (rgb & 0xff) / 255.0,
-                ((rgb >> 8) & 0xff) / 255.0,
-                (rgb >> 16) / 255.0
+            const compact_color cc = {
+                (unsigned char)(rgb & 0xff),
+                (unsigned char)((rgb >> 8) & 0xff),
+                (unsigned char)(rgb >> 16)
             };
-            palette[e.second] = c;
+            palette[e.second] = x_color(cc);
         }
         return palette;
     }
