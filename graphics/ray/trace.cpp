@@ -37,7 +37,7 @@ trace(ray t, world * w)
     static inline bool
 ignorable_color(const color lens)
 {
-    const real small = 0.1;
+    const real small = 1 / (real)256;
     return (lens.r < small && lens.g < small && lens.b < small);
 }
 
