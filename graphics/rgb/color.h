@@ -6,8 +6,6 @@
 #include "real.h"
 #include <stdbool.h>
 
-#define GAMMA 2.2  // sRGB
-
 struct color {  // linear
 	real r;
 	real g;
@@ -45,25 +43,45 @@ static inline bool similar(double esq, const color * x, const color * y)
     }
 }
 
-static inline void gamma(color * color_, real e)
+static inline real dec_stimulus(unsigned char c)
 {
-    color_->r = rpow(color_->r, e);
-    color_->g = rpow(color_->g, e);
-    color_->b = rpow(color_->b, e);
+    const real s = c / 255.0;
+
+    if (s <= 0.04045) return s / 12.92;
+    else return rpow(((s + 0.055) / 1.055), 2.4);
+}
+
+static inline unsigned char enc_stimulus(real s)
+{
+    if (s <= 0.0031308) s *= 12.92;
+    else s = rpow(s, 1.0 / 2.4) * 1.055 - 0.055;
+
+    return (unsigned char)nearest(s * 255);
 }
 
 static inline color x_color(compact_color cc)
 {
     color ret = {
-        cc.r /(real) 255,
-        cc.g /(real) 255,
-        cc.b /(real) 255
+        dec_stimulus(cc.r),
+        dec_stimulus(cc.g),
+        dec_stimulus(cc.b)
     };
-    gamma(&ret, GAMMA);
     return ret;
 }
 
-static inline compact_color z_rgb_(color c)
+static inline compact_color z_color(color c)
+{
+    compact_color ret = {
+        enc_stimulus(c.r),
+        enc_stimulus(c.g),
+        enc_stimulus(c.b)
+    };
+    return ret;
+}
+
+// note: internal representation assumed by filter
+//       is linear, so do not gamma-correct values
+static inline compact_color z_filter(color c)
 {
     compact_color ret = {
         (unsigned char)nearest(c.r * 255),
@@ -71,19 +89,6 @@ static inline compact_color z_rgb_(color c)
         (unsigned char)nearest(c.b * 255)
     };
     return ret;
-}
-
-static inline compact_color z_color(color c)
-{
-    gamma(&c, 1 /(real) GAMMA);  // note: gamma-correct
-    return z_rgb_(c);
-}
-
-// note: internal representation assumed by filter
-//       is linear, so do not gamma-correct values
-static inline compact_color z_filter(color c)
-{
-    return z_rgb_(c);
 }
 
 static inline compact_color str_color(unsigned char * rgb)

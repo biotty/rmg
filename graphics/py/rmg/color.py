@@ -126,8 +126,7 @@ class Color:
         return Color(*rgb)
 
     def intensity(self):
-        y = self ** (1 / 2.2)  # note: gamma
-        return (y.r + y.g + y.b) / 3
+        return .299 * self.r + .587 * self.g + .114 * self.b
 
     def __str__(self):
         return "%LG %LG %LG" % (self.r, self.g, self.b)

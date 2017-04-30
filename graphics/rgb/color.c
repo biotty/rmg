@@ -22,5 +22,5 @@ color_add(color * q, color w)
     real
 intensity(color c)
 {
-    return (c.r + c.g + c.b) / 3;
+    return .299 * c.r + .587 * c.g + .114 * c.b;
 }
