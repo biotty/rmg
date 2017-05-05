@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
+set -e
 o=$1
 d=$(./movie_directory.sh)
 c="$2 -o '$d/'"
-eval $c || exit 1
-./assemble_movie.sh $d $o || exit 1
+eval $c
+./movie_assembler.sh $d $o
 ./movie_directory.sh -d $d
 true

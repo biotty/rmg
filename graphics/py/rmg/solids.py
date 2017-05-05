@@ -1,7 +1,7 @@
 #
 #       (c) Christian Sommerfeldt OEien
 #       All rights reserved
-from rmg.bodies import Intersection, Sphere, Plane, Manipulation
+from rmg.bodies import Intersection, Sphere, Plane, Placement
 from rmg.space import Point, origo, mean
 from rmg.math_ import golden_ratio as g
 g2 = g ** 2
@@ -154,10 +154,10 @@ class RegularSolid:
         faces, mid_r, circum_r = regular_solids_data[self.n]
         resize = self.mid_r / mid_r
         r = circum_r * resize
-        m = Manipulation(resize, self.theta, self.phi, origo)
+        m = Placement(resize, self.theta, self.phi, origo)
         planes = [Plane(n.copy(), n.copy()) for n in faces]
         for p in planes:
-            p.manipulate(m)
+            p.place(m)
         return planes, r
 
 

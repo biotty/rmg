@@ -14,10 +14,11 @@ do
         pnmtojpeg 2> /dev/null $f > $g && rm $f
     done
 done &
+set -e
 pnmsplit - %d.pnm 2> t
-sleep 4
+sleep 5
 rm r
 cd $h
-./assemble_movie.sh $d $o || exit 1
+./movie_assembler.sh $d $o
 ./movie_directory.sh -d $d
 true

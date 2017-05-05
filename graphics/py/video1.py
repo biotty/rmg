@@ -5,7 +5,7 @@
 
 from rmg.math_ import rnd, unit_angle, rnd_weighted
 from rmg.plane import XY
-from rmg.bodies import Manipulation
+from rmg.bodies import Placement
 from rmg.solids import intersect_regulars, sole_regular
 from rmg.space import Point, Direction, origo, random_orbit
 from rmg.color import Color, Optics, white, black
@@ -38,8 +38,8 @@ class RandomSceneObject:
     def __call__(self, t):
         position = self.orbit(t)
         i = sole_regular(self.n)
-        m = Manipulation(.1, self.theta, self.phi, position)
-        i.manipulate(m)
+        m = Placement(.1, self.theta, self.phi, position)
+        i.place(m)
         return SceneObject(self.optics, i)
 
 

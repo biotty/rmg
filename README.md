@@ -36,4 +36,4 @@
 * **netpbm** used with a unix pipe in graphic tools internals
 * **pngquant** for **fluid** which operates on a limited palette
 * **lame** for adding sound to videos like done with **karaoke**
-* **libav-tools** for generating video from images of f.ex  **border**
+* **libav-tools** for generating video from images of f.ex  **follow**
