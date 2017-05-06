@@ -60,7 +60,7 @@ class XYZ:
         (t_r, t_theta, t_phi) = axis.spherical()
         (r, theta, phi) = self.inverse_rotation(t_theta, t_phi).spherical()
         phi += angle
-        return up.rotation(theta, phi).rotation(t_theta, t_phi)
+        return self.__class__(0, 0, r).rotation(theta, phi).rotation(t_theta, t_phi)
     def spherical(self):
         r = abs(self)
         S = (self.x * self.x + self.y * self.y) ** 0.5

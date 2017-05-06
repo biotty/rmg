@@ -3,17 +3,11 @@
 #       All rights reserved
 
 class Placement:
-    #todo: rename to Placement
     def __init__(self, r, theta, phi, delta):
         self.r = r
         self.theta = theta
         self.phi = phi
         self.delta = delta
-    def place(self, m):
-        self.r *= m.r
-        self.theta += m.theta
-        self.phi += m.phi
-        self.delta += m.delta
 
 class Plane:
     def __init__(self, point, normal):
