@@ -75,10 +75,10 @@ class GlobeMapRenderer:
         for b in a:
             h = b.discr(direction)
             if h > 0:
-                ink += b.ink
+                ink += b.ink * .8
                 count += 1
         if count > 1:
-            ink *= count ** -.7
+            ink *= count ** -.6
             ink.cap()
         return Color.from_hsv(*ink.hsv())
 

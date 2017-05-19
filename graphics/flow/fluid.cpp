@@ -167,7 +167,7 @@ int main(int argc, char **argv)
     time_t seed = 0;
     unsigned p = 9, q = 9, m = 4;
     std::vector<ColorMatch> d_exc, v_exc;
-    double z = 0.1, d = 0.08, D = 0.2, v = 0.4, V = 1.0;
+    double z = 0.2, d = 0.08, D = 0.2, v = 0.4, V = 2.0;
     const char *image_prefix = "", *photo_filename = "img.png";
     int n = 512;
 

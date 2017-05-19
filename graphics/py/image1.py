@@ -25,18 +25,18 @@ lightened_variant = .5 < rnd(0, 1)
 def optics_a():
     if lightened_variant:
         hint = Color.random().mix(white)
-        reflection = hint.mix(water)
-        absorption = water * .1
+        reflection = hint.mix(water) * .8
+        absorption = water * .2
         refraction = black
         passthrough = black
         return Optics(reflection, absorption,
                 -1, refraction, passthrough)
     else:
-        color = Color.random()
-        reflection = color.mix(white * .3)
-        refraction = white * .5
-        passthrough = color.mix(white)
-        absorption = black
+        color = Color.random().mix(white)
+        reflection = color * .6
+        refraction = color * .4
+        passthrough = color * .5
+        absorption = color * .1
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
 
@@ -44,17 +44,17 @@ def optics_a():
 def optics_b():
     if lightened_variant:
         hint = Color.random().mix(white, .9)
-        reflection = hint * .1
-        absorption = hint * .9
+        reflection = hint * .2
+        absorption = hint * .8
         refraction = black
         passthrough = black
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
     else:
-        color = Color.random()
-        refraction = color.mix(water)
-        reflection = refraction * .5
-        passthrough = refraction * .5
+        color = Color.random().mix(water)
+        refraction = color * .85
+        reflection = color * .15
+        passthrough = color * .9
         absorption = black
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
@@ -207,7 +207,7 @@ class light_spots:
         self.ro = rnd_circular_orbit()
         self.go = rnd_circular_orbit()
         self.bo = rnd_circular_orbit()
-        ss, ws = .8, .4
+        ss, ws = .3, .2
         self.rc = Color(ss, ws, ws)
         self.gc = Color(ws, ss, ws)
         self.bc = Color(ws, ws, ss)

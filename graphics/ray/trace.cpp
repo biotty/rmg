@@ -162,6 +162,7 @@ refraction_trace(ray ray_, const scene_object * so,
     if (transparent_on_equal_index
             && outside_refraction_index_nano
             == so->optics.refraction_index_nano) {
+        ray_.head = detector_->ray_.head;
         compact_color transparent_ = {255, 255, 255};
         *result = trace_hop(ray_, transparent_, detector_, w);
         return transparent;
@@ -186,10 +187,12 @@ refraction_trace(ray ray_, const scene_object * so,
     static color
 ray_trace(const detector * detector_, world * w)
 {
-    if (0 == detector_->hop || ignorable_color(detector_->lens)) {
-        return (color){1, 1, 1};
-    }
     color detected = {0, 0, 0};
+    if (ignorable_color(detector_->lens)) return detected;
+    if (0 == detector_->hop) {
+        if (debug) std::cerr << "no more hops" << std::endl;
+        return detected;
+    }
     ray surface = detector_->ray_;
     assert(is_near(length(surface.head), 1));
     stack toggled = EMPTY_STACK;
