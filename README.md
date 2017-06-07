@@ -26,7 +26,7 @@
 
 ### To Compile
 
-* **nothing** for the graphics tools
+* **C and C++ tool-chain** for the binaries
 * **python3-dev** to build the **fuge** module
 * **python-pygame** available to python for **icons**
 * **libsdl2-dev** and **libncurses5-dev** for **amuse**
