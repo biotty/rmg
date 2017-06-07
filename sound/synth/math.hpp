@@ -6,19 +6,9 @@
 #include <cstdlib>
 #include <cmath>
 
-namespace {
-
-double const pi = 3.1415926535;
-
-double spow(double y, double p)
-{ return (y >= 0) ? std::pow(y, p) : -std::pow(-y, p); }
-
-double rnd(double a, double b)
-{ return a + std::rand() * (b - a) / RAND_MAX; }
-
-double linear(double a, double b, double r)
-{ return a * (1 - r) + b * r; }
-
-}
+#define pi (3.1415926535)
+#define spow(y, p) ((y >= 0) ? std::pow(y, p) : -std::pow(-y, p))
+#define rnd(a, b) (a + std::rand() * (b - a) / RAND_MAX)
+#define linear(a, b, r) (a * (1 - r) + b * r)
 
 #endif
