@@ -161,8 +161,8 @@ class RegularSolid:
         return planes, r
 
 
-def sole_regular(n):
-    solid = RegularSolid(n, 1, 0, 0)
+def sole_regular(n, mid_r, theta, phi):
+    solid = RegularSolid(n, mid_r, theta, phi)
     planes, r = solid.inscribed_at_origo()
     objects = [Sphere(origo, r)]
     objects.extend(planes)

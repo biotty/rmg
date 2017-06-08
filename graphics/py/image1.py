@@ -11,14 +11,15 @@ from rmg.plane import XY, XYCircle
 from rmg.bodies import (Plane, Sphere,
         Sphere_, Cylinder, Cylinder_, Cone, Cone_,
         Intersection, Placement)
-from rmg.solids import intersect_regulars, RegularSolid
+from rmg.solids import (intersect_regulars, RegularSolid,
+        sole_regular, cube_faces)
 from rmg.scene import SceneObject, World, LightSpot, Observer, RgbSky
 from rmg.script import ScriptInvocation, ParametricWorld
 
 
 water_index = 2.6
 water = Color(.7, .8, .9)
-lightened_variant = .5 < rnd(0, 1)
+lightened_variant = .5 < rnd(1)
 
 
 # note: most reflexive
@@ -174,12 +175,113 @@ def rnd_intersection_of_two(p, r, v):
         return [SceneObject(ob, sb)]
     return o
 
+rnd_uphalf = lambda x: rnd(x * .5, x)
+
+def scene_die(p, r, v):
+    oa = optics_b()
+    er = rnd_uphalf(.5 * .5 ** .5)
+    _, theta, phi = Direction.random().spherical()
+    rt = Direction.random()
+    rs = rnd(5)
+    def o(t):
+        sa = sole_regular(6, 1, theta, phi)
+        for pl in sa.objects[1:]:
+            sa.objects.append(Sphere_(pl.point, er))
+        sa.rotate(rt, rs * t)
+        pt = p + v * (t - .5)
+        rm = Placement(r, 0, 0, pt)
+        sa.place(rm)
+        return [SceneObject(oa, sa)]
+    return o
+
+def scene_tunels(p, r, v):
+    oc = optics_a() if .5 < rnd(1) else optics_b()
+    tr = rnd_uphalf(.3819660112380617)
+    _, theta, phi = Direction.random().spherical()
+    rt = Direction.random()
+    rs = rnd(5)
+    def o(t):
+        sa = sole_regular(30, 1, theta, phi)
+        for pl in sa.objects[1:]:
+            axis = pl.point * tr
+            sa.objects.append(Cylinder_(origo, axis))
+        sa.rotate(rt, rs * t)
+        pt = p + v * (t - .5)
+        rm = Placement(r, 0, 0, pt)
+        sa.place(rm)
+        return [SceneObject(oc, sa)]
+    return o
+
+def scene_submarine(p, r, v):
+    oa = optics_a()
+    mr = rnd_uphalf(.6180339889783486)
+    _, theta, phi = Direction.random().spherical()
+    rt = Direction.random()
+    rs = rnd(5)
+    def o(t):
+        sa = sole_regular(12, 1 + rnd(.1), theta, phi)
+        sb = sole_regular(12, 1, theta, phi)
+        for pl in sb.objects[1:]:
+            axis = pl.point * mr
+            sa.objects.append(Cylinder_(origo, axis))
+        sa.rotate(rt, rs * t)
+        sb.rotate(rt, rs * t)
+        pt = p + v * (t - .5)
+        rm = Placement(r, 0, 0, pt)
+        sa.place(rm)
+        sb.place(rm)
+        return [SceneObject(oa, sa),
+                SceneObject(oa, sb)]
+    return o
+
+def scene_octacone(p, r, v):
+    ob = optics_b()
+    br = rnd(.2, 5)
+    _, theta, phi = Direction.random().spherical()
+    rt = Direction.random()
+    rs = rnd(5)
+    def o(t):
+        sr = sole_regular(8, 1, theta, phi)
+        ps = Direction(0, 0, 0)
+        for pl in sr.objects[1:5]:
+            ps += pl.normal * .25
+        axis = ps * br
+        sr.objects.append(Cone(origo, axis))
+        sr.rotate(rt, rs * t)
+        pt = p + v * (t - .5)
+        rm = Placement(r, 0, 0, pt)
+        sr.place(rm)
+        return [SceneObject(ob, sr)]
+    return o
+
+def scene_alpha(p, r, v):
+    oa = optics_a()
+    ob = optics_b()
+    _, theta, phi = Direction.random().spherical()
+    ps, cr = RegularSolid(4, 1, theta, phi).inscribed_at_origo()
+    rt = Direction.random()
+    rs = rnd(5)
+    def o(t):
+        pt = p + v * (t - .5)
+        aa = []
+        for i, pl in enumerate(ps):
+            sp = Sphere(pl.point, cr * 0.2721655269759087)
+            sp.rotate(rt, rs * t)
+            rm = Placement(r, 0, 0, pt)
+            sp.place(rm)
+            aa.append(SceneObject(
+                oa if i&1 else ob, sp))
+        return aa
+    return o
+
 def rnd_scene_cluster(d):
     v = Direction.random(d)
     p = Point(*(Direction.random(rnd(.2, 2)).xyz()))
-    return rnd_weighted([scene_fruit, rnd_intersection_of_two,
-                scene_wheel, scene_ring, scene_disc],
-            [5, 4, 3, 2, 1])(p, 1, v)
+    c = [scene_fruit, scene_wheel, scene_ring,
+            rnd_intersection_of_two, scene_disc,
+            scene_tunels, scene_die, scene_submarine,
+            scene_alpha, scene_octacone]
+    return rnd_weighted(c, [5, 4, 3, 2, 1] * 2)(p, 1, v)
 
 class scene_objects:
     def __init__(self, n, d):

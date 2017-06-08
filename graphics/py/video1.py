@@ -37,7 +37,7 @@ class RandomSceneObject:
 
     def __call__(self, t):
         position = self.orbit(t)
-        i = sole_regular(self.n)
+        i = sole_regular(self.n, 1, 0, 0)
         m = Placement(.1, self.theta, self.phi, position)
         i.place(m)
         return SceneObject(self.optics, i)
