@@ -22,7 +22,7 @@ then lame -r -s 44.1 --signed --bitwidth 16 --big-endian $w $tmp3
 else g=;a=;echo silent
 fi
 
-p=" -qscale 1" # " -b 128k"
+p=" -q:v 1" # " -b 128k"
 c="avconv -y$g -f image2 -i $impd/%d.jpeg$a$p $omp4"
 echo $c
 $c

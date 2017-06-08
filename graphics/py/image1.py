@@ -215,11 +215,12 @@ def scene_tunels(p, r, v):
 def scene_submarine(p, r, v):
     oa = optics_a()
     mr = rnd_uphalf(.6180339889783486)
+    l = 1 + rnd(.1)
     _, theta, phi = Direction.random().spherical()
     rt = Direction.random()
     rs = rnd(5)
     def o(t):
-        sa = sole_regular(12, 1 + rnd(.1), theta, phi)
+        sa = sole_regular(12, l, theta, phi)
         sb = sole_regular(12, 1, theta, phi)
         for pl in sb.objects[1:]:
             axis = pl.point * mr

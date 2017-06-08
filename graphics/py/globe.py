@@ -75,7 +75,7 @@ class GlobeMapRenderer:
         for b in a:
             h = b.discr(direction)
             if h > 0:
-                ink += b.ink * .8
+                ink += b.ink * .9
                 count += 1
         if count > 1:
             ink *= count ** -.6
