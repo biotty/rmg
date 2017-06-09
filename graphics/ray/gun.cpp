@@ -189,15 +189,15 @@ get_decoration(std::string name, object_decoration * df)
     direction n;
     std::string path;
 
-    if (name == "directional") {
+    if (name == "normal") {
         std::cin >> n >> path;
-        return directional_texture_mapping(df, n, path.c_str(),
+        return normal_texture_mapping(df, n, path.c_str(),
                 get_texture_application());
     }
 
-    if (name == "positional") {
+    if (name == "planar") {
         std::cin >> n >> path;
-        return positional_texture_mapping(df, n, path.c_str(),
+        return planar_texture_mapping(df, n, path.c_str(),
                 get_texture_application());
     }
 
@@ -207,9 +207,9 @@ get_decoration(std::string name, object_decoration * df)
                 get_texture_application());
     }
 
-    if (name == "linear") {
+    if (name == "axial") {
         std::cin >> n >> o >> path;
-        return linear_texture_mapping(df, n, o, path.c_str(),
+        return axial_texture_mapping(df, n, o, path.c_str(),
                 get_texture_application());
     }
 

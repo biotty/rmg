@@ -14,7 +14,7 @@ typedef struct {
     real r;
     real theta;
     real phi;
-} positional_decoration_arg;
+} normal_decoration_arg;
 
 typedef struct {
     photo * photo;
@@ -40,12 +40,12 @@ typedef struct {
     real r;
     real theta;
     real phi;
-} linear_decoration_arg;
+} axial_decoration_arg;
 
     void
 delete_texture_mapping(void * decoration_arg)
 {
-    positional_decoration_arg * da = decoration_arg;
+    normal_decoration_arg * da = decoration_arg;
     photo_delete(da->photo);
     free(da);
 }
@@ -99,10 +99,10 @@ wrap_(const texture_application * a, real * x, real * y)
 }
 
     static void
-directional_decoration(const ray * ray_, void * decoration_arg,
+normal_decoration(const ray * ray_, void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
-    const positional_decoration_arg * da = decoration_arg;
+    const normal_decoration_arg * da = decoration_arg;
     real x, y;
     direction d = inverse_rotation(ray_->head, da->theta, da->phi);
     direction_to_unitsquare(&d, &x, &y);
@@ -112,7 +112,7 @@ directional_decoration(const ray * ray_, void * decoration_arg,
 }
 
     static void
-positional_decoration(const ray * ray_, void * decoration_arg,
+planar_decoration(const ray * ray_, void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
     const planar_decoration_arg * da = decoration_arg;
@@ -142,12 +142,12 @@ relative_decoration(const ray * ray_, void * decoration_arg,
 }
 
     static void
-linear_decoration(const ray * ray_, void * decoration_arg,
+axial_decoration(const ray * ray_, void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
     static const real pi = REAL_PI;
     static const real two_pi = REAL_PI * 2;
-    const linear_decoration_arg * da = decoration_arg;
+    const axial_decoration_arg * da = decoration_arg;
     direction d = inverse_rotation(
             distance_vector(da->o, ray_->endpoint),
             da->theta, da->phi);
@@ -160,21 +160,21 @@ linear_decoration(const ray * ray_, void * decoration_arg,
 }
 
     void *
-directional_texture_mapping(object_decoration * df, direction n,
+normal_texture_mapping(object_decoration * df, direction n,
         const char * path, texture_application a)
 {
-    positional_decoration_arg * da = malloc(sizeof *da);
+    normal_decoration_arg * da = malloc(sizeof *da);
     da->a = a;
     da->photo = photo_create(path);
     real r;
     spherical(n, &r, &da->theta, &da->phi);
     da->r = 1 / r;
-    *df = directional_decoration;
+    *df = normal_decoration;
     return da;
 }
 
     void *
-positional_texture_mapping(object_decoration * df, direction n,
+planar_texture_mapping(object_decoration * df, direction n,
         const char * path, texture_application a)
 
 {
@@ -184,7 +184,7 @@ positional_texture_mapping(object_decoration * df, direction n,
     real r;
     spherical(n, &r, &da->theta, &da->phi);
     da->r = 1 / r;
-    *df = positional_decoration;
+    *df = planar_decoration;
     return da;
 }
 
@@ -204,16 +204,16 @@ relative_texture_mapping(object_decoration * df, direction n,
 }
 
     void *
-linear_texture_mapping(object_decoration * df, direction n,
+axial_texture_mapping(object_decoration * df, direction n,
         point o, const char * path, texture_application a)
 {
-    linear_decoration_arg * da = malloc(sizeof *da);
+    axial_decoration_arg * da = malloc(sizeof *da);
     da->a = a;
     da->photo = photo_create(path);
     real r;
     spherical(n, &r, &da->theta, &da->phi);
     da->r = 1 / r;
     da->o = o;
-    *df = linear_decoration;
+    *df = axial_decoration;
     return da;
 }

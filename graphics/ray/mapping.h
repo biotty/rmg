@@ -21,11 +21,11 @@ typedef struct texture_application texture_application;
 extern "C" {
 #endif
 
-void * directional_texture_mapping(
+void * normal_texture_mapping(
         object_decoration * df, direction n,
         const char * path, texture_application a);
 
-void * positional_texture_mapping(
+void * planar_texture_mapping(
         object_decoration * df, direction n,
         const char * path, texture_application a);
 
@@ -33,7 +33,7 @@ void * relative_texture_mapping(
         object_decoration * df, direction n, point o,
         const char * path, texture_application a);
 
-void * linear_texture_mapping(
+void * axial_texture_mapping(
         object_decoration * df, direction n, point o,
         const char * path, texture_application a);
 
