@@ -213,6 +213,15 @@ get_decoration(std::string name, object_decoration * df)
                 get_texture_application());
     }
 
+    if (name == "checkers") {
+        int q;
+        compact_color reflection, absorption, refraction;
+        std::cin >> n >> o >> q >> reflection
+            >> absorption >> refraction;
+        return checkers_mapping(df, n, o, q, reflection,
+                absorption, refraction);
+    }
+
     fail("decoration \"%s\"?", name.c_str());
 }
 
@@ -340,7 +349,7 @@ main(int argc, char *argv[])
 
     fini_arg_pool();
     while ( -- decoration_index >= 0)
-        delete_texture_mapping(decoration_args[decoration_index]);
+        delete_decoration(decoration_args[decoration_index]);
     delete [] decoration_args;
     delete [] world_.scene_.objects;
     delete [] world_.spots;

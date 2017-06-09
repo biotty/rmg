@@ -14,6 +14,7 @@ from rmg.bodies import (Plane, Sphere,
 from rmg.solids import (intersect_regulars, RegularSolid,
         sole_regular, cube_faces)
 from rmg.scene import SceneObject, World, LightSpot, Observer, RgbSky
+from rmg.mapping import CheckersMap, SurfaceOptics
 from rmg.script import ScriptInvocation, ParametricWorld
 
 
@@ -60,9 +61,17 @@ def optics_b():
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
 
+# note: functional mapping
+def optics_c():
+    a, b = optics_a(), optics_b()
+    if .5 < rnd(1):
+        a, b = b, a
+    return CheckersMap(Direction.random(), origo,
+            20, SurfaceOptics.from_optics(a), b)
+
 def scene_disc(p, r, v):
     oa = optics_a()
-    ob = optics_b()
+    ob = optics_c()
     _, theta, phi = Direction.random().spherical()
     sc = XYCircle(XY(0, 0), r * rnd(0, .8))(rnd(0, 1))
     qo = Point(sc.x, sc.y, 0).rotation(theta, phi)
@@ -140,7 +149,7 @@ def scene_wheel(p, r, v):
     return o
 
 def scene_ring(p, r, v):
-    oa = optics_a()
+    oa = optics_c()
     dc = Direction.random() * rnd(.1, .9)
     th = r * rnd(.1, .2)
     rt = Direction.random()
@@ -156,7 +165,7 @@ def scene_ring(p, r, v):
     return o
 
 def rnd_intersection_of_two(p, r, v):
-    ob = optics_b()
+    ob = optics_c()
     def rnd_tilted(n):
         _, theta, phi = Direction.random().spherical()
         mid_r = rnd(.9, 1)
@@ -282,7 +291,7 @@ def rnd_scene_cluster(d):
             rnd_intersection_of_two, scene_disc,
             scene_tunels, scene_die, scene_submarine,
             scene_alpha, scene_octacone]
-    return rnd_weighted(c, [5, 4, 3, 2, 1] * 2)(p, 1, v)
+    return rnd_weighted(c, 2 * [5, 4, 3, 2, 1])(p, 1, v)
 
 class scene_objects:
     def __init__(self, n, d):

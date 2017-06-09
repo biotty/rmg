@@ -6,8 +6,8 @@
 #include "scene.h"
 
 struct texture_application {
-    real x_wrap;
-    real y_wrap;
+    real x_wrap; // note: redundant for textures having o
+    real y_wrap; // ^
     color reflection_factor;
     color absorption_factor;
     color refraction_factor;
@@ -37,7 +37,13 @@ void * axial_texture_mapping(
         object_decoration * df, direction n, point o,
         const char * path, texture_application a);
 
-void delete_texture_mapping(void * decoration_arg);
+void * checkers_mapping(
+        object_decoration * df, direction n, point o, int q,
+        compact_color reflection_filter,
+        compact_color absorption_filter,
+        compact_color refraction_filter);
+
+void delete_decoration(void * decoration_arg);
 
 #ifdef __cplusplus
 }
