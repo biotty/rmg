@@ -62,12 +62,16 @@ def optics_b():
                 water_index, refraction, passthrough)
 
 # note: functional mapping
-def optics_c():
+def optics_c(glide):
     a, b = optics_a(), optics_b()
-    if .5 < rnd(1):
-        a, b = b, a
-    return CheckersMap(Direction.random(), origo,
-            20, SurfaceOptics.from_optics(a), b)
+    if .5 < rnd(1): a, b = b, a
+    a = SurfaceOptics.from_optics(a)
+    d = Direction.random()
+    def f(t):
+        pl = Plane(origo, d)
+        glide(pl, t)
+        return CheckersMap(pl.normal, pl.point, 12, a, b)
+    return f
 
 class Glide:
     def __init__(self, p, r, v, d, s):
@@ -89,36 +93,36 @@ class Glide:
         return cls(Point(*(Direction.random(rnd(.2, 2)).xyz())),
                 1, Direction.random(d), Direction.random(), rnd(5))
 
-def scene_disc(am):
+def scene_disc(glide):
     oa = optics_a()
-    ob = optics_c()
+    mc = optics_c(glide)
     _, theta, phi = Direction.random().spherical()
     sc = XYCircle(XY(0, 0), rnd(0, .8))(rnd(0, 1))
     qo = Point(sc.x, sc.y, 0).rotation(theta, phi)
     po = Point(0, 0, rnd(.02, .1)).rotation(theta, phi)
     dp = Direction(0, 0, 1).rotation(theta, phi)
-    r_ = rnd(.1, .9) * (-1)
-    ro = rnd(.5, .7)
+    r, rk = .9, rnd(.1, .8)
+    ro = rnd(.4, .6)
     def o(t):
         sa = Sphere(qo, ro)
-        am(sa, t)
-        sb = Intersection([
-            Cylinder(origo, dp),
-            Cylinder_(origo, dp * r_),
+        glide(sa, t)
+        sc = Intersection([
+            Cylinder(origo, dp * r),
+            Cylinder_(origo, dp * rk),
             Plane(po, dp),
-            Plane(po * (-1), dp * (-1))
+            Plane(po * -1, dp * -1)
         ])
-        am(sb, t)
+        glide(sc, t)
         return [SceneObject(oa, sa),
-                SceneObject(ob, sb)]
+                SceneObject(mc(t), sc)]
     return o
 
-def scene_fruit(am):
+def scene_fruit(glide):
     oa = optics_a()
     ob = optics_b()
     dp = Direction.random()
     _, theta, phi = dp.spherical()
-    co = XYCircle(XY(0, 0), rnd(.5, .7))
+    co = XYCircle(XY(0, 0), rnd(.4, .6))
     lt = rnd(0, 1)
     s1 = co(lt)
     s2 = co(lt + rnd(.2, .4))
@@ -126,51 +130,51 @@ def scene_fruit(am):
     q1 = Point(s1.x, s1.y, 0).rotation(theta, phi)
     q2 = Point(s2.x, s2.y, 0).rotation(theta, phi)
     q3 = Point(s3.x, s3.y, 0).rotation(theta, phi)
-    r1 = rnd(.1, .3)
-    r2 = rnd(.1, .3)
-    r3 = rnd(.1, .3)
+    r1 = rnd(.2, .4)
+    r2 = rnd(.2, .4)
+    r3 = rnd(.2, .4)
     def o(t):
         sa = Sphere(q3, r3)
-        am(sa, t)
+        glide(sa, t)
         sb = Intersection([
             Sphere(origo, 1),
             Plane(origo, dp),
             Sphere_(q1, r1),
             Sphere_(q2, r2)
         ])
-        am(sb, t)
+        glide(sb, t)
         return [SceneObject(oa, sa),
                 SceneObject(ob, sb)]
     return o
 
-def scene_wheel(am):
+def scene_wheel(glide):
     ob = optics_b()
     dc = Direction.random() * rnd(1, 2)
-    th = rnd(.1, .3)
+    th, r = rnd(.02, .15), .8
     def o(t):
         ce = Cone(origo, dc)
-        sp = Sphere(origo, 1)
-        sn = Sphere_(origo, 1 - th)
+        sp = Sphere(origo, r)
+        sn = Sphere_(origo, r - th)
         sb = Intersection([ce, sp, sn])
-        am(sb, t)
+        glide(sb, t)
         return [SceneObject(ob, sb)]
     return o
 
-def scene_ring(am):
+def scene_ring(glide):
     oa = optics_a()
     dc = Direction.random() * rnd(.1, .9)
-    th = rnd(.1, .2)
+    th, r = rnd(.02, .15), .8
     def o(t):
         cn = Cone_(origo, dc)
-        sp = Sphere(origo, 1)
-        sn = Sphere_(origo, 1 - th)
+        sp = Sphere(origo, r)
+        sn = Sphere_(origo, r - th)
         sa = Intersection([cn, sp, sn])
-        am(sa, t)
+        glide(sa, t)
         return [SceneObject(oa, sa)]
     return o
 
-def rnd_intersection_of_two(am):
-    ob = optics_b()
+def regular_pair_inter(glide):
+    mc = optics_c(glide)
     def rnd_tilted(n):
         _, theta, phi = Direction.random().spherical()
         mid_r = rnd(.9, 1)
@@ -179,14 +183,14 @@ def rnd_intersection_of_two(am):
     ra = rnd_tilted(fr())
     rb = rnd_tilted(fr())
     def o(t):
-        sb = intersect_regulars([ra, rb])
-        am(sb, t)
-        return [SceneObject(ob, sb)]
+        sc = intersect_regulars([ra, rb])
+        glide(sc, t)
+        return [SceneObject(mc(t), sc)]
     return o
 
 rnd_uphalf = lambda x: rnd(x * .5, x)
 
-def scene_die(am):
+def scene_die(glide):
     oa = optics_b()
     er = rnd_uphalf(.5 * .5 ** .5)
     _, theta, phi = Direction.random().spherical()
@@ -194,11 +198,11 @@ def scene_die(am):
         sa = sole_regular(6, 1, theta, phi)
         for pl in sa.objects[1:]:
             sa.objects.append(Sphere_(pl.point, er))
-        am(sa, t)
+        glide(sa, t)
         return [SceneObject(oa, sa)]
     return o
 
-def scene_tunels(am):
+def scene_tunels(glide):
     oc = optics_a() if .5 < rnd(1) else optics_b()
     tr = rnd_uphalf(.3819660112380617)
     _, theta, phi = Direction.random().spherical()
@@ -207,11 +211,11 @@ def scene_tunels(am):
         for pl in sa.objects[1:]:
             axis = pl.point * tr
             sa.objects.append(Cylinder_(origo, axis))
-        am(sa, t)
+        glide(sa, t)
         return [SceneObject(oc, sa)]
     return o
 
-def scene_submarine(am):
+def scene_submarine(glide):
     oa = optics_a()
     mr = rnd_uphalf(.6180339889783486)
     l = 1 + rnd(.1)
@@ -222,13 +226,13 @@ def scene_submarine(am):
         for pl in sb.objects[1:]:
             axis = pl.point * mr
             sa.objects.append(Cylinder_(origo, axis))
-        am(sa, t)
-        am(sb, t)
+        glide(sa, t)
+        glide(sb, t)
         return [SceneObject(oa, sa),
                 SceneObject(oa, sb)]
     return o
 
-def scene_octacone(am):
+def scene_octacone(glide):
     ob = optics_b()
     br = rnd(.2, 5)
     _, theta, phi = Direction.random().spherical()
@@ -239,29 +243,28 @@ def scene_octacone(am):
             ps += pl.normal * .25
         axis = ps * br
         sr.objects.append(Cone(origo, axis))
-        am(sr, t)
+        glide(sr, t)
         return [SceneObject(ob, sr)]
     return o
 
-def scene_alpha(am):
+def scene_alpha(glide):
     oa = optics_a()
     ob = optics_b()
     _, theta, phi = Direction.random().spherical()
-    ps, cr = RegularSolid(4, 1, theta, phi).inscribed_at_origo()
+    ps, cr = RegularSolid(4, .5, theta, phi).inscribed_at_origo()
     def o(t):
         aa = []
         for i, pl in enumerate(ps):
             sp = Sphere(pl.point, cr * 0.2721655269759087)
-            am(sp, t)
+            glide(sp, t)
             aa.append(SceneObject(
                 oa if i&1 else ob, sp))
         return aa
     return o
 
 def rnd_scene_cluster(d):
-    c = [scene_fruit, scene_wheel, scene_ring,
-            rnd_intersection_of_two, scene_disc,
-            scene_tunels, scene_die, scene_submarine,
+    c = [scene_fruit, scene_wheel, scene_ring, regular_pair_inter,
+            scene_disc, scene_tunels, scene_die, scene_submarine,
             scene_alpha, scene_octacone]
     return rnd_weighted(c, [5, 4, 3, 2, 1] * 2)(Glide.random(d))
 
