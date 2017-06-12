@@ -69,40 +69,56 @@ def optics_c():
     return CheckersMap(Direction.random(), origo,
             20, SurfaceOptics.from_optics(a), b)
 
-def scene_disc(p, r, v):
+class Glide:
+    def __init__(self, p, r, v, d, s):
+        self.p = p
+        self.r = r
+        self.v = v
+        self.d = d
+        self.s = s
+
+    def __call__(self, oo, t):
+        oo.rotate(self.d, self.s * t)
+        pt = self.p + self.v * (t - .5)
+        rm = Placement(self.r, 0, 0, pt)
+        oo.place(rm)
+        return oo
+
+    @classmethod
+    def random(cls, d):
+        return cls(Point(*(Direction.random(rnd(.2, 2)).xyz())),
+                1, Direction.random(d), Direction.random(), rnd(5))
+
+def scene_disc(am):
     oa = optics_a()
     ob = optics_c()
     _, theta, phi = Direction.random().spherical()
-    sc = XYCircle(XY(0, 0), r * rnd(0, .8))(rnd(0, 1))
+    sc = XYCircle(XY(0, 0), rnd(0, .8))(rnd(0, 1))
     qo = Point(sc.x, sc.y, 0).rotation(theta, phi)
-    po = Point(0, 0, r * rnd(.02, .1)).rotation(theta, phi)
+    po = Point(0, 0, rnd(.02, .1)).rotation(theta, phi)
     dp = Direction(0, 0, 1).rotation(theta, phi)
-    r_ = r * rnd(.1, .9)
-    ro = r * rnd(.5, .7)
-    rt = Direction.random()
-    rs = rnd(5)
+    r_ = rnd(.1, .9) * (-1)
+    ro = rnd(.5, .7)
     def o(t):
-        qo_ = qo.rotation_on_axis(rt, rs * t)
-        po_ = po.rotation_on_axis(rt, rs * t)
-        dp_ = dp.rotation_on_axis(rt, rs * t)
-        pt = p + v * (t - .5)
+        sa = Sphere(qo, ro)
+        am(sa, t)
         sb = Intersection([
-            Cylinder(pt, dp_ * r),
-            Cylinder_(pt, dp_ * r_),
-            Plane(pt + po_, dp_),
-            Plane(pt - po_, dp_ * (-1))
+            Cylinder(origo, dp),
+            Cylinder_(origo, dp * r_),
+            Plane(po, dp),
+            Plane(po * (-1), dp * (-1))
         ])
-        sa = Sphere(pt + qo_, ro)
+        am(sb, t)
         return [SceneObject(oa, sa),
                 SceneObject(ob, sb)]
     return o
 
-def scene_fruit(p, r, v):
+def scene_fruit(am):
     oa = optics_a()
     ob = optics_b()
     dp = Direction.random()
     _, theta, phi = dp.spherical()
-    co = XYCircle(XY(0, 0), r * rnd(.5, .7))
+    co = XYCircle(XY(0, 0), rnd(.5, .7))
     lt = rnd(0, 1)
     s1 = co(lt)
     s2 = co(lt + rnd(.2, .4))
@@ -113,59 +129,48 @@ def scene_fruit(p, r, v):
     r1 = rnd(.1, .3)
     r2 = rnd(.1, .3)
     r3 = rnd(.1, .3)
-    rt = Direction.random()
-    rs = rnd(5)
     def o(t):
-        q1_ = q1.rotation_on_axis(rt, rs * t)
-        q2_ = q2.rotation_on_axis(rt, rs * t)
-        q3_ = q3.rotation_on_axis(rt, rs * t)
-        dp_ = dp.rotation_on_axis(rt, rs * t)
-        pt = p + v * (t - .5)
+        sa = Sphere(q3, r3)
+        am(sa, t)
         sb = Intersection([
-            Sphere(pt, r),
-            Plane(pt, dp_),
-            Sphere_(pt + q1_, r1),
-            Sphere_(pt + q2_, r2)
+            Sphere(origo, 1),
+            Plane(origo, dp),
+            Sphere_(q1, r1),
+            Sphere_(q2, r2)
         ])
-        sa = Sphere(pt + q3_, r3)
+        am(sb, t)
         return [SceneObject(oa, sa),
                 SceneObject(ob, sb)]
     return o
 
-def scene_wheel(p, r, v):
+def scene_wheel(am):
     ob = optics_b()
     dc = Direction.random() * rnd(1, 2)
-    th = r * rnd(.1, .3)
-    rt = Direction.random()
-    rs = rnd(5)
+    th = rnd(.1, .3)
     def o(t):
-        dc_ = dc.rotation_on_axis(rt, rs * t)
-        pt = p + v * (t - .5)
-        ce = Cone(pt, dc_)
-        sp = Sphere(pt, r)
-        sn = Sphere_(pt, r - th)
+        ce = Cone(origo, dc)
+        sp = Sphere(origo, 1)
+        sn = Sphere_(origo, 1 - th)
         sb = Intersection([ce, sp, sn])
+        am(sb, t)
         return [SceneObject(ob, sb)]
     return o
 
-def scene_ring(p, r, v):
-    oa = optics_c()
+def scene_ring(am):
+    oa = optics_a()
     dc = Direction.random() * rnd(.1, .9)
-    th = r * rnd(.1, .2)
-    rt = Direction.random()
-    rs = rnd(5)
+    th = rnd(.1, .2)
     def o(t):
-        dc_ = dc.rotation_on_axis(rt, rs * t)
-        pt = p + v * (t - .5)
-        cn = Cone_(pt, dc_)
-        sp = Sphere(pt, r)
-        sn = Sphere_(pt, r - th)
+        cn = Cone_(origo, dc)
+        sp = Sphere(origo, 1)
+        sn = Sphere_(origo, 1 - th)
         sa = Intersection([cn, sp, sn])
+        am(sa, t)
         return [SceneObject(oa, sa)]
     return o
 
-def rnd_intersection_of_two(p, r, v):
-    ob = optics_c()
+def rnd_intersection_of_two(am):
+    ob = optics_b()
     def rnd_tilted(n):
         _, theta, phi = Direction.random().spherical()
         mid_r = rnd(.9, 1)
@@ -173,83 +178,60 @@ def rnd_intersection_of_two(p, r, v):
     fr = lambda: rnd_weighted([4, 6, 8, 12, 30])
     ra = rnd_tilted(fr())
     rb = rnd_tilted(fr())
-    rt = Direction.random()
-    rs = rnd(5)
     def o(t):
         sb = intersect_regulars([ra, rb])
-        sb.rotate(rt, rs * t)
-        pt = p + v * (t - .5)
-        rm = Placement(r, 0, 0, pt)
-        sb.place(rm)
+        am(sb, t)
         return [SceneObject(ob, sb)]
     return o
 
 rnd_uphalf = lambda x: rnd(x * .5, x)
 
-def scene_die(p, r, v):
+def scene_die(am):
     oa = optics_b()
     er = rnd_uphalf(.5 * .5 ** .5)
     _, theta, phi = Direction.random().spherical()
-    rt = Direction.random()
-    rs = rnd(5)
     def o(t):
         sa = sole_regular(6, 1, theta, phi)
         for pl in sa.objects[1:]:
             sa.objects.append(Sphere_(pl.point, er))
-        sa.rotate(rt, rs * t)
-        pt = p + v * (t - .5)
-        rm = Placement(r, 0, 0, pt)
-        sa.place(rm)
+        am(sa, t)
         return [SceneObject(oa, sa)]
     return o
 
-def scene_tunels(p, r, v):
+def scene_tunels(am):
     oc = optics_a() if .5 < rnd(1) else optics_b()
     tr = rnd_uphalf(.3819660112380617)
     _, theta, phi = Direction.random().spherical()
-    rt = Direction.random()
-    rs = rnd(5)
     def o(t):
         sa = sole_regular(30, 1, theta, phi)
         for pl in sa.objects[1:]:
             axis = pl.point * tr
             sa.objects.append(Cylinder_(origo, axis))
-        sa.rotate(rt, rs * t)
-        pt = p + v * (t - .5)
-        rm = Placement(r, 0, 0, pt)
-        sa.place(rm)
+        am(sa, t)
         return [SceneObject(oc, sa)]
     return o
 
-def scene_submarine(p, r, v):
+def scene_submarine(am):
     oa = optics_a()
     mr = rnd_uphalf(.6180339889783486)
     l = 1 + rnd(.1)
     _, theta, phi = Direction.random().spherical()
-    rt = Direction.random()
-    rs = rnd(5)
     def o(t):
         sa = sole_regular(12, l, theta, phi)
         sb = sole_regular(12, 1, theta, phi)
         for pl in sb.objects[1:]:
             axis = pl.point * mr
             sa.objects.append(Cylinder_(origo, axis))
-        sa.rotate(rt, rs * t)
-        sb.rotate(rt, rs * t)
-        pt = p + v * (t - .5)
-        rm = Placement(r, 0, 0, pt)
-        sa.place(rm)
-        sb.place(rm)
+        am(sa, t)
+        am(sb, t)
         return [SceneObject(oa, sa),
                 SceneObject(oa, sb)]
     return o
 
-def scene_octacone(p, r, v):
+def scene_octacone(am):
     ob = optics_b()
     br = rnd(.2, 5)
     _, theta, phi = Direction.random().spherical()
-    rt = Direction.random()
-    rs = rnd(5)
     def o(t):
         sr = sole_regular(8, 1, theta, phi)
         ps = Direction(0, 0, 0)
@@ -257,41 +239,31 @@ def scene_octacone(p, r, v):
             ps += pl.normal * .25
         axis = ps * br
         sr.objects.append(Cone(origo, axis))
-        sr.rotate(rt, rs * t)
-        pt = p + v * (t - .5)
-        rm = Placement(r, 0, 0, pt)
-        sr.place(rm)
+        am(sr, t)
         return [SceneObject(ob, sr)]
     return o
 
-def scene_alpha(p, r, v):
+def scene_alpha(am):
     oa = optics_a()
     ob = optics_b()
     _, theta, phi = Direction.random().spherical()
     ps, cr = RegularSolid(4, 1, theta, phi).inscribed_at_origo()
-    rt = Direction.random()
-    rs = rnd(5)
     def o(t):
-        pt = p + v * (t - .5)
         aa = []
         for i, pl in enumerate(ps):
             sp = Sphere(pl.point, cr * 0.2721655269759087)
-            sp.rotate(rt, rs * t)
-            rm = Placement(r, 0, 0, pt)
-            sp.place(rm)
+            am(sp, t)
             aa.append(SceneObject(
                 oa if i&1 else ob, sp))
         return aa
     return o
 
 def rnd_scene_cluster(d):
-    v = Direction.random(d)
-    p = Point(*(Direction.random(rnd(.2, 2)).xyz()))
     c = [scene_fruit, scene_wheel, scene_ring,
             rnd_intersection_of_two, scene_disc,
             scene_tunels, scene_die, scene_submarine,
             scene_alpha, scene_octacone]
-    return rnd_weighted(c, 2 * [5, 4, 3, 2, 1])(p, 1, v)
+    return rnd_weighted(c, [5, 4, 3, 2, 1] * 2)(Glide.random(d))
 
 class scene_objects:
     def __init__(self, n, d):
