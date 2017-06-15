@@ -99,14 +99,6 @@ zoom_(const real r, real * x, real * y)
     *x = zoom(r, *x);
     *y = zoom(r, *y);
 }
-    static void
-wrap_(const texture_application * a, real * x, real * y)
-{
-    *x += a->x_wrap;
-    if (*x >= 1) *x -= 1;
-    *y += a->y_wrap;
-    if (*y >= 1) *y -= 1;
-}
 
     static void
 normal_decoration(const ray * ray_, void * decoration_arg,
@@ -117,7 +109,6 @@ normal_decoration(const ray * ray_, void * decoration_arg,
     direction d = inverse_rotation(ray_->head, da->theta, da->phi);
     direction_to_unitsquare(&d, &x, &y);
     zoom_(da->r, &x, &y);
-    wrap_(&da->a, &x, &y);
     texture_map(&da->a, da->photo, x, y, so, adjust);
 }
 
@@ -138,7 +129,6 @@ planar_decoration_(const ray * ray_, void * decoration_arg,
         if (x < 0 || x >= 1 || y < 0 || y >= 1)
             x = y = 0;
     }
-    wrap_(&da->a, &x, &y);
     texture_map(&da->a, da->photo, x, y, so, adjust);
 }
 
@@ -167,7 +157,6 @@ relative_decoration(const ray * ray_, void * decoration_arg,
     real x, y;
     direction_to_unitsquare(&d, &x, &y);
     zoom_(da->r, &x, &y);
-    wrap_(&da->a, &x, &y);
     texture_map(&da->a, da->photo, x, y, so, adjust);
 }
 
@@ -196,7 +185,6 @@ axial_decoration_(const ray * ray_, void * decoration_arg,
     }
     if (x == 1)
         x = (ratan(d.y, d.x) + pi) / two_pi;
-    wrap_(&da->a, &x, &y);
     texture_map(&da->a, da->photo, x, y, so, adjust);
 }
 

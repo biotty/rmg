@@ -83,8 +83,7 @@ def optics_d(r):
         o = Optics(white * .1, black, 1, white * .1, white)
         f = OpticsFactor(black, white * .1, white * .8)
     def g(pl):
-        return Planar1Map(pl.normal * r, pl.point, "map.jpeg",
-                XY(0, 0), f, o)
+        return Planar1Map(pl.normal * r, pl.point, "map.jpeg", f, o)
     return g
 
 class Glide:
@@ -267,7 +266,7 @@ def scene_alpha(glide):
     oa = optics_a()
     ob = optics_b()
     _, theta, phi = Direction.random().spherical()
-    ps, cr = RegularSolid(4, .5, theta, phi).inscribed_at_origo()
+    ps, cr = RegularSolid(4, .7, theta, phi).inscribed_at_origo()
     def o(t):
         aa = []
         for i, pl in enumerate(ps):

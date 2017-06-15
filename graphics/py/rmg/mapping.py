@@ -21,29 +21,28 @@ class SurfaceOptics(OpticsFactor):
                 optics.refraction_filter)
 
 class MapApplication:
-    def __init__(self, wrap, factor, adjust):
+    def __init__(self, factor, adjust):
         assert isinstance(factor, OpticsFactor)
         assert isinstance(adjust, Optics)
-        self.wrap = wrap
         self.factor = factor
         self.adjust = adjust
     def __str__(self):
-        return "%s\n %s\n%s" % (self.wrap, self.factor, self.adjust)
+        return "%s\n%s" % (self.factor, self.adjust)
 
 class Map:
-    def __init__(self, north, path, wrap, factor, adjust):
+    def __init__(self, north, path, factor, adjust):
         self.north = north
         self.path = path
-        self.a = MapApplication(wrap, factor, adjust)
+        self.a = MapApplication(factor, adjust)
     def __str__(self):
         return "normal %s %s %s" % (self.north, self.path, self.a)
 
 class _origoMap:
-    def __init__(self, north, origo, path, wrap, factor, adjust):
+    def __init__(self, north, origo, path, factor, adjust):
         self.north = north
         self.origo = origo
         self.path = path
-        self.a = MapApplication(wrap, factor, adjust)
+        self.a = MapApplication(factor, adjust)
     def __str__(self):
         return "%s %s %s %s %s" % (self.name,
                 self.north, self.origo, self.path, self.a)

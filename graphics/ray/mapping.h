@@ -6,8 +6,6 @@
 #include "scene.h"
 
 struct texture_application {
-    real x_wrap; // note: redundant for textures having o
-    real y_wrap; // ^
     color reflection_factor;
     color absorption_factor;
     color refraction_factor;

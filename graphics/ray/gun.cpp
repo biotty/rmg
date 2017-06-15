@@ -174,8 +174,6 @@ get_object_optics(real first)
 get_texture_application()
 {
     texture_application ret;
-    std::cin >> ret.x_wrap;
-    std::cin >> ret.y_wrap;
     std::cin >> ret.reflection_factor;
     std::cin >> ret.absorption_factor;
     std::cin >> ret.refraction_factor;
