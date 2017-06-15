@@ -26,7 +26,11 @@ void * normal_texture_mapping(
         const char * path, texture_application a);
 
 void * planar_texture_mapping(
-        object_decoration * df, direction n,
+        object_decoration * df, direction n, point o,
+        const char * path, texture_application a);
+
+void * planar1_texture_mapping(
+        object_decoration * df, direction n, point o,
         const char * path, texture_application a);
 
 void * relative_texture_mapping(
@@ -34,6 +38,10 @@ void * relative_texture_mapping(
         const char * path, texture_application a);
 
 void * axial_texture_mapping(
+        object_decoration * df, direction n, point o,
+        const char * path, texture_application a);
+
+void * axial1_texture_mapping(
         object_decoration * df, direction n, point o,
         const char * path, texture_application a);
 

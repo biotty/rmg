@@ -14,7 +14,8 @@ from rmg.bodies import (Plane, Sphere,
 from rmg.solids import (intersect_regulars, RegularSolid,
         sole_regular, cube_faces)
 from rmg.scene import SceneObject, World, LightSpot, Observer, RgbSky
-from rmg.mapping import CheckersMap, SurfaceOptics
+from rmg.mapping import (CheckersMap, SurfaceOptics,
+        Planar1Map, OpticsFactor)
 from rmg.script import ScriptInvocation, ParametricWorld
 
 
@@ -72,6 +73,19 @@ def optics_c(glide):
         glide(pl, t)
         return CheckersMap(pl.normal, pl.point, 12, a, b)
     return f
+
+# note: texture mapping
+def optics_d(r):
+    if lightened_variant:
+        o = Optics(black, black, -1, black, black)
+        f = OpticsFactor(white * .2, white * .8, black)
+    else:
+        o = Optics(white * .1, black, 1, white * .1, white)
+        f = OpticsFactor(black, white * .1, white * .8)
+    def g(pl):
+        return Planar1Map(pl.normal * r, pl.point, "map.jpeg",
+                XY(0, 0), f, o)
+    return g
 
 class Glide:
     def __init__(self, p, r, v, d, s):
@@ -216,20 +230,22 @@ def scene_tunels(glide):
     return o
 
 def scene_submarine(glide):
-    oa = optics_a()
-    mr = rnd_uphalf(.6180339889783486)
+    r = rnd_uphalf(.6180339889783486)
+    a = optics_a()
+    m = optics_d(r * 2)
     l = 1 + rnd(.1)
     _, theta, phi = Direction.random().spherical()
     def o(t):
         sa = sole_regular(12, l, theta, phi)
-        sb = sole_regular(12, 1, theta, phi)
-        for pl in sb.objects[1:]:
-            axis = pl.point * mr
+        sd = sole_regular(12, 1, theta, phi)
+        for pl in sd.objects[1:]:
+            axis = pl.point * r
             sa.objects.append(Cylinder_(origo, axis))
         glide(sa, t)
-        glide(sb, t)
-        return [SceneObject(oa, sa),
-                SceneObject(oa, sb)]
+        glide(sd, t)
+        d = m(sd.objects[1])
+        return [SceneObject(a, sa),
+                SceneObject(d, sd)]
     return o
 
 def scene_octacone(glide):
@@ -264,7 +280,7 @@ def scene_alpha(glide):
 
 def rnd_scene_cluster(d):
     c = [scene_fruit, scene_wheel, scene_ring, regular_pair_inter,
-            scene_disc, scene_tunels, scene_die, scene_submarine,
+            scene_disc, scene_tunels, scene_submarine, scene_die,
             scene_alpha, scene_octacone]
     return rnd_weighted(c, [5, 4, 3, 2, 1] * 2)(Glide.random(d))
 

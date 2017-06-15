@@ -38,31 +38,21 @@ class Map:
     def __str__(self):
         return "normal %s %s %s" % (self.north, self.path, self.a)
 
-class PlanarMap:
-    def __init__(self, normal, path, wrap, factor, adjust):
-        self.normal = normal
-        self.path = path
-        self.a = MapApplication(wrap, factor, adjust)
-    def __str__(self):
-        return "planar %s %s %s" % (self.normal, self.path, self.a)
-
-class RelativeMap:
+class _origoMap:
     def __init__(self, north, origo, path, wrap, factor, adjust):
         self.north = north
         self.origo = origo
         self.path = path
         self.a = MapApplication(wrap, factor, adjust)
     def __str__(self):
-        return "relative %s %s %s %s" % (self.north, self.origo, self.path, self.a)
+        return "%s %s %s %s %s" % (self.name,
+                self.north, self.origo, self.path, self.a)
 
-class AxialMap:
-    def __init__(self, north, origo, path, wrap, factor, adjust):
-        self.north = north
-        self.origo = origo
-        self.path = path
-        self.a = MapApplication(wrap, factor, adjust)
-    def __str__(self):
-        return "axial %s %s %s %s" % (self.north, self.origo, self.path, self.a)
+class PlanarMap(_origoMap): name = "planar"
+class Planar1Map(_origoMap): name = "planar1"
+class RelativeMap(_origoMap): name = "relative"
+class AxialMap(_origoMap): name = "axial"
+class Axial1Map(_origoMap): name = "axial1"
 
 class CheckersMap:
     def __init__(self, north, origo, q, a_surface, b_optics):

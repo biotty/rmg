@@ -94,12 +94,11 @@ texture_map(const texture_application * a, const photo * ph, real x, real y,
 }
 
     static void
-zoom_(const real r, real * x_, real * y_)
+zoom_(const real r, real * x, real * y)
 {
-    *x_ = zoom(r, *x_);
-    *y_ = zoom(r, *y_);
+    *x = zoom(r, *x);
+    *y = zoom(r, *y);
 }
-
     static void
 wrap_(const texture_application * a, real * x, real * y)
 {
@@ -123,18 +122,38 @@ normal_decoration(const ray * ray_, void * decoration_arg,
 }
 
     static void
-planar_decoration(const ray * ray_, void * decoration_arg,
-        object_optics * so, const object_optics * adjust)
+planar_decoration_(const ray * ray_, void * decoration_arg,
+        object_optics * so, const object_optics * adjust, bool repeat)
 {
-    const texture_arg * da = decoration_arg;
+    const texture_origin_arg * da = decoration_arg;
     direction d = inverse_rotation(
-            direction_from_origo(ray_->endpoint),
+            distance_vector(da->o, ray_->endpoint),
             da->theta, da->phi);
     real x = d.x;
     real y = d.y;
-    zoom_(da->r, &x, &y);
+    if (repeat) zoom_(da->r, &x, &y);
+    else {
+        x = .5 + x * da->r;
+        y = .5 + y * da->r;
+        if (x < 0 || x >= 1 || y < 0 || y >= 1)
+            x = y = 0;
+    }
     wrap_(&da->a, &x, &y);
     texture_map(&da->a, da->photo, x, y, so, adjust);
+}
+
+    static void
+planar_decoration(const ray * ray_, void * decoration_arg,
+        object_optics * so, const object_optics * adjust)
+{
+    planar_decoration_(ray_, decoration_arg, so, adjust, true);
+}
+
+    static void
+planar1_decoration(const ray * ray_, void * decoration_arg,
+        object_optics * so, const object_optics * adjust)
+{
+    planar_decoration_(ray_, decoration_arg, so, adjust, false);
 }
 
     static void
@@ -153,8 +172,8 @@ relative_decoration(const ray * ray_, void * decoration_arg,
 }
 
     static void
-axial_decoration(const ray * ray_, void * decoration_arg,
-        object_optics * so, const object_optics * adjust)
+axial_decoration_(const ray * ray_, void * decoration_arg,
+        object_optics * so, const object_optics * adjust, bool repeat)
 {
     static const real pi = REAL_PI;
     static const real two_pi = REAL_PI * 2;
@@ -162,12 +181,37 @@ axial_decoration(const ray * ray_, void * decoration_arg,
     direction d = inverse_rotation(
             distance_vector(da->o, ray_->endpoint),
             da->theta, da->phi);
-    real x = (ratan(d.y, d.x) + pi) / two_pi;
+    real x = 1;
     real y = d.z * da->r;
-    y -= rfloor(y);
-    if (y == 1) y = 0;
+    if (repeat) {
+        y -= rfloor(y);
+        if (y == 1)
+            y = 0;
+    } else {
+        y += .5;
+        if (y < 0 || y >= 1) {
+            y = 0;
+            x = 0;
+        }
+    }
+    if (x == 1)
+        x = (ratan(d.y, d.x) + pi) / two_pi;
     wrap_(&da->a, &x, &y);
     texture_map(&da->a, da->photo, x, y, so, adjust);
+}
+
+    static void
+axial_decoration(const ray * ray_, void * decoration_arg,
+        object_optics * so, const object_optics * adjust)
+{
+    axial_decoration_(ray_, decoration_arg, so, adjust, true);
+}
+
+    static void
+axial1_decoration(const ray * ray_, void * decoration_arg,
+        object_optics * so, const object_optics * adjust)
+{
+    axial_decoration_(ray_, decoration_arg, so, adjust, false);
 }
 
     static void
@@ -212,19 +256,37 @@ normal_texture_mapping(object_decoration * df, direction n,
     return da;
 }
 
-    void *
-planar_texture_mapping(object_decoration * df, direction n,
-        const char * path, texture_application a)
+    static void *
+_planar_texture_mapping(direction n,
+        point o, const char * path, texture_application a)
 
 {
-    texture_arg * da = malloc(sizeof *da);
+    texture_origin_arg * da = malloc(sizeof *da);
     da->a = a;
     da->photo = photo_create(path);
     real r;
     spherical(n, &r, &da->theta, &da->phi);
     da->r = 1 / r;
-    *df = planar_decoration;
+    da->o = o;
     return da;
+}
+
+    void *
+planar_texture_mapping(object_decoration * df, direction n,
+        point o, const char * path, texture_application a)
+
+{
+    *df = planar_decoration;
+    return _planar_texture_mapping(n, o, path, a);
+}
+
+    void *
+planar1_texture_mapping(object_decoration * df, direction n,
+        point o, const char * path, texture_application a)
+
+{
+    *df = planar1_decoration;
+    return _planar_texture_mapping(n, o, path, a);
 }
 
     void *
@@ -242,8 +304,8 @@ relative_texture_mapping(object_decoration * df, direction n,
     return da;
 }
 
-    void *
-axial_texture_mapping(object_decoration * df, direction n,
+    static void *
+_axial_texture_mapping(direction n,
         point o, const char * path, texture_application a)
 {
     texture_origin_arg * da = malloc(sizeof *da);
@@ -253,8 +315,23 @@ axial_texture_mapping(object_decoration * df, direction n,
     spherical(n, &r, &da->theta, &da->phi);
     da->r = 1 / r;
     da->o = o;
-    *df = axial_decoration;
     return da;
+}
+
+    void *
+axial_texture_mapping(object_decoration * df, direction n,
+        point o, const char * path, texture_application a)
+{
+    *df = axial_decoration;
+    return _axial_texture_mapping(n, o, path, a);
+}
+
+    void *
+axial1_texture_mapping(object_decoration * df, direction n,
+        point o, const char * path, texture_application a)
+{
+    *df = axial1_decoration;
+    return _axial_texture_mapping(n, o, path, a);
 }
 
     typedef short beam_t;

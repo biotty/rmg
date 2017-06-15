@@ -195,21 +195,16 @@ get_decoration(std::string name, object_decoration * df)
                 get_texture_application());
     }
 
-    if (name == "planar") {
-        std::cin >> n >> path;
-        return planar_texture_mapping(df, n, path.c_str(),
-                get_texture_application());
-    }
-
-    if (name == "relative") {
+    void * (* mapping)(object_decoration * df, direction n, point o,
+            const char * path, texture_application a) = nullptr;
+    if (name == "planar") mapping = planar_texture_mapping;
+    if (name == "planar1") mapping = planar1_texture_mapping;
+    if (name == "relative") mapping = relative_texture_mapping;
+    if (name == "axial") mapping = axial_texture_mapping;
+    if (name == "axial1") mapping = axial1_texture_mapping;
+    if (mapping) {
         std::cin >> n >> o >> path;
-        return relative_texture_mapping(df, n, o, path.c_str(),
-                get_texture_application());
-    }
-
-    if (name == "axial") {
-        std::cin >> n >> o >> path;
-        return axial_texture_mapping(df, n, o, path.c_str(),
+        return mapping(df, n, o, path.c_str(),
                 get_texture_application());
     }
 
