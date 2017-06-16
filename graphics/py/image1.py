@@ -3,7 +3,7 @@
 #       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 
-from math import cos, sin
+from math import cos, sin, atan2
 from rmg.math_ import rnd, unit_angle, rnd_weighted
 from rmg.color import Color, white, black, Optics
 from rmg.space import Point, Direction, origo
@@ -62,16 +62,23 @@ def optics_b():
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
 
+def mapping_angle(n, vx):
+    _, theta, phi = n.spherical()
+    v = vx.inverse_rotation(theta, phi)
+    return atan2(v.y, v.x)
+
 # note: functional mapping
-def optics_c(glide):
+def optics_c():
     a, b = optics_a(), optics_b()
     if .5 < rnd(1): a, b = b, a
     a = SurfaceOptics.from_optics(a)
-    d = Direction.random()
-    def f(t):
-        pl = Plane(origo, d)
-        glide(pl, t)
-        return CheckersMap(pl.normal, pl.point, 12, a, b)
+    off = Direction.random(0.1)
+    # numeric: ^ counter arbitrary float toggling surface
+    #            along image-sequence of movement
+    def f(pl, vx):
+        return CheckersMap(pl.normal,
+                mapping_angle(pl.normal, vx),
+                    pl.point + off, 12, a, b)
     return f
 
 # note: texture mapping
@@ -82,8 +89,10 @@ def optics_d(r):
     else:
         o = Optics(white * .1, black, 1, white * .1, white)
         f = OpticsFactor(black, white * .1, white * .8)
-    def g(pl):
-        return Planar1Map(pl.normal * r, pl.point, "map.jpeg", f, o)
+    def g(pl, vx):
+        return Planar1Map(pl.normal * r,
+                mapping_angle(pl.normal, vx),
+                pl.point, "map.jpeg", f, o)
     return g
 
 class Glide:
@@ -108,7 +117,7 @@ class Glide:
 
 def scene_disc(glide):
     oa = optics_a()
-    mc = optics_c(glide)
+    mc = optics_c()
     _, theta, phi = Direction.random().spherical()
     sc = XYCircle(XY(0, 0), rnd(0, .8))(rnd(0, 1))
     qo = Point(sc.x, sc.y, 0).rotation(theta, phi)
@@ -119,15 +128,16 @@ def scene_disc(glide):
     def o(t):
         sa = Sphere(qo, ro)
         glide(sa, t)
+        pl = Plane(po, dp)
         sc = Intersection([
             Cylinder(origo, dp * r),
             Cylinder_(origo, dp * rk),
-            Plane(po, dp),
-            Plane(po * -1, dp * -1)
+            pl, Plane(po * -1, dp * -1)
         ])
         glide(sc, t)
+        oc = mc(pl, sa.center - pl.point)
         return [SceneObject(oa, sa),
-                SceneObject(mc(t), sc)]
+                SceneObject(oc, sc)]
     return o
 
 def scene_fruit(glide):
@@ -187,7 +197,7 @@ def scene_ring(glide):
     return o
 
 def regular_pair_inter(glide):
-    mc = optics_c(glide)
+    mc = optics_c()
     def rnd_tilted(n):
         _, theta, phi = Direction.random().spherical()
         mid_r = rnd(.9, 1)
@@ -198,7 +208,8 @@ def regular_pair_inter(glide):
     def o(t):
         sc = intersect_regulars([ra, rb])
         glide(sc, t)
-        return [SceneObject(mc(t), sc)]
+        oc = mc(sc.objects[1], sc.objects[2].normal)
+        return [SceneObject(oc, sc)]
     return o
 
 rnd_uphalf = lambda x: rnd(x * .5, x)
@@ -242,7 +253,7 @@ def scene_submarine(glide):
             sa.objects.append(Cylinder_(origo, axis))
         glide(sa, t)
         glide(sd, t)
-        d = m(sd.objects[1])
+        d = m(sd.objects[1], sd.objects[2].normal)
         return [SceneObject(a, sa),
                 SceneObject(d, sd)]
     return o

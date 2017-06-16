@@ -30,22 +30,25 @@ class MapApplication:
         return "%s\n%s" % (self.factor, self.adjust)
 
 class Map:
-    def __init__(self, north, path, factor, adjust):
+    def __init__(self, north, angle, path, factor, adjust):
         self.north = north
+        self.angle = angle
         self.path = path
         self.a = MapApplication(factor, adjust)
     def __str__(self):
-        return "normal %s %s %s" % (self.north, self.path, self.a)
+        return "normal %s %LG %s %s" % (
+                self.north, self.angle, self.path, self.a)
 
 class _origoMap:
-    def __init__(self, north, origo, path, factor, adjust):
+    def __init__(self, north, angle, origo, path, factor, adjust):
         self.north = north
+        self.angle = angle
         self.origo = origo
         self.path = path
         self.a = MapApplication(factor, adjust)
     def __str__(self):
-        return "%s %s %s %s %s" % (self.name,
-                self.north, self.origo, self.path, self.a)
+        return "%s %s %LG %s %s %s" % (self.name, self.north,
+                self.angle, self.origo, self.path, self.a)
 
 class PlanarMap(_origoMap): name = "planar"
 class Planar1Map(_origoMap): name = "planar1"
@@ -54,12 +57,13 @@ class AxialMap(_origoMap): name = "axial"
 class Axial1Map(_origoMap): name = "axial1"
 
 class CheckersMap:
-    def __init__(self, north, origo, q, a_surface, b_optics):
+    def __init__(self, north, angle, origo, q, a_surface, b_optics):
         self.north = north
+        self.angle = angle
         self.origo = origo
         self.q = q
         self.a_surface = a_surface
         self.b_optics = b_optics
     def __str__(self):
-        return "checkers %s %s %d %s %s" % (self.north, self.origo,
-                self.q, self.a_surface, self.b_optics)
+        return "checkers %s %LG %s %d %s %s" % (self.north, self.angle,
+                self.origo, self.q, self.a_surface, self.b_optics)
