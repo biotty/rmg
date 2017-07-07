@@ -36,7 +36,7 @@ class Map:
         self.path = path
         self.a = MapApplication(factor, adjust)
     def __str__(self):
-        return "normal %s %LG %s %s" % (
+        return "normal %s %LG\n%s %s" % (
                 self.north, self.angle, self.path, self.a)
 
 class _origoMap:
@@ -47,7 +47,7 @@ class _origoMap:
         self.path = path
         self.a = MapApplication(factor, adjust)
     def __str__(self):
-        return "%s %s %LG %s %s %s" % (self.name, self.north,
+        return "%s %s %LG %s\n%s %s" % (self.name, self.north,
                 self.angle, self.origo, self.path, self.a)
 
 class PlanarMap(_origoMap): name = "planar"
@@ -65,5 +65,5 @@ class CheckersMap:
         self.a_surface = a_surface
         self.b_optics = b_optics
     def __str__(self):
-        return "checkers %s %LG %s %d %s %s" % (self.north, self.angle,
+        return "checkers %s %LG %s\n%d %s %s" % (self.north, self.angle,
                 self.origo, self.q, self.a_surface, self.b_optics)

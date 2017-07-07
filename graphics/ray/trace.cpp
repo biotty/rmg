@@ -160,6 +160,7 @@ refraction_trace(ray ray_, const scene_object * so,
         }
     }
     if (transparent_on_equal_index
+            && so->decoration == nullptr
             && outside_refraction_index_nano
             == so->optics.refraction_index_nano) {
         ray_.head = detector_->ray_.head;

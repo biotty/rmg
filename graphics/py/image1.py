@@ -21,7 +21,7 @@ from rmg.script import ScriptInvocation, ParametricWorld
 
 water_index = 2.6
 water = Color(.7, .8, .9)
-lightened_variant = .5 < rnd(1)
+lightened_variant = .6 < rnd(1)
 
 
 # note: most reflexive
@@ -67,28 +67,26 @@ def mapping_angle(n, vx):
     v = vx.inverse_rotation(theta, phi)
     return atan2(v.y, v.x)
 
-# note: functional mapping
 def optics_c():
     a, b = optics_a(), optics_b()
     if .5 < rnd(1): a, b = b, a
     a = SurfaceOptics.from_optics(a)
     off = Direction.random(0.1)
-    # numeric: ^ counter arbitrary float toggling surface
-    #            along image-sequence of movement
+    # num: ^ counter arbitrary float toggling surface
+    #      along image-sequence of movement
     def f(pl, vx):
         return CheckersMap(pl.normal,
                 mapping_angle(pl.normal, vx),
                     pl.point + off, 12, a, b)
     return f
 
-# note: texture mapping
 def optics_d(r):
     if lightened_variant:
         o = Optics(black, black, -1, black, black)
         f = OpticsFactor(white * .2, white * .8, black)
     else:
-        o = Optics(white * .1, black, 1, white * .1, white)
-        f = OpticsFactor(black, white * .1, white * .8)
+        o = Optics(black, black, 1, black, white)
+        f = OpticsFactor(white * .1, black, white)
     def g(pl, vx):
         return Planar1Map(pl.normal * r,
                 mapping_angle(pl.normal, vx),
@@ -254,8 +252,8 @@ def scene_submarine(glide):
         glide(sa, t)
         glide(sd, t)
         d = m(sd.objects[1], sd.objects[2].normal)
-        return [SceneObject(a, sa),
-                SceneObject(d, sd)]
+        return [SceneObject(d, sd),
+                SceneObject(a, sa)]
     return o
 
 def scene_octacone(glide):
