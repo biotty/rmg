@@ -2,8 +2,6 @@
 
 from sys import stdout
 from random import randrange, choice
-from math import sin, cos, pi
-
 
 def shruti(swara_halfnote, adhara):
     return adhara * 2 ** (swara_halfnote / 12)
@@ -60,14 +58,16 @@ def sarali(n, gati):
     return a[:n]
 
 
-sr = 8000
-with open("out.U8", "wb") as o:
-    for c in range(8):
-        for s in compose("IOO", 4, 1, sarali):
-            f = swara_frequency(s, mayamalavagowla, 200)
-            n = sr // 4
-            for i in range(n):
-                a = 47 * (1 - cos(pi * 2 * (n - i) / n))
-                v = 127 + int(a * sin(pi * 2 * i * f / sr))
-                o.write(bytes((v,)))
+if __name__ == "__main__":
+    from math import sin, cos, pi
+    sr = 8000
+    with open("out.U8", "wb") as o:
+        for c in range(8):
+            for s in compose("IOO", 4, 1, sarali):
+                f = swara_frequency(s, mayamalavagowla, 200)
+                n = sr // 4
+                for i in range(n):
+                    a = 47 * (1 - cos(pi * 2 * (n - i) / n))
+                    v = 127 + int(a * sin(pi * 2 * i * f / sr))
+                    o.write(bytes((v,)))
 
