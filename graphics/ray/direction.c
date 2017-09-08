@@ -3,48 +3,6 @@
 
 #include "direction.h"
 #include "matrix.h"
-#include "xmath.h"
-
-#ifndef point_from_origo
-    point
-point_from_origo(direction direction_)
-{
-    return (point){direction_.x, direction_.y, direction_.z};
-}
-#endif
-#ifndef direction_from_origo
-    direction
-direction_from_origo(point point_)
-{
-    return (direction){point_.x, point_.y, point_.z};
-}
-#endif
-
-    real
-length(direction direction_)
-{
-    return distance_to_origo(point_from_origo(direction_));
-}
-
-    void
-scale(direction * direction_, real r)
-{
-    direction_->x *= r;
-    direction_->y *= r;
-    direction_->z *= r;
-}
-
-    void
-normalize(direction * direction_)
-{
-    scale(direction_, 1 / length(*direction_));
-}
-
-    real
-scalar_product(direction a, direction b)
-{
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
 
     direction
 reflection(direction normal, direction d)
@@ -59,24 +17,6 @@ reflection(direction normal, direction d)
         normalize(&normal);
     }
     return normal;
-}
-
-    void
-move(point * p, direction displacement)
-{
-    p->x += displacement.x;
-    p->y += displacement.y;
-    p->z += displacement.z;
-}
-
-    direction
-distance_vector(point from, point to)
-{
-    return (direction){
-        to.x - from.x,
-        to.y - from.y,
-        to.z - from.z
-    };
 }
 
     direction
@@ -142,26 +82,34 @@ transform(direction * d, const real T[9])
     d->z = r[2];
 }
 
-    static void
-rotate_xy(direction  * d, real a)
+    static inline void
+rotate_xz_xy(direction  * d, const real a, const real b)
 {
-    const real Rz[3 * 3] = {
-        cos(a), -sin(a), 0,
-        sin(a), cos(a), 0,
-        0, 0, 1,
+    const real ca = cos(a);
+    const real sa = sin(a);
+    const real cb = cos(b);
+    const real sb = sin(b);
+    const real RzRy[3 * 3] = {
+        cb * ca, -sb, cb * sa,
+        sb * ca, cb, sb * sa,
+        -sa, 0, ca
     };
-    transform(d, Rz);
+    transform(d, RzRy);
 }
 
-    static void
-rotate_xz(direction * d, real a)
+    static inline void
+rotate_xy_xz(direction * d, const real a, const real b)
 {
-    const real Ry[3 * 3] = {
-        cos(a), 0, sin(a),
-        0, 1, 0,
-        -sin(a), 0, cos(a),
+    const real ca = cos(a);
+    const real sa = sin(a);
+    const real cb = cos(b);
+    const real sb = sin(b);
+    const real RyRz[3 * 3] = {
+        cb * ca, -cb * sa, sb,
+        sa, ca, 0,
+        -sb * ca, sb * sa, cb
     };
-    transform(d, Ry);
+    transform(d, RyRz);
 }
 
 #if 0 /*unused*/
@@ -180,16 +128,13 @@ rotate_yz(direction * d, real a)
     direction
 rotation(direction d, real theta, real phi)
 {
-    rotate_xz(&d, theta);
-    rotate_xy(&d, phi);
+    rotate_xz_xy(&d, theta, phi);
     return d;
 }
 
     direction
 inverse_rotation(direction d, real theta, real phi)
 {
-    rotate_xy(&d, - phi);
-    rotate_xz(&d, - theta);
+    rotate_xy_xz(&d, -phi, -theta);
     return d;
 }
-

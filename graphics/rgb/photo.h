@@ -6,16 +6,17 @@
 #include "color.h"
 #include <stdbool.h>
 
-struct photo {
+struct photo;
+// note: first member is
+struct photo_attr {
     int width;
     int height;
     bool grey;
-    int ref_count_;
-    char data[];
 };
 
 #ifndef __cplusplus
 typedef struct photo photo;
+typedef struct photo_attr photo_attr;
 #endif
 
 #ifdef __cplusplus

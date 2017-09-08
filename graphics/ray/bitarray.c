@@ -7,6 +7,17 @@
 #include <assert.h>
 
 
+struct bitarray {
+    unsigned bit_count;
+    char c[];
+};
+
+    void
+ba_init(bitarray * ba, unsigned q)
+{
+    ba->bit_count = q;
+}
+
     static inline int
 array_length(int bit_count)
 {

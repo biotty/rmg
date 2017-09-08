@@ -63,15 +63,17 @@ struct Painting
     std::pair<size_t, size_t> dim()
     {
         std::pair<size_t, size_t> r;
-        r.first = ph->width;
-        r.second = ph->height;
+        const photo_attr & a = *(photo_attr *) ph;
+        r.first = a.width;
+        r.second = a.height;
         return r;
     }
 
     std::vector<color> print(Grid<palette_index_type> * board)
     {
-        double h_m = ph->height /(double) board->h;
-        double w_m = ph->width /(double) board->w;
+        const photo_attr & a = *(photo_attr *) ph;
+        double h_m = a.height /(double) board->h;
+        double w_m = a.width /(double) board->w;
         std::map<unsigned, palette_index_type> indices;
         for (PositionIterator it = board->positions(); it.more(); ++it) {
             const Position & pos = it.position;

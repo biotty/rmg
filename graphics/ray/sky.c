@@ -21,9 +21,10 @@ photo_sky(direction d)
 {
     real x, y;
     direction_to_unitsquare(&d, &x, &y);
-    real col = (x == 0) ? sky_photo->width - 1 : (1 - x) * sky_photo->width;
-    // horizontally flip as we see the "sphere" from the "inside"
-    compact_color cc = photo_color(sky_photo, col, y * sky_photo->height);
+    const photo_attr * a = (photo_attr *) sky_photo;
+    const real col = (x == 0) ? a->width - 1 : (1 - x) * a->width;
+    // ^ horizontally flip as we see the "sphere" from the "inside"
+    compact_color cc = photo_color(sky_photo, col, y * a->height);
     return x_color(cc);
 }
 

@@ -2,7 +2,6 @@
 //      All rights reserved
 
 #include "mapping.h"
-#include "xmath.h"
 #include "photo.h"
 #include <stdlib.h>
 #include <string.h>
@@ -89,7 +88,7 @@ mix(compact_color a, compact_color b, real s)
 }
 
     static void
-texture_map(const texture_application * a, const photo * ph, real x, real y,
+texture_map(const texture_application * t, const photo * ph, real x, real y,
         object_optics * so, const object_optics * adjust)
 {
     so->refraction_index_nano = adjust->refraction_index_nano;
@@ -100,13 +99,14 @@ texture_map(const texture_application * a, const photo * ph, real x, real y,
         so->refraction_filter = adjust->refraction_filter;
         return;
     }
-    const compact_color c = photo_color(ph, x * ph->width, y * ph->height);
+    const photo_attr * a = (photo_attr *) ph;
+    const compact_color c = photo_color(ph, x * a->width, y * a->height);
     so->reflection_filter = linear(
-            c, a->reflection_factor, adjust->reflection_filter);
+            c, t->reflection_factor, adjust->reflection_filter);
     so->absorption_filter = linear(
-            c, a->absorption_factor, adjust->absorption_filter);
+            c, t->absorption_factor, adjust->absorption_filter);
     so->refraction_filter = linear(
-            c, a->refraction_factor, adjust->refraction_filter);
+            c, t->refraction_factor, adjust->refraction_filter);
 }
 
     static void

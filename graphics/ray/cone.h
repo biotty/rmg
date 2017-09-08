@@ -7,7 +7,7 @@
 
 struct cone {
     direction translate;
-    float r;
+    float inv_r;
     float theta;
     float phi;
 };

@@ -5,15 +5,21 @@
 
 #include "plane.h"
 #include "sphere.h"
-#include "cone.h"
 #include "cylinder.h"
+#include "cone.h"
+#include "parabol.h"
+#include "hyperbol.h"
+#include "saddle.h"
 #include "scene.h"
 
 union object_arg_union {
-    sphere sphere_;
     plane plane_;
-    cone cone_;
+    sphere sphere_;
     cylinder cylinder_;
+    cone cone_;
+    parabol parabol_;
+    hyperbol hyperbol_;
+    saddle saddle_;
 };
 
 typedef union object_arg_union (*object_generator)

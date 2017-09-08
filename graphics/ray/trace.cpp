@@ -2,7 +2,6 @@
 //      All rights reserved
 
 #include "trace.h"
-#include "xmath.h"
 #include <cassert>
 #include <iostream>
 
@@ -24,7 +23,7 @@ trace(ray t, world * w)
     const size_t q = w->scene_.object_count;
     detector detector_ = {{1, 1, 1}, t, max_hops,
         (bitarray *)calloc(1, ba_size(q))};
-    detector_.inside->bit_count = q;
+    ba_init(detector_.inside, q);
     init_inside(detector_.inside, w->scene_, &t);
     if (debug && ba_firstset(detector_.inside) >= 0)
         std::cerr << "initial detector is at inside of "
@@ -82,7 +81,7 @@ spot_absorption(const ray * surface, const object_optics * so,
         // consider: inv-scale with up to |to_spot|^2 (global setting 0-1)
         const real a = scalar_product(surface->head, to_spot);
         if (a <= 0) continue;
-        ray s = { .endpoint = surface->endpoint, .head = to_spot };
+        ray s = { surface->endpoint, to_spot };
         if (NULL == closest_surface(&s, w->scene_, inside, NULL)) {
             const real ua = acos(1 - a) * (2/REAL_PI);
             sum_.r += color_.r * ua;

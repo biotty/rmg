@@ -58,9 +58,10 @@ main(int argc, char **argv)
         std::cerr << "Redirect stdout, i.e;\n | pnmtojpeg >mix.jpeg\n";
         return 1;
     }
-    image i = image_create(NULL, orig->width, orig->height);
-    for (int y=0; y<orig->height; y++) {
-        for (int x=0; x<orig->width; x++) {
+    const photo_attr & a = *(photo_attr *)orig;
+    image i = image_create(NULL, a.width, a.height);
+    for (int y=0; y<a.height; y++) {
+        for (int x=0; x<a.width; x++) {
             color c = x_color(photo_color(orig, x, y));
             if (fillins[0].esq < 0) do_gradient(x, y, c);
             else do_fillins(x, y, c);
@@ -133,9 +134,10 @@ err:return false;
     static void
 stats()
 {
+    const photo_attr & a = *(photo_attr *)orig;
     std::map<unsigned, unsigned> counts;
-    for (int y=0; y<orig->height; y++) {
-        for (int x=0; x<orig->width; x++) {
+    for (int y=0; y<a.height; y++) {
+        for (int x=0; x<a.width; x++) {
             compact_color cc = photo_color(orig, x, y);
             unsigned c = cc.r + (cc.g << 8) + (cc.b << 16);
             ++counts[c];
@@ -164,8 +166,10 @@ scale(int value, int from, int to)
     static color
 photo_inter(photo * p, int orig_x, int orig_y)
 {
-    const int x = scale(orig_x, orig->width, p->width);
-    const int y = scale(orig_y, orig->height, p->height);
+    const photo_attr & oa = *(photo_attr *)orig;
+    const photo_attr & pa = *(photo_attr *)p;
+    const int x = scale(orig_x, oa.width, pa.width);
+    const int y = scale(orig_y, oa.height, pa.height);
     return x_color(photo_color(p, x, y));
 }
 

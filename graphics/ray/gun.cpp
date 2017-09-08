@@ -6,7 +6,6 @@
 #include "observer.h"
 #include "trace.h"
 #include "image.h"
-#include "xmath.h"
 #include <cstdio>
 #include <cctype>
 #include <cstdarg>
@@ -64,22 +63,23 @@ get_object(std::string name,
 {
     object_arg_union ret;
 
-    if (name == "plane") {
-        point at;
-        std::cin >> at;
-        ret.plane_.at_x = at.x;
-        ret.plane_.at_y = at.y;
-        ret.plane_.at_z = at.z;
+    if (name == "plane" || name == "-plane") {
+        std::cin >> ret.plane_.at;
         std::cin >> ret.plane_.normal;
         normalize(&ret.plane_.normal);
         *fi = plane_intersection;
         *fn = plane_normal;
+        if (name[0] == '-') {
+            scale(&ret.plane_.normal, -1);
+        }
         return ret;
     }
 
     if (name == "sphere" || name == "-sphere") {
+        real radius;
         std::cin >> ret.sphere_.center;
-        std::cin >> ret.sphere_.radius;
+        std::cin >> radius;
+        ret.sphere_.sq_radius = square(radius);
         if (name[0] == '-') {
             *fi = _sphere_intersection;
             *fn = _sphere_normal;
@@ -92,14 +92,13 @@ get_object(std::string name,
 
     if (name == "cylinder" || name == "-cylinder") {
         real r, theta, phi;
-        direction p;
+        point p;
         direction axis;
         std::cin >> p;
         std::cin >> axis;
         spherical(axis, &r, &theta, &phi);
         cylinder cylinder_ = {{-p.x, -p.y, -p.z},
             (float)square(r), (float)theta, (float)phi};
-        ret.cylinder_ = cylinder_;
         if (name[0] == '-') {
             *fi = _cylinder_intersection;
             *fn = _cylinder_normal;
@@ -107,19 +106,19 @@ get_object(std::string name,
             *fi = cylinder_intersection;
             *fn = cylinder_normal;
         }
+        ret.cylinder_ = cylinder_;
         return ret;
     }
 
     if (name == "cone" || name == "-cone") {
         real r, theta, phi;
-        direction apex;
+        point apex;
         direction axis;
         std::cin >> apex;
         std::cin >> axis;
         spherical(axis, &r, &theta, &phi);
         cone cone_ = {{-apex.x, -apex.y, -apex.z},
             1/(float)r, (float)theta, (float)phi};
-        ret.cone_ = cone_;
         if (name[0] == '-') {
             *fi = _cone_intersection;
             *fn = _cone_normal;
@@ -127,6 +126,77 @@ get_object(std::string name,
             *fi = cone_intersection;
             *fn = cone_normal;
         }
+        ret.cone_ = cone_;
+        return ret;
+    }
+
+    if (name == "parabol" || name == "-parabol") {
+        real r_half, theta, phi;
+        point vertex;
+        direction focus;
+        std::cin >> vertex;
+        std::cin >> focus;
+        spherical(focus, &r_half, &theta, &phi);
+        parabol parabol_ = {
+            distance_vector(vertex, point_from_origo(focus)),
+            2*(float)r_half, (float)theta, (float)phi};
+        if (name[0] == '-') {
+            *fi = _parabol_intersection;
+            *fn = _parabol_normal;
+        } else {
+            *fi = parabol_intersection;
+            *fn = parabol_normal;
+        }
+        ret.parabol_ = parabol_;
+        return ret;
+    }
+
+    if (name == "hyperbol" || name == "-hyperbol") {
+        real r, theta, phi;
+        point center;
+        direction axis;
+        real vertex;
+        std::cin >> center;
+        std::cin >> axis;
+        std::cin >> vertex;
+        spherical(axis, &r, &theta, &phi);
+        hyperbol hyperbol_ = {{-center.x, -center.y, -center.z},
+            (float)theta, (float)phi, 1/(float)r, 1/(float)vertex};
+        if (name[0] == '-') {
+            *fi = _hyperbol_intersection;
+            *fn = _hyperbol_normal;
+        } else {
+            *fi = hyperbol_intersection;
+            *fn = hyperbol_normal;
+        }
+        ret.hyperbol_ = hyperbol_;
+        return ret;
+    }
+
+    if (name == "saddle" || name == "-saddle") {
+        real r, theta, phi;
+        point center;
+        direction axis;
+        real v, x, y;
+        std::cin >> center;
+        std::cin >> axis;
+        std::cin >> v;
+        std::cin >> x;
+        std::cin >> y;
+        spherical(axis, &r, &theta, &phi);
+        saddle saddle_ = {{-center.x, -center.y, -center.z},
+            (float)theta, (float)phi, (float)v,
+            {1/(float)x, 1/(float)y, 1/(float)r }};
+        *fi = saddle_intersection;
+        *fn = saddle_normal;
+        if (name[0] == '-') {
+            saddle_.scale.z *= -1;
+            saddle_.v += (float)REAL_PI / 2;
+            const float x = saddle_.scale.x;
+            saddle_.scale.x = saddle_.scale.y;
+            saddle_.scale.y = x;
+        }
+        ret.saddle_ = saddle_;
         return ret;
     }
 

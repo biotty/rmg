@@ -8,9 +8,9 @@ from rmg.math_ import rnd, unit_angle, rnd_weighted
 from rmg.color import Color, white, black, Optics
 from rmg.space import Point, Direction, origo
 from rmg.plane import XY, XYCircle
-from rmg.bodies import (Plane, Sphere,
-        Sphere_, Cylinder, Cylinder_, Cone, Cone_,
-        Intersection, Placement)
+from rmg.bodies import (Plane, Sphere, Parabol,
+        Sphere_, Cylinder, Cylinder_, Cone, Cone_, Saddle, Saddle_,
+        Hyperbol, Hyperbol_, Intersection, Placement)
 from rmg.solids import (intersect_regulars, RegularSolid,
         sole_regular, cube_faces)
 from rmg.scene import SceneObject, World, LightSpot, Observer, RgbSky
@@ -20,44 +20,44 @@ from rmg.script import ScriptInvocation, ParametricWorld
 
 
 water_index = 2.6
-water = Color(.7, .8, .9)
+water = Color(0, .6, 1)
 lightened_variant = .6 < rnd(1)
 
 
 # note: most reflexive
 def optics_a():
     if lightened_variant:
-        hint = Color.random().mix(white)
-        reflection = hint.mix(water) * .8
-        absorption = water * .2
+        hint = Color.random().mix(white, .8)
+        reflection = hint * .9
+        absorption = hint * .2
         refraction = black
         passthrough = black
         return Optics(reflection, absorption,
                 -1, refraction, passthrough)
     else:
-        color = Color.random().mix(white)
-        reflection = color * .6
-        refraction = color * .4
-        passthrough = color * .5
-        absorption = color * .1
+        color = Color.random().mix(white, .56)
+        reflection = color * .64
+        refraction = color * .41
+        passthrough = color * .4
+        absorption = color * .11
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
 
 # note: most passthrough
 def optics_b():
     if lightened_variant:
-        hint = Color.random().mix(white, .9)
+        hint = Color.random().mix(white, .8)
         reflection = hint * .2
-        absorption = hint * .8
+        absorption = hint * .9
         refraction = black
         passthrough = black
         return Optics(reflection, absorption,
-                water_index, refraction, passthrough)
+                -1, refraction, passthrough)
     else:
-        color = Color.random().mix(water)
-        refraction = color * .85
-        reflection = color * .15
-        passthrough = color * .9
+        color = Color.random().mix(water, .3)
+        refraction = color * .865
+        reflection = color * .123
+        passthrough = color * .92
         absorption = black
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
@@ -72,7 +72,7 @@ def optics_c():
     if .5 < rnd(1): a, b = b, a
     a = SurfaceOptics.from_optics(a)
     off = Direction.random(0.1)
-    # num: ^ counter arbitrary float toggling surface
+    # num: ^ prevent arbitrary float toggling surface
     #      along image-sequence of movement
     def f(pl, vx):
         return CheckersMap(pl.normal,
@@ -83,10 +83,10 @@ def optics_c():
 def optics_d(r):
     if lightened_variant:
         o = Optics(black, black, -1, black, black)
-        f = OpticsFactor(white * .2, white * .8, black)
+        f = OpticsFactor(white * .2, white * .85, black)
     else:
         o = Optics(black, black, 1, black, white)
-        f = OpticsFactor(white * .1, black, white)
+        f = OpticsFactor(white * .16, black, white)
     def g(pl, vx):
         return Planar1Map(pl.normal * r,
                 mapping_angle(pl.normal, vx),
@@ -119,7 +119,7 @@ def scene_disc(glide):
     _, theta, phi = Direction.random().spherical()
     sc = XYCircle(XY(0, 0), rnd(0, .8))(rnd(0, 1))
     qo = Point(sc.x, sc.y, 0).rotation(theta, phi)
-    po = Point(0, 0, rnd(.02, .1)).rotation(theta, phi)
+    po = Point(0, 0, rnd(.1, .3)).rotation(theta, phi)
     dp = Direction(0, 0, 1).rotation(theta, phi)
     r, rk = .9, rnd(.1, .8)
     ro = rnd(.4, .6)
@@ -128,14 +128,14 @@ def scene_disc(glide):
         glide(sa, t)
         pl = Plane(po, dp)
         sc = Intersection([
-            Cylinder(origo, dp * r),
-            Cylinder_(origo, dp * rk),
+            Hyperbol(origo, dp * .4 * r, r),
+            Hyperbol_(origo, dp * .4 * rk, rk),
             pl, Plane(po * -1, dp * -1)
         ])
         glide(sc, t)
         oc = mc(pl, sa.center - pl.point)
-        return [SceneObject(oa, sa),
-                SceneObject(oc, sc)]
+        return [SceneObject(oa, sc),
+                SceneObject(oc, sa)]
     return o
 
 def scene_fruit(glide):
@@ -214,12 +214,12 @@ rnd_uphalf = lambda x: rnd(x * .5, x)
 
 def scene_die(glide):
     oa = optics_b()
-    er = rnd_uphalf(.5 * .5 ** .5)
+    er = rnd_uphalf(.5)
     _, theta, phi = Direction.random().spherical()
     def o(t):
         sa = sole_regular(6, 1, theta, phi)
         for pl in sa.objects[1:]:
-            sa.objects.append(Sphere_(pl.point, er))
+            sa.objects.append(Parabol(pl.point *.5, pl.point * er))
         glide(sa, t)
         return [SceneObject(oa, sa)]
     return o
@@ -274,15 +274,21 @@ def scene_octacone(glide):
 def scene_alpha(glide):
     oa = optics_a()
     ob = optics_b()
+    dv = rnd(3.141592)
+    da = rnd_uphalf(3.141592 * 2)
+    dz, dx, dy = rnd_uphalf(1), rnd_uphalf(.5), rnd_uphalf(.5)
     _, theta, phi = Direction.random().spherical()
     ps, cr = RegularSolid(4, .7, theta, phi).inscribed_at_origo()
     def o(t):
         aa = []
         for i, pl in enumerate(ps):
             sp = Sphere(pl.point, cr * 0.2721655269759087)
-            glide(sp, t)
+            sl = (Saddle if i&1 else Saddle_
+                    )(pl.point, pl.point * dz, dv + t * da, dx, dy)
+            si = Intersection([sp, sl])
+            glide(si, t)
             aa.append(SceneObject(
-                oa if i&1 else ob, sp))
+                oa if i&1 else ob, si))
         return aa
     return o
 

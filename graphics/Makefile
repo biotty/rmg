@@ -17,10 +17,10 @@ flow/fluid flow/wave: rgb/librgb.a
 rgb/librgb.a:
 	@$(MAKE) -C rgb
 
-image.jpeg: py/image1.py ray/gun
+image.jpeg: py/image1.py ray/gun map.jpeg
 	$< 12 |$(RAY_GUN) 1920x1080 |pnmtojpeg >$@
 
-video.mp4: py/image1.py ray/gun
+video.mp4: py/image1.py ray/gun map.jpeg
 	./movie_from_exec.sh $@ "$< -n 736 -C $(RAY_GUN)"
 
 fluidwave.mp4: flow/fluid flow/wave
@@ -31,6 +31,9 @@ follow: follow.cpp
 
 mandelbrot.mp4: follow
 	./follow |./movie_from_pipe.sh $@
+
+map.jpeg: py/globe.py
+	$< 512x512 && pnmtojpeg globe.pnm > $@
 
 .PHONY:
 clean:

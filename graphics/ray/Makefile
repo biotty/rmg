@@ -1,14 +1,14 @@
 GRAPHICS=..
 LDFLAGS=-L$(GRAPHICS)/rgb -lrgb -lm
-CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -O2 -I$(GRAPHICS)/rgb
-CFLAGS=-Wall -Wextra -Werror -std=c11 -O2 -I$(GRAPHICS)/rgb
+CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -O2 -pedantic -I$(GRAPHICS)/rgb
+CFLAGS=-Wall -Wextra -Werror -std=c11 -pedantic -O2 -I$(GRAPHICS)/rgb
 
 gun: gun.o tracer.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 tracer.a: mapping.o inter.o sphere.o plane.o cylinder.o \
-	  cone.o direction.o point.o ray.o observer.o \
-      matrix.o bitarray.o stack.o scene.o sky.o trace.o
+	  cone.o parabol.o hyperbol.o saddle.o direction.o point.o ray.o \
+	  observer.o matrix.o bitarray.o stack.o scene.o sky.o trace.o
 	ar rc $@ $^
 
 mapping.o:  mapping.h
@@ -17,6 +17,9 @@ sphere.o:   sphere.h
 plane.o:    plane.h
 cylinder.o: cylinder.h
 cone.o:     cone.h
+parabol.o:  parabol.h
+hyperbol.o: hyperbol.h
+saddle.o:   saddle.h
 direction.o:direction.h
 point.o:    point.h
 ray.o:      ray.h

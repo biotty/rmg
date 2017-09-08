@@ -7,7 +7,7 @@
 
 struct sphere {
 	point center;
-	real radius;
+	real sq_radius;
 };
 
 #ifndef __cplusplus

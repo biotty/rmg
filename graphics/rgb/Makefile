@@ -1,5 +1,5 @@
-CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -O2
-CFLAGS=-Wall -Wextra -Werror -std=c99 -O2
+CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -pedantic -O2
+CFLAGS=-Wall -Wextra -Werror -std=c11 -pedantic -O2
 LDFLAGS=-lm
 
 bluf: bluf.o librgb.a

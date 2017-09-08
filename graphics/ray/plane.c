@@ -2,7 +2,6 @@
 //      All rights reserved
 
 #include "plane.h"
-#include "xmath.h"
 
 real_pair
 plane_intersection(
@@ -11,10 +10,9 @@ plane_intersection(
 {
     const plane * plane_ = plane__;
     const real b = scalar_product(plane_->normal, ray_->head);
-    const point at_surface = { plane_->at_x, plane_->at_y, plane_->at_z };
-    const direction v = distance_vector(ray_->endpoint, at_surface);
+    const direction v = distance_vector(ray_->endpoint, plane_->at);
     const real a = scalar_product(plane_->normal, v);
-    if (is_near(b, 0)) {
+    if (b == 0) {
         return (real_pair){-1, (a >= 0) ? HUGE_REAL : -1};
     }
     if (b < 0 && a >= 0) return (real_pair){-1, HUGE_REAL};
@@ -35,4 +33,3 @@ plane_normal(point p, void * plane__, bool at_second)
     (void)p;
     return d;
 }
-

@@ -45,7 +45,7 @@ closest_surface(ray * ray_, const scene s, bitarray * inside, stack * toggled)
             closest_i = i;
         }
     }
-    if (closest_r >= 0 && closest_r < HUGE_REAL/2) {
+    if (closest_r >= 0 && closest_r < HUGE_REAL) {
         int presedent_i = ba_firstset(inside);
         if (presedent_i >= 0 && closest_i > presedent_i) {
             advance(ray_, closest_r + TINY_REAL);

@@ -16,6 +16,7 @@ typedef struct ray ray;
 #endif
 
 void advance(ray * ray_, real r);
+void inverse_rotation_ray(ray * ray_, real phi, real theta);
 
 #endif
 

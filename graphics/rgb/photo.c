@@ -9,6 +9,13 @@
 #include <assert.h>
 #include <strings.h>
 
+
+struct photo {
+    struct photo_attr a;
+    int ref_count_;
+    char data[];
+};
+
     static bool //note: exist in image.c as well
 path_is_jpeg(const char * path)
 {
@@ -133,9 +140,9 @@ photo_create(const char * path)
         ;  // note: file may be open in "r" mode, so scanf "\n" would eat a trailing CR
     const int tup = (pnm_type == '5') ? 1 : 3;
     ph = malloc((sizeof *ph) + tup * width * height);
-    ph->width = width;
-    ph->height = height;
-    ph->grey = (tup == 1);
+    ph->a.width = width;
+    ph->a.height = height;
+    ph->a.grey = (tup == 1);
     const int r = fread(ph->data, tup, width * height, file);
     if (r != width * height) {
         fprintf(stderr, "'%s' gave %s after %u of %d values. "
@@ -165,9 +172,9 @@ photo_delete(photo * ph)
     static unsigned char *
 photo_pixel(const photo * ph, int x, int y)
 {
-    if (x < 0 || y < 0 || x >= ph->width || y >= ph->height) return NULL;
+    if (x < 0 || y < 0 || x >= ph->a.width || y >= ph->a.height) return NULL;
     else return (unsigned char *)
-            & ph->data[(ph->grey ? 1 : 3) * (ph->width * y + x)];
+            & ph->data[(ph->a.grey ? 1 : 3) * (ph->a.width * y + x)];
 }
 
     unsigned
@@ -175,7 +182,7 @@ photo_rgb(const photo * ph, int x, int y)
 {
     unsigned char * v = photo_pixel(ph, x, y);
     if (v == NULL) return 0;
-    else if (ph->grey) {
+    else if (ph->a.grey) {
         unsigned w = *v;
         return w | w << 8 | w << 16;
     } else
@@ -188,7 +195,7 @@ photo_color(const photo * ph, int x, int y)
     unsigned char * v = photo_pixel(ph, x, y);
     if (v == NULL)
         return (compact_color){0, 0, 0};
-    else if (ph->grey)
+    else if (ph->a.grey)
         return (compact_color){*v, *v, *v};
     else
         return str_color(v);

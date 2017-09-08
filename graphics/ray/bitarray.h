@@ -5,10 +5,7 @@
 
 #include <stdbool.h>
 
-struct bitarray {
-    unsigned bit_count;
-    char c[];
-};
+struct bitarray;
 
 #ifndef __cplusplus
 typedef struct bitarray bitarray;
@@ -19,6 +16,7 @@ extern "C" {
 #endif
 
 int ba_size(int bit_count);
+void ba_init(bitarray *, unsigned q);
 void ba_set(bitarray *, int i);
 void ba_clear(bitarray *, int i);
 void ba_toggle(bitarray *, int i);

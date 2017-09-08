@@ -58,13 +58,15 @@ struct Picture
     }
     color color_at(XY u) const
     {
-        compact_color cc = photo_color(ph, u.x * ph->width, u.y * ph->height);
+        const photo_attr & a = *(photo_attr *) ph;
+        compact_color cc = photo_color(ph, u.x * a.width, u.y * a.height);
         return x_color(cc);
     }
     void dim(unsigned &w, unsigned &h) const
     {
-        w = ph->width;
-        h = ph->height;
+        const photo_attr & a = *(photo_attr *) ph;
+        w = a.width;
+        h = a.height;
     }
     operator bool() const { return ph; }
 
