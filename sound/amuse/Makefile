@@ -1,5 +1,5 @@
 SOUND=..
-CXXFLAGS=-Wall -Wextra -Werror -O2 -std=c++11\
+CXXFLAGS=-Wall -Wextra -Werror -O2 -std=c++14\
  `sdl2-config --cflags` -I$(SOUND)/synth
 LDFLAGS=`sdl2-config --libs` $(SOUND)/synth/sizr.a -lncurses -lm
 

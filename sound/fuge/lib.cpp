@@ -181,11 +181,11 @@ std::map<std::string, std::unique_ptr<instrument>> orchestra;
 void
 init_orchestra()
 {
-    orchestra.emplace("beep", std::unique_ptr<instrument>(new beep));
-    orchestra.emplace("amp-mod", std::unique_ptr<instrument>(new amp_mod));
-    orchestra.emplace("freq-mod", std::unique_ptr<instrument>(new freq_mod));
-    orchestra.emplace("ks-string", std::unique_ptr<instrument>(new ks_string));
-    orchestra.emplace("diphthong", std::unique_ptr<instrument>(new diphthong));
+    orchestra.emplace("beep", std::make_unique<beep>());
+    orchestra.emplace("amp-mod", std::make_unique<amp_mod>());
+    orchestra.emplace("freq-mod", std::make_unique<freq_mod>());
+    orchestra.emplace("ks-string", std::make_unique<ks_string>());
+    orchestra.emplace("diphthong", std::make_unique<diphthong>());
 }
 
 bu_ptr
@@ -261,9 +261,9 @@ std::map<std::string, std::unique_ptr<filter>> filters;
 void
 init_filters()
 {
-    filters.emplace("comb", std::unique_ptr<filter>(new comb));
-    filters.emplace("echo", std::unique_ptr<filter>(new echo));
-    filters.emplace("biquad", std::unique_ptr<filter>(new biqd));
+    filters.emplace("comb", std::make_unique<comb>());
+    filters.emplace("echo", std::make_unique<echo>());
+    filters.emplace("biquad", std::make_unique<biqd>());
 }
 
 bu_ptr

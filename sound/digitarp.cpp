@@ -8,42 +8,49 @@
 #include <vector>
 #include <array>
 
-#define SR 44100
-
-const double pi = 3.141592653589;
+constexpr long SR = 44100; // sample rate
+constexpr double PI = 3.141592653589;
 double rnd(double a, double b) { return a + rand() * (b - a) / RAND_MAX; }
-double sine(double x) { return sin(x * 2 * pi); }
+double sine(double x) { return sin(x * 2 * PI); }
 double linear(double a, double b, double r) { return a * (1 - r) + b * r; }
 
-struct lfo
+class lfo // oscilator
 {
-    double d, x;
+    double x;
 
-    lfo(double d = 0) : d(d), x(rnd(0, 1)) {}
-    
-    double y()
+    double produce()
     {
-        if ((x += d) > 1) x -= 1;
+        if ((x += d) > 1) x = fmod(x, 1);
         return sine(x);
     }
 
-    double linear(double a, double b)
+public:
+    double d;
+
+    lfo(double d = 0) : x(rnd(0, 1)), d(d) {}
+
+    double produce_onto_span(double lower, double upper)
     {
-        return ::linear(a, b, .5 * (1 + y()));
+        return ::linear(lower, upper, .5 * (1 + produce()));
     }
 };
 
-struct ring_buffer
+class ring_buffer
 {
+    unsigned i = 0;
+
+protected:
     std::vector<float> samples;
-    unsigned i;
     
-    ring_buffer(unsigned n) : samples(n), i()
+public:
+    ring_buffer(size_t n = 0) : samples(n)
     {}
-    
+
     void ring_walk()
     {
-        if (i == 0) i = samples.size();
+        if (i == 0) {
+            i = samples.size();
+        }
         --i;
     }
 
@@ -53,35 +60,35 @@ struct ring_buffer
     }
 };
 
-struct worm_buffer : ring_buffer
+class worm_buffer : protected ring_buffer
 {
-    lfo delay;
-    unsigned n;
-    unsigned n_target;
     double step_progress;
     double step_speed;
 
-    worm_buffer(unsigned n = 0)
-        : ring_buffer(SR/10)
-        , n(n)
-        , n_target(n)
-        , step_progress()
+protected:
+    lfo delay;
+
+public:
+    unsigned n_target;
+
+    worm_buffer(size_t n = 0)
+        : step_progress()
         , step_speed(.01)
+        , n_target(n)
     {}
 
     void grow()
     {
+        size_t n = samples.size();
         if (n == 0) {
-            n = n_target;
-            return;
-        }
-        
-        if (n_target != n) {
+            samples.resize(n_target);
+        } else if (n != n_target) {
             step_progress += step_speed;
             if (step_progress >= 1) {
                 step_progress = 0;
                 if (n_target > n) n += 1;
                 else n -= 1;
+                samples.resize(n);
             }
         }
     }
@@ -93,7 +100,7 @@ struct va_karpluss : worm_buffer
     void excite()
     {
         const double y = rnd(.8, 1);
-        for (size_t k=1; k<n; k++)
+        for (size_t k=1; k<samples.size(); k++)
             element(k) += rnd(-y, y);
     }
 
@@ -101,7 +108,8 @@ struct va_karpluss : worm_buffer
     {
         grow();
 
-        const unsigned k = n * linear(.99, .999, .5 * (1 + delay.y()));
+        const unsigned k = samples.size()
+            * delay.produce_onto_span(.99, .999);
         const double r = .99 * linear(element(k - 1), element(k), .8);
         element() = r;
         ring_walk();
@@ -111,22 +119,27 @@ struct va_karpluss : worm_buffer
 
 struct va_comb : worm_buffer
 {
-    lfo fundamental;
-    va_comb() : fundamental(.4/SR) {}
+    va_comb() : fundamental(.4/SR)
+    {}
+
     double shift(double v) {
-        n_target = SR/fundamental.linear(48, 880);
+        n_target = SR/fundamental.produce_onto_span(48, 880);
         grow();
 
-        const double r = linear(v, element(n), .3);
+        const double r = linear(v, element(), .3);
         element() = v;
         ring_walk();
         return r;
     }
+
+private:
+    lfo fundamental;
 };
 
 class biquad
 {
     double w1, w2;
+
 public:
     double a1, a2, b0, b1, b2;
     
@@ -143,7 +156,7 @@ public:
 
     void set_wah(double c, double q)
     {
-      const double p = 2 * pi * c / SR;
+      const double p = 2 * PI * c / SR;
       const double alpha = sin(p) / (2 * q);
       const double a0 = 1 + alpha;
       a1 = (-2 * cos(p)) / a0;
@@ -163,10 +176,10 @@ struct wah_wah
     
     double shift(double v)
     {
-        double c = pedal.linear(36, 880);
+        double c = pedal.produce_onto_span(36, 880);
         f.set_wah(c, .98);
         return linear(v, f.shift(v),
-                mix.linear(.5, .6));
+                mix.produce_onto_span(.5, .7));
     }
 };
 
@@ -194,8 +207,7 @@ struct reverbr : ring_buffer
     {
         for (unsigned k=0; k<echoes.size(); k++) {
             echo & e = echoes[k];
-            e.cached_d = linear(1, samples.size(),
-                        .5 * (1 + e.delay.y()));
+            e.cached_d = e.delay.produce_onto_span(1, samples.size());
         }
     }
 
@@ -351,7 +363,8 @@ extern "C" int isatty(int);
 int main()
 {
     if (isatty(1)) {
-        fprintf(stderr, "redirect stdout and i'll write 1ch 16/le audio\n");
+        fprintf(stderr, "redirect stdout and i.e pipe it to\n"
+            " | aplay -f S16_LE < digitarp.raw -r 44100\n");
         return 1;
     }
     arp_digitar aw;

@@ -1,5 +1,5 @@
 SOUND=..
-CXXFLAGS=-Wall -Wextra -Werror -O2 -std=c++11\
+CXXFLAGS=-Wall -Wextra -Werror -O2 -std=c++14\
  `python3-config --includes` -I$(SOUND)/synth
 
 fuge.so: fuge.o lib.o $(SOUND)/synth/sizr.a
