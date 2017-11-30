@@ -771,9 +771,10 @@ struct FractalMovie
 };
 
 
+extern "C" int isatty(int);
+
 int main()
 {
-    extern int isatty(int fd);
     if (isatty(1)) {
         std::cerr << "Please redirect stdout" << std::endl;
         return 2;

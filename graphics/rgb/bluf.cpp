@@ -29,9 +29,9 @@ static photo * orig;
 static std::vector<fillin> fillins;
 
 static bool init(int argc, char **argv);
-static void stats();
 static void do_fillins(int x, int y, color & c, bool skip_first = false);
 static void do_gradient(int x, int y, color & c);
+static void stats();
 
     int
 main(int argc, char **argv)
@@ -41,11 +41,12 @@ main(int argc, char **argv)
         std::cerr << "Usage:\tProvide a maskable* photo file.\n\t* "
                 "some (~) monochrome areas to be used to fill-in photo(s).\n"
                 "\t  or a use slash to v-gradient itself or the following fill-in(s)\n"
-                "Alt.usage:\tProvide no fill-ins to list colors in file\n";
+                "Alt.usage:\tProvide no fill-ins to list colors in file\n"
+                "Ex:\tbluf a.jpeg\n\tbluf a.jpeg fff~.5:b.jpeg\n\tbluf a.jpeg /:b.jpeg\n";
         return 1;
     }
     orig = photo_create(argv[1]);
-    if (orig == NULL)
+    if (orig == nullptr)
         return 1;
 
     if (argc == 2) {
@@ -59,13 +60,12 @@ main(int argc, char **argv)
         return 1;
     }
     const photo_attr & a = *(photo_attr *)orig;
-    image i = image_create(NULL, a.width, a.height);
+    image i = image_create(nullptr, a.width, a.height);
     for (int y=0; y<a.height; y++) {
         for (int x=0; x<a.width; x++) {
             color c = x_color(photo_color(orig, x, y));
             if (fillins[0].esq < 0) do_gradient(x, y, c);
             else do_fillins(x, y, c);
-            // ^^ todo: only when only one fillin, handle when two too (rest-gradient replace)
             image_write(i, c);
         }
     }
@@ -78,13 +78,17 @@ parse_color(const char * hex)
 {
     char * endptr;
     unsigned rgb = strtol(hex, &endptr, 16);
-    if (endptr - hex != 6) {
-        std::cerr << "Invalid pre-colon token in " << hex
-                << ", must be i.e FF0000 for red\n";
-        exit(1);
+    if (endptr - hex == 6) {
+        return {(255 & (rgb >> 16)) / 255.0,
+                (255 & (rgb >> 8)) / 255.0, (255 & (rgb)) / 255.0};
+    } else if (endptr - hex == 3) {
+        return {(15 & (rgb >> 8)) / 15.0,
+                (15 & (rgb >> 4)) / 15.0, (15 & (rgb)) / 15.0};
     }
-    return { (255 & (rgb >> 16)) / 255.0,
-            (255 & (rgb >> 8)) / 255.0, (255 & (rgb)) / 255.0 };
+
+    std::cerr << "Invalid pre-colon token in " << hex
+        << ", must be i.e F00 or FF0000 for red\n";
+    exit(1);
 }
 
     static bool
@@ -95,7 +99,7 @@ init(int argc, char **argv)
         fillins.push_back(fillin());
         fillin & f = fillins.back();
         const char * name = strchr(a, ':');
-        if (name == NULL) {
+        if (name == nullptr) {
             std::cerr << i << ": not [color[~e]|/]:[path|=color]\n";
             goto err;
         }

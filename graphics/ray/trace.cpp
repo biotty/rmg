@@ -124,6 +124,8 @@ enum refraction_ret {
 
     static enum refraction_ret
 refraction_trace(ray ray_, const scene_object * so,
+        unsigned long optics_refraction_index_nano,
+        compact_color optics_refraction_filter,
         const detector * detector_, world * w, color * result)
 {
     const ptrdiff_t i = so - w->scene_.objects;
@@ -161,14 +163,14 @@ refraction_trace(ray ray_, const scene_object * so,
     if (transparent_on_equal_index
             && so->decoration == nullptr
             && outside_refraction_index_nano
-            == so->optics.refraction_index_nano) {
+            == optics_refraction_index_nano) {
         ray_.head = detector_->ray_.head;
         compact_color transparent_ = {255, 255, 255};
         *result = trace_hop(ray_, transparent_, detector_, w);
         return transparent;
     }
     real refraction_index = outside_refraction_index_nano
-            /(real) so->optics.refraction_index_nano;
+            /(real) optics_refraction_index_nano;
     if ( ! enters) {
         refraction_index = 1 / refraction_index;
         scale(&ray_.head, -1);
@@ -180,7 +182,7 @@ refraction_trace(ray ray_, const scene_object * so,
     }
     // consider: light density changes with angle, so that
     //           we must scale the result proportionally.
-    *result = trace_hop(ray_, so->optics.refraction_filter, detector_, w);
+    *result = trace_hop(ray_, optics_refraction_filter, detector_, w);
     return reflect;
 }
 
@@ -238,7 +240,10 @@ ray_trace(const detector * detector_, world * w)
     if (optics->refraction_index_nano) {
         color refraction_color;
         r = refraction_trace(
-                surface, closest_object, detector_, w, &refraction_color);
+                surface, closest_object,
+                optics->refraction_index_nano,
+                optics->refraction_filter,
+                detector_, w, &refraction_color);
         if (r == reflect || r == transparent) {
             color_add(&detected, refraction_color);
         } else if (r == total_reflect) {

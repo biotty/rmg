@@ -20,44 +20,43 @@ from rmg.script import ScriptInvocation, ParametricWorld
 
 
 water_index = 2.6
-water = Color(0, .6, 1)
+water = Color(.24, .75, 1)
 lightened_variant = .6 < rnd(1)
 
 
 # note: most reflexive
 def optics_a():
     if lightened_variant:
-        hint = Color.random().mix(white, .8)
-        reflection = hint * .9
-        absorption = hint * .2
+        reflection = white * .65
+        absorption = white * .25
         refraction = black
         passthrough = black
         return Optics(reflection, absorption,
                 -1, refraction, passthrough)
     else:
         color = Color.random().mix(white, .56)
-        reflection = color * .64
-        refraction = color * .41
-        passthrough = color * .4
-        absorption = color * .11
+        reflection = color * .85
+        refraction = white * .15
+        passthrough = white * .1
+        absorption = black
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
 
 # note: most passthrough
 def optics_b():
     if lightened_variant:
-        hint = Color.random().mix(white, .8)
-        reflection = hint * .2
-        absorption = hint * .9
-        refraction = black
-        passthrough = black
+        hint = Color.random().mix(white, .96)
+        reflection = hint * .175
+        absorption = hint * .725
+        refraction = white * .18
+        passthrough = water * .1
         return Optics(reflection, absorption,
-                -1, refraction, passthrough)
+                water_index, refraction, passthrough)
     else:
-        color = Color.random().mix(water, .3)
-        refraction = color * .865
-        reflection = color * .123
-        passthrough = color * .92
+        color = Color.random()
+        reflection = color * .2
+        refraction = color.mix(water, .4)
+        passthrough = water
         absorption = black
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
@@ -68,21 +67,19 @@ def mapping_angle(n, vx):
     return atan2(v.y, v.x)
 
 def optics_c():
-    a, b = optics_a(), optics_b()
-    if .5 < rnd(1): a, b = b, a
-    a = SurfaceOptics.from_optics(a)
-    off = Direction.random(0.1)
+    a = SurfaceOptics(black, black, white)
+    b = Optics(black, black, 1, white * .65, white)
     # num: ^ prevent arbitrary float toggling surface
     #      along image-sequence of movement
     def f(pl, vx):
         return CheckersMap(pl.normal,
                 mapping_angle(pl.normal, vx),
-                    pl.point + off, 12, a, b)
+                    pl.point, 19, a, b)
     return f
 
 def optics_d(r):
     if lightened_variant:
-        o = Optics(black, black, -1, black, black)
+        o = Optics(black, black, 1, black, black)
         f = OpticsFactor(white * .2, white * .85, black)
     else:
         o = Optics(black, black, 1, black, white)
@@ -115,7 +112,7 @@ class Glide:
 
 def scene_disc(glide):
     oa = optics_a()
-    mc = optics_c()
+    oc = optics_b()
     _, theta, phi = Direction.random().spherical()
     sc = XYCircle(XY(0, 0), rnd(0, .8))(rnd(0, 1))
     qo = Point(sc.x, sc.y, 0).rotation(theta, phi)
@@ -133,7 +130,6 @@ def scene_disc(glide):
             pl, Plane(po * -1, dp * -1)
         ])
         glide(sc, t)
-        oc = mc(pl, sa.center - pl.point)
         return [SceneObject(oa, sc),
                 SceneObject(oc, sa)]
     return o
@@ -195,7 +191,7 @@ def scene_ring(glide):
     return o
 
 def regular_pair_inter(glide):
-    mc = optics_c()
+    oc = optics_a()
     def rnd_tilted(n):
         _, theta, phi = Direction.random().spherical()
         mid_r = rnd(.9, 1)
@@ -206,7 +202,6 @@ def regular_pair_inter(glide):
     def o(t):
         sc = intersect_regulars([ra, rb])
         glide(sc, t)
-        oc = mc(sc.objects[1], sc.objects[2].normal)
         return [SceneObject(oc, sc)]
     return o
 
@@ -225,8 +220,9 @@ def scene_die(glide):
     return o
 
 def scene_tunels(glide):
-    oc = optics_a() if .5 < rnd(1) else optics_b()
-    tr = rnd_uphalf(.3819660112380617)
+    oc = optics_b()
+    tr = rnd_uphalf(.065)
+    # rem: ^ side-touch is .3819660112380617
     _, theta, phi = Direction.random().spherical()
     def o(t):
         sa = sole_regular(30, 1, theta, phi)
@@ -238,10 +234,10 @@ def scene_tunels(glide):
     return o
 
 def scene_submarine(glide):
-    r = rnd_uphalf(.6180339889783486)
+    r = .6180339889783486 - rnd_uphalf(.21)
     a = optics_a()
-    m = optics_d(r * 2)
-    l = 1 + rnd(.1)
+    m = optics_d(r * 1.9)
+    l = 1 + rnd_uphalf(.02)
     _, theta, phi = Direction.random().spherical()
     def o(t):
         sa = sole_regular(12, l, theta, phi)
@@ -298,6 +294,18 @@ def rnd_scene_cluster(d):
             scene_alpha, scene_octacone]
     return rnd_weighted(c, [5, 4, 3, 2, 1] * 2)(Glide.random(d))
 
+def make_overall():
+    north = Direction(0, 0, 5)
+    xv = Direction(1, 0, 0)
+    pl = Plane(origo, north)
+    oc = optics_c()(pl, xv)
+    return [
+        SceneObject(oc, Intersection([
+            Sphere_(origo, 6),
+            Sphere(origo, 9)]))]
+
+overall = [] if lightened_variant else make_overall()
+
 class scene_objects:
     def __init__(self, n, d):
         self.g = [rnd_scene_cluster(d) for _ in range(n)]
@@ -306,6 +314,7 @@ class scene_objects:
         a = []
         for o in self.g:
             a.extend(o(t))
+        a.extend(overall)
         return a
 
 class rnd_circular_orbit:

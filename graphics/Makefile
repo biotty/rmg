@@ -1,7 +1,8 @@
 RAY_GUN=$(CURDIR)/ray/gun
 CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -O2
 
-.PHONY:
+.PHONY: all media heavy_media clean sweep
+
 all: ray/gun flow/fluid flow/wave
 
 media: image.jpeg
@@ -35,11 +36,9 @@ mandelbrot.mp4: follow
 map.jpeg: py/globe.py
 	$< 512x512 && pnmtojpeg globe.pnm > $@
 
-.PHONY:
 clean:
 	@find py -name "*.pyc" -delete
 
-.PHONY:
 sweep: clean
 	@rm -f follow globe.pnm *.png *.jpeg *.mp4
 	@ls -d *.movie 2>/dev/null |xargs -i ./movie_directory.sh -D {}
