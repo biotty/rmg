@@ -37,3 +37,14 @@ rgb_sky(direction d)
     1 - (d.z + 1) * 0.5  // most natural orientation for blue is down
     };
 }
+
+    color
+hsv_sky(direction d)
+{
+    real x, y;
+    direction_to_unitsquare(&d, &x, &y);
+    const real h = x * REAL_PI * 2;
+    const real s = y > 0.5 ? 1 : 2 * y;
+    const real v = y < 0.5 ? 1 : 2 * (1 - y);
+    return from_hsv(h, s, v);
+}

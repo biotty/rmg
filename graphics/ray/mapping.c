@@ -213,7 +213,7 @@ axial_decoration_(const ray * ray_, void * decoration_arg,
     }
     if (x == 1) {
         x = (ratan(d.y, d.x) + pi + da->w) / two_pi;
-        if (x >= 1) x -= 1;
+        x -= rfloor(x);
     }
     texture_map(&da->a, da->photo, x, y, so, adjust);
 }

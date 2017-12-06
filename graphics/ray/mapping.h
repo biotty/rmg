@@ -13,9 +13,7 @@ struct texture_application {
 
 #ifndef __cplusplus
 typedef struct texture_application texture_application;
-#endif
-
-#ifdef __cplusplus
+#else
 extern "C" {
 #endif
 

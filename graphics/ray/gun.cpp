@@ -297,6 +297,8 @@ get_scene_sky()
     std::cin >> name;
     if (name == "rgb") {
         return rgb_sky;
+    } else if (name == "hsv") {
+        return hsv_sky;
     } else if (name == "color") {
         std::cin >> sky_color;
         return color_sky;

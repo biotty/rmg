@@ -104,6 +104,7 @@ extern "C" {
 void filter(color * light, compact_color surface);
 void color_add(color * q, color w);
 real intensity(color);
+color from_hsv(real h, real s, real v);
 
 #ifdef __cplusplus
 }

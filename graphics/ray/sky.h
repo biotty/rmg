@@ -16,6 +16,7 @@ extern "C" {
 color color_sky(direction);
 color photo_sky(direction);
 color rgb_sky(direction);
+color hsv_sky(direction);
 extern photo * sky_photo;
 extern color sky_color;
 

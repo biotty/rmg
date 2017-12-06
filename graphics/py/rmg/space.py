@@ -32,11 +32,11 @@ class XYZ:
         return not (self == p)
     def __add__(self, d):
         return self.__class__(self.x + d.x, self.y + d.y, self.z + d.z)
-    def __mul__(self, s):
-        if isinstance(s, XYZ):
-            return self.__class__(self.x * d.x, self.y * d.y, self.z * d.z)
+    def __mul__(self, m):
+        if isinstance(m, XYZ):
+            return self.__class__(self.x * m.x, self.y * m.y, self.z * m.z)
         else:
-            return self.__class__(self.x * s, self.y * s, self.z * s)
+            return self.__class__(self.x * m, self.y * m, self.z * m)
     def __sub__(self, d):
         return self + d*-1
     def __abs__(self):

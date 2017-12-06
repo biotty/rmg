@@ -55,6 +55,10 @@ class RgbSky:
     def __str__(self):
         return "rgb"
 
+class HsvSky:
+    def __str__(self):
+        return "hsv"
+
 class ColorSky:
     def __init__(self, color):
         assert isinstance(color, Color)

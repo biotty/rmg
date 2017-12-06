@@ -13,30 +13,30 @@ from rmg.bodies import (Plane, Sphere, Parabol,
         Hyperbol, Hyperbol_, Intersection, Placement)
 from rmg.solids import (intersect_regulars, RegularSolid,
         sole_regular, cube_faces)
-from rmg.scene import SceneObject, World, LightSpot, Observer, RgbSky
+from rmg.scene import SceneObject, World, LightSpot, Observer, RgbSky, HsvSky
 from rmg.mapping import (CheckersMap, SurfaceOptics,
-        Planar1Map, OpticsFactor)
+        Planar1Map, AxialMap, OpticsFactor)
 from rmg.script import ScriptInvocation, ParametricWorld
 
 
 water_index = 2.6
-water = Color(.24, .75, 1)
-lightened_variant = .6 < rnd(1)
+water = Color(.5, .8, 1)
+lightened_variant = .65 < rnd(1)
 
 
 # note: most reflexive
 def optics_a():
     if lightened_variant:
-        reflection = white * .65
-        absorption = white * .25
+        reflection = white * .7
+        absorption = white * .2
         refraction = black
         passthrough = black
         return Optics(reflection, absorption,
                 -1, refraction, passthrough)
     else:
         color = Color.random().mix(white, .56)
-        reflection = color * .85
-        refraction = white * .15
+        reflection = color * .8
+        refraction = white * .1
         passthrough = white * .1
         absorption = black
         return Optics(reflection, absorption,
@@ -46,17 +46,17 @@ def optics_a():
 def optics_b():
     if lightened_variant:
         hint = Color.random().mix(white, .96)
-        reflection = hint * .175
-        absorption = hint * .725
-        refraction = white * .18
+        reflection = hint * .1
+        absorption = hint * .7
+        refraction = white * .1
         passthrough = water * .1
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
     else:
         color = Color.random()
         reflection = color * .2
-        refraction = color.mix(water, .4)
-        passthrough = water
+        refraction = color.mix(water, .4) * .88
+        passthrough = refraction
         absorption = black
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
@@ -64,28 +64,26 @@ def optics_b():
 def mapping_angle(n, vx):
     _, theta, phi = n.spherical()
     v = vx.inverse_rotation(theta, phi)
-    return atan2(v.y, v.x)
+    return atan2(v.y, v.x) + .001
 
 def optics_c():
     a = SurfaceOptics(black, black, white)
-    b = Optics(black, black, 1, white * .65, white)
-    # num: ^ prevent arbitrary float toggling surface
-    #      along image-sequence of movement
+    b = Optics(black, black, 1, white * .8, white)
     def f(pl, vx):
-        return CheckersMap(pl.normal,
+        return CheckersMap(pl.normal * abs(vx),
                 mapping_angle(pl.normal, vx),
-                    pl.point, 19, a, b)
+                    pl.point, 9, a, b)
     return f
 
-def optics_d(r):
+def optics_d(mapcls):
     if lightened_variant:
         o = Optics(black, black, 1, black, black)
-        f = OpticsFactor(white * .2, white * .85, black)
+        f = OpticsFactor(white * .3, white * .7, black)
     else:
         o = Optics(black, black, 1, black, white)
-        f = OpticsFactor(white * .16, black, white)
+        f = OpticsFactor(white * .2, black, white * .8)
     def g(pl, vx):
-        return Planar1Map(pl.normal * r,
+        return mapcls(pl.normal * abs(vx),
                 mapping_angle(pl.normal, vx),
                 pl.point, "map.jpeg", f, o)
     return g
@@ -112,26 +110,30 @@ class Glide:
 
 def scene_disc(glide):
     oa = optics_a()
-    oc = optics_b()
+    ob = optics_b()
     _, theta, phi = Direction.random().spherical()
-    sc = XYCircle(XY(0, 0), rnd(0, .8))(rnd(0, 1))
-    qo = Point(sc.x, sc.y, 0).rotation(theta, phi)
-    po = Point(0, 0, rnd(.1, .3)).rotation(theta, phi)
+    s1 = XYCircle(XY(0, 0), rnd(.2, .6))(rnd(0, 1))
+    s2 = XYCircle(XY(0, 0), rnd(.2, .6))(rnd(0, 1))
+    qo = Point(s1.x, s1.y, 0).rotation(theta, phi)
+    qi = Point(s2.x, s2.y, 0).rotation(theta, phi)
+    po = Point(0, 0, rnd(.05, .2)).rotation(theta, phi)
     dp = Direction(0, 0, 1).rotation(theta, phi)
-    r, rk = .9, rnd(.1, .8)
-    ro = rnd(.4, .6)
+    r, rk = .9, rnd(.2, .4)
+    ro = rnd(.2, .4)
+    ri = rnd(.2, .4)
     def o(t):
         sa = Sphere(qo, ro)
-        glide(sa, t)
         pl = Plane(po, dp)
-        sc = Intersection([
-            Hyperbol(origo, dp * .4 * r, r),
-            Hyperbol_(origo, dp * .4 * rk, rk),
+        sb = Intersection([
+            Sphere_(qi, ri),
+            Hyperbol(origo, dp * r, r),
+            Hyperbol_(origo, dp * rk, rk),
             pl, Plane(po * -1, dp * -1)
         ])
-        glide(sc, t)
-        return [SceneObject(oa, sc),
-                SceneObject(oc, sa)]
+        glide(sa, t)
+        glide(sb, t)
+        return [SceneObject(ob, sb),
+                SceneObject(oa, sa)]
     return o
 
 def scene_fruit(glide):
@@ -180,7 +182,7 @@ def scene_wheel(glide):
 def scene_ring(glide):
     oa = optics_a()
     dc = Direction.random() * rnd(.1, .9)
-    th, r = rnd(.02, .15), .8
+    th, r = rnd(.1, .2), .8
     def o(t):
         cn = Cone_(origo, dc)
         sp = Sphere(origo, r)
@@ -191,7 +193,7 @@ def scene_ring(glide):
     return o
 
 def regular_pair_inter(glide):
-    oc = optics_a()
+    mc = optics_d(AxialMap)
     def rnd_tilted(n):
         _, theta, phi = Direction.random().spherical()
         mid_r = rnd(.9, 1)
@@ -202,6 +204,8 @@ def regular_pair_inter(glide):
     def o(t):
         sc = intersect_regulars([ra, rb])
         glide(sc, t)
+        os = sc.objects
+        oc = mc(os[2], os[1].normal * os[0].radius * 2)
         return [SceneObject(oc, sc)]
     return o
 
@@ -221,12 +225,12 @@ def scene_die(glide):
 
 def scene_tunels(glide):
     oc = optics_b()
-    tr = rnd_uphalf(.065)
+    tr = rnd_uphalf(.025)
     # rem: ^ side-touch is .3819660112380617
     _, theta, phi = Direction.random().spherical()
     def o(t):
         sa = sole_regular(30, 1, theta, phi)
-        for pl in sa.objects[1:]:
+        for pl in sa.objects[1:6]:
             axis = pl.point * tr
             sa.objects.append(Cylinder_(origo, axis))
         glide(sa, t)
@@ -234,10 +238,10 @@ def scene_tunels(glide):
     return o
 
 def scene_submarine(glide):
-    r = .6180339889783486 - rnd_uphalf(.21)
+    r = .6180339889783486 - rnd_uphalf(.2)
     a = optics_a()
-    m = optics_d(r * 1.9)
-    l = 1 + rnd_uphalf(.02)
+    m = optics_d(Planar1Map)
+    l = 1 + rnd_uphalf(.1)
     _, theta, phi = Direction.random().spherical()
     def o(t):
         sa = sole_regular(12, l, theta, phi)
@@ -247,14 +251,15 @@ def scene_submarine(glide):
             sa.objects.append(Cylinder_(origo, axis))
         glide(sa, t)
         glide(sd, t)
-        d = m(sd.objects[1], sd.objects[2].normal)
+        os = sd.objects
+        d = m(os[1], os[2].normal * os[0].radius)
         return [SceneObject(d, sd),
                 SceneObject(a, sa)]
     return o
 
 def scene_octacone(glide):
     ob = optics_b()
-    br = rnd(.2, 5)
+    br = rnd(.25, 4)
     _, theta, phi = Direction.random().spherical()
     def o(t):
         sr = sole_regular(8, 1, theta, phi)
@@ -289,20 +294,19 @@ def scene_alpha(glide):
     return o
 
 def rnd_scene_cluster(d):
-    c = [scene_fruit, scene_wheel, scene_ring, regular_pair_inter,
-            scene_disc, scene_tunels, scene_submarine, scene_die,
-            scene_alpha, scene_octacone]
-    return rnd_weighted(c, [5, 4, 3, 2, 1] * 2)(Glide.random(d))
+    c = [scene_fruit, scene_disc, scene_wheel, scene_ring, regular_pair_inter,
+        scene_die, scene_alpha, scene_octacone, scene_tunels, scene_submarine]
+    return rnd_weighted(c, list(range(9, 4, -1)) * 2)(Glide.random(d))
 
 def make_overall():
-    north = Direction(0, 0, 5)
-    xv = Direction(1, 0, 0)
+    north = Direction(0, 0, 1)
+    xv = Direction(5, 0, 0)
     pl = Plane(origo, north)
     oc = optics_c()(pl, xv)
     return [
         SceneObject(oc, Intersection([
-            Sphere_(origo, 6),
-            Sphere(origo, 9)]))]
+            Sphere_(origo, 9),
+            Sphere(origo, 17)]))]
 
 overall = [] if lightened_variant else make_overall()
 
@@ -318,22 +322,20 @@ class scene_objects:
         return a
 
 class rnd_circular_orbit:
-    def __init__(self):
+    def __init__(self, sa, cr):
         _, self.theta, self.phi = Direction.random().spherical()
-        self.rs = rnd(-5, 5)
-        self.cr = rnd(5, 10)
+        self.a0, self.sa, self.cr = rnd(6.283), sa, cr
 
     def __call__(self, t):
-        an = self.rs * t
+        an = self.sa * t + self.a0
         cp = Point(cos(an), sin(an), 0)
         return cp.rotation(self.theta, self.phi) * self.cr
 
 class light_spots:
     def __init__(self):
-        self.ro = rnd_circular_orbit()
-        self.go = rnd_circular_orbit()
-        self.bo = rnd_circular_orbit()
-        ss, ws = .3, .2
+        self.ro, self.go, self.bo = [
+            rnd_circular_orbit(rnd(-3, 3), rnd(7, 12)) for _ in range(3)]
+        ss, ws = .3, .14
         self.rc = Color(ss, ws, ws)
         self.gc = Color(ws, ss, ws)
         self.bc = Color(ws, ws, ss)
@@ -345,13 +347,24 @@ class light_spots:
                 LightSpot(self.bo(t), self.bc)
         ] if lightened_variant else []
 
-def observer(t, w = Observer(Direction.random(5),
-             origo, rnd(1), view_opening = 2)):
-    return w
+class scene_observer:
+    def __init__(self):
+        self.orbit = rnd_circular_orbit(1, 7)
+        self.tilt = rnd(1)
 
-def sky(t): return RgbSky()
+    def __call__(self, t):
+        p = self.orbit(t)
+        return Observer(p, origo, self.tilt, view_opening = 2)
+
+class sky:
+    def __init__(self):
+        self.s = RgbSky() if .5 > rnd(1) else HsvSky()
+
+    def __call__(self, t):
+        return self.s
 
 script = ScriptInvocation.from_sys()
-n = int(script.args.get(0, "9"))
-d = float(script.args.get(1, "1.5"))
-script.run(ParametricWorld(scene_objects(n, d), light_spots(), observer, sky))
+n = int(script.args.get(0, "11"))
+d = float(script.args.get(1, "4"))
+script.run(ParametricWorld(scene_objects(n, d),
+    light_spots(), scene_observer(), sky()))
