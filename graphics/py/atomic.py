@@ -84,6 +84,7 @@ class PhysPars:
         self.spring_f = s_f
         self.spring_k = s_k
         self.bounce_c = s_k * .5
+        self.good_dt = .2 / s_f
 
     def atom_atom(self, a, b, delta_t):
         r = b.p - a.p
@@ -313,11 +314,10 @@ def plane_partition(a, r, off, rows = 10, columns = 10):
 
 
 class Lab:
-    def __init__(self, dim, par, delta_t, blend, spoon, fork, hue6shift, printer):
+    def __init__(self, dim, par, t_per_frame, blend, spoon, fork, hue6shift, printer):
         self.realt = time()
         self.t = 0
         self.par = par
-        self.delta_t = delta_t
         self.corner = dim * .5
         w = lambda r: int(r * printer.height / dim.y - .5)
         self.bulb = Bulb(w(par.spring_r * .5), 1.9, w(par.detach_r * .6), 1.2)
@@ -328,7 +328,9 @@ class Lab:
         self.fork = fork
         self.hue6shift = hue6shift
         self.printer = printer
-        self.stride = 4
+        self.steps = 4  # value: good_dt has encounters within amount of steps
+        self.stride = int(t_per_frame / par.good_dt)
+        self.delta_t = t_per_frame / self.stride
         self.zoom = XY(1 / dim.x, 1 / dim.y)
 
     def _scaled(self, p):
@@ -366,8 +368,8 @@ class Lab:
             for i, a in enumerate(rect[:-1]):
                 for b in rect[i+1:]:
                     self.par.atom_atom(a, b, self.delta_t)
-                if abs(a.v) * self.delta_t * self.stride > self.par.vecorr_d:
-                    a.v *= self.par.vecorr_d / (abs(a.v) * self.delta_t * self.stride)
+                if abs(a.v) * self.delta_t * self.steps > self.par.vecorr_d:
+                    a.v *= self.par.vecorr_d / (abs(a.v) * self.delta_t * self.steps)
 
     def _displace(self):
         for a in self.atoms:
@@ -400,23 +402,23 @@ class Lab:
             p = self._scaled(a.p)
             frame.put_bulb(p, hue6, self.bulb, a)
 
-    def run(self, n):
+    def run(self, n_frames):
         overlay = Overlay(lambda i, j:
                 XY ((j / self.printer.width - 0.5) * 2 * self.corner.x,
                     (i / self.printer.height - .5) * 2 * self.corner.y),
                 self.spoon.overlay_f,
                 self.fork.overlay_f)
-        sys.stderr.write("%d\n" % (n,))
-        for _ in range(n - self.printer.i):
-            lab._inject()
+        for i in range(self.stride * (n_frames - self.printer.i)):
+            if 0 == i % self.steps:
+                lab._inject()
+                lab._restruct()
             lab.t += self.delta_t
+            lab._work()
+            lab._displace()
+            if (i + 1) % self.stride != 0:
+                continue
 
-            lab._restruct()
-            for q in range(self.stride):
-                lab._work()
-                lab._displace()
-
-            sys.stderr.write("%d" % (self.printer.i,))
+            sys.stderr.write("%d #%d" % (self.printer.i, len(self.atoms)))
             sys.stderr.flush()
             frame = self.printer.frame(overlay)
             if frame:
@@ -427,8 +429,7 @@ class Lab:
             realt = time()
             calct = realt - self.realt
             self.realt = realt
-            sys.stderr.write(" at %.2fs used %.2fs\r" % (self.t, calct))
-
+            sys.stderr.write("@%.2f used %.2fs\r" % (self.t, calct))
 
 
 class Overlay:
@@ -542,10 +543,10 @@ class Frame:
 
 
 class Printer:
-    def __init__(self, dim, name_fmt, skip_i):
+    def __init__(self, dim, movie_d, skip_i):
         self.width = dim.x
         self.height = dim.y
-        self.name_fmt = name_fmt
+        self.name_fmt = movie_d + "/%d.jpeg"
         self.i = -skip_i
 
     def frame(self, overlay):
@@ -557,15 +558,31 @@ class Printer:
         return Frame(self.width, self.height, overlay, name)
 
 
-_d = XY(1280, 720)
-_h, _ar = 160, _d.x / _d.y
+def movie_directory(link):
+    f = os.popen("sh movie_directory.sh", "r")
+    name = f.buffer.read().decode('ascii').strip()
+    if not link: return name
+    try: os.symlink(name, link)
+    except FileExistsError: pass  # warning: old link left unaltered
+    return link
+
+_o = dict(enumerate(sys.argv))
+_n = int(_o.get(1, "736"))
+_m = movie_directory(_o.get(2, ""))
+_d = XY(*(int(n) for n in _o.get(3, "1280x720").split("x")))
+_h = 160  # value: height in physical spatial units (at scale of span of atom)
+
 shade_m = .1
 cast_r = 5.5
-intro_n = 20
+total_t = 400  # note: a lab-time unit behaves nicely played in about 1/8 sec.
+t_per_frame = total_t / _n
+intro_n = int(20 / t_per_frame)
+_w = _h * (_d.x / _d.y)
+
 par = PhysPars(rnd(1.1, 1.2), rnd(1.4, 1.5), rnd(450, 550), rnd(4, 6))
-lab = Lab(XY(_h * _ar, _h), par, .03,
-        Blend(_h * .16, _h * .26, int(rnd(250, 350)), rnd(9, 11)),
-        Spoon(rnd(.55, .75), _h * .35, rnd(.4, .7), _h * .15, par.bounce_c, 1),
-        Fork(XY(_ar, 1) * _h * .46, XY(.19416, .12) * _h, rnd(6, 8), par.bounce_c, 1),
-        Hue6Shift(_h * _ar, rnd(.5, .9)), Printer(_d, "%d.jpeg", intro_n))
-lab.run(4096)
+lab = Lab(XY(_w, _h), par, t_per_frame,
+        Blend(_h * .16, _h * .2, int(rnd(250, 350)), rnd(5, 9)),
+        Spoon(rnd(.09, .15), _h * .35, rnd(.1, .2), _h * .15, par.bounce_c, 1),
+        Fork(XY(_w, _h) * .46, XY(.19416, .12) * _h, rnd(6, 8), par.bounce_c, 1),
+        Hue6Shift(_w, rnd(.5, .9)), Printer(_d, _m, intro_n))
+lab.run(_n)

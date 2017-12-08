@@ -21,7 +21,7 @@ rgb/librgb.a:
 image.jpeg: py/image1.py ray/gun map.jpeg
 	$< 12 |$(RAY_GUN) 1920x1080 |pnmtojpeg >$@
 
-video.mp4: py/image1.py ray/gun map.jpeg
+video.mp4: py/image1.py ray/gun map.jpeg map.movie
 	./movie_from_exec.sh $@ "$< -n 736 -C $(RAY_GUN)"
 
 fluidwave.mp4: flow/fluid flow/wave
@@ -35,6 +35,9 @@ mandelbrot.mp4: follow
 
 map.jpeg: py/globe.py
 	$< 512x512 && pnmtojpeg globe.pnm > $@
+
+map.movie: py/atomic.py
+	$< 736 $@ 600x400
 
 clean:
 	@find py -name "*.pyc" -delete

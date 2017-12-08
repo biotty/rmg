@@ -71,8 +71,7 @@ def optics_c():
     b = Optics(black, black, 1, white * .8, white)
     def f(pl, vx):
         return CheckersMap(pl.normal * abs(vx),
-                mapping_angle(pl.normal, vx),
-                    pl.point, 9, a, b)
+                mapping_angle(pl.normal, vx), pl.point, 9, a, b)
     return f
 
 def optics_d(mapcls):
@@ -82,31 +81,22 @@ def optics_d(mapcls):
     else:
         o = Optics(black, black, 1, black, white)
         f = OpticsFactor(white * .2, black, white * .8)
-    def g(pl, vx):
+    def g(pl, vx, path):
         return mapcls(pl.normal * abs(vx),
-                mapping_angle(pl.normal, vx),
-                pl.point, "map.jpeg", f, o)
+                mapping_angle(pl.normal, vx), pl.point, path, f, o)
     return g
 
-class Glide:
-    def __init__(self, p, r, v, d, s):
-        self.p = p
-        self.r = r
-        self.v = v
-        self.d = d
-        self.s = s
-
-    def __call__(self, oo, t):
-        oo.rotate(self.d, self.s * t)
-        pt = self.p + self.v * (t - .5)
-        rm = Placement(self.r, 0, 0, pt)
-        oo.place(rm)
-        return oo
-
-    @classmethod
-    def random(cls, d):
-        return cls(Point(*(Direction.random(rnd(.2, 2)).xyz())),
-                1, Direction.random(d), Direction.random(), rnd(5))
+def optics_e(mapcls):
+    if lightened_variant:
+        o = Optics(water * .5, black, 1, black, black)
+        f = OpticsFactor(white * -.25, white * .8, black)
+    else:
+        o = Optics(black, black, 1, white, white)
+        f = OpticsFactor(white, black, white * -1)
+    def g(pl, vx, path):
+        return mapcls(pl.normal * abs(vx),
+                mapping_angle(pl.normal, vx), pl.point, path, f, o)
+    return g
 
 def scene_disc(glide):
     oa = optics_a()
@@ -192,8 +182,10 @@ def scene_ring(glide):
         return [SceneObject(oa, sa)]
     return o
 
-def regular_pair_inter(glide):
-    mc = optics_d(AxialMap)
+def scene_regular_pair(glide):
+    is_m = glide.is_movie
+    mc = (optics_e if is_m else optics_d)(AxialMap)
+    movie_n = 4096  # value: guess
     def rnd_tilted(n):
         _, theta, phi = Direction.random().spherical()
         mid_r = rnd(.9, 1)
@@ -205,7 +197,8 @@ def regular_pair_inter(glide):
         sc = intersect_regulars([ra, rb])
         glide(sc, t)
         os = sc.objects
-        oc = mc(os[2], os[1].normal * os[0].radius * 2)
+        path = "map.movie/%d.jpeg" % (t * 4096,) if is_m else "map.jpeg"
+        oc = mc(os[2], os[1].normal * os[0].radius * 2, path)
         return [SceneObject(oc, sc)]
     return o
 
@@ -252,7 +245,7 @@ def scene_submarine(glide):
         glide(sa, t)
         glide(sd, t)
         os = sd.objects
-        d = m(os[1], os[2].normal * os[0].radius)
+        d = m(os[1], os[2].normal * os[0].radius, "map.jpeg")
         return [SceneObject(d, sd),
                 SceneObject(a, sa)]
     return o
@@ -293,10 +286,34 @@ def scene_alpha(glide):
         return aa
     return o
 
+class Glide:
+    def __init__(self, p, r, v, d, s):
+        self.is_movie = bool(script.frame_count)  # dep: circular
+        self.p = p
+        self.r = r
+        self.v = v
+        self.d = d
+        self.s = s
+
+    def __call__(self, oo, t):
+        oo.rotate(self.d, self.s * t)
+        pt = self.p + self.v * (t - .5)
+        rm = Placement(self.r, 0, 0, pt)
+        oo.place(rm)
+        return oo
+
+    @classmethod
+    def random(cls, d):
+        return cls(Point(*(Direction.random(rnd(.2, 2)).xyz())),
+                1, Direction.random(d), Direction.random(), rnd(5))
+
 def rnd_scene_cluster(d):
-    c = [scene_fruit, scene_disc, scene_wheel, scene_ring, regular_pair_inter,
-        scene_die, scene_alpha, scene_octacone, scene_tunels, scene_submarine]
-    return rnd_weighted(c, list(range(9, 4, -1)) * 2)(Glide.random(d))
+    selected = rnd_weighted([
+        scene_fruit, scene_disc, scene_wheel, scene_ring, scene_regular_pair,
+        scene_die, scene_alpha, scene_octacone, scene_tunels, scene_submarine
+    ], list(range(9, 4, -1)) * 2)
+    selected = scene_regular_pair
+    return selected(Glide.random(d))
 
 def make_overall():
     north = Direction(0, 0, 1)
@@ -366,5 +383,6 @@ class sky:
 script = ScriptInvocation.from_sys()
 n = int(script.args.get(0, "11"))
 d = float(script.args.get(1, "4"))
+
 script.run(ParametricWorld(scene_objects(n, d),
     light_spots(), scene_observer(), sky()))
