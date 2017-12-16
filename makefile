@@ -1,7 +1,6 @@
 SCIENCES=sound graphics
 ACTIONS=all clean media sweep
 
-.PHONY: $(ACTIONS) $(SCIENCES)
-
+.PHONY:
 $(ACTIONS):
 	@$(foreach p,$(SCIENCES),$(MAKE) -C $(p) $@;)

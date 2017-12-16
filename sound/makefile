@@ -26,7 +26,7 @@ fuge/fuge.so: synth/sizr.a
 	@$(MAKE) -C fuge
 
 py/fuge.so: fuge/fuge.so
-	@ln -f $^ $@
+	@ln -f $< $@
 
 %.raw: py/%.py py/fuge.so
 	py/$*.py > $@
@@ -35,16 +35,13 @@ digitarp.raw: digitarp
 	./digitarp > $@
 
 %.mp3: %.raw
-	lame $(LAME_S16) $^ $@
+	lame $(LAME_S16) $< $@
 
 clean:
-	@find py -name "*.pyc" -delete
+	@$(foreach d,synth fuge amuse mrender,$(MAKE) $@ -C $(d);)
+	@rm -f *.o
+	@py3clean .
 
 sweep: clean
-	@rm -f digitarp
-	@rm -f py/fuge.so
-	@rm -f *.raw *.mp3
-	@$(MAKE) -C mrender $@
-	@$(MAKE) -C synth $@
-	@$(MAKE) -C amuse $@
-	@$(MAKE) -C fuge $@
+	@$(foreach d,synth fuge amuse mrender,$(MAKE) $@ -C $(d);)
+	@rm -f digitarp py/fuge.so *.raw *.mp3

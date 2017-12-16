@@ -30,8 +30,3 @@ p=$t/$d
 mkdir $p
 ln -sf $p .
 echo $d
-if [ -n "$MOVIE_DIR_KEEP" ]
-then touch $d/k && echo "rm $d/k # to gc" >&2
-else echo "touch $d/k # to keep" >&2
-fi
-

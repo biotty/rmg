@@ -185,7 +185,6 @@ def scene_ring(glide):
 def scene_regular_pair(glide):
     is_m = glide.is_movie
     mc = (optics_e if is_m else optics_d)(AxialMap)
-    movie_n = 4096  # value: guess
     def rnd_tilted(n):
         _, theta, phi = Direction.random().spherical()
         mid_r = rnd(.9, 1)
@@ -193,12 +192,17 @@ def scene_regular_pair(glide):
     fr = lambda: rnd_weighted([4, 6, 8, 12, 30])
     ra = rnd_tilted(fr())
     rb = rnd_tilted(fr())
+    i = 0
     def o(t):
+        nonlocal i
         sc = intersect_regulars([ra, rb])
         glide(sc, t)
         os = sc.objects
-        path = "map.movie/%d.jpeg" % (t * 4096,) if is_m else "map.jpeg"
-        oc = mc(os[2], os[1].normal * os[0].radius * 2, path)
+        path = "map.movie/%d.jpeg" % (i,) if is_m else "map.jpeg"
+        i += 1
+        avg = Plane((os[2].point + os[3].point) * .5,
+                (os[2].normal + os[3].normal) * .5)
+        oc = mc(avg, os[1].normal * os[0].radius * 2, path)
         return [SceneObject(oc, sc)]
     return o
 
@@ -307,14 +311,6 @@ class Glide:
         return cls(Point(*(Direction.random(rnd(.2, 2)).xyz())),
                 1, Direction.random(d), Direction.random(), rnd(5))
 
-def rnd_scene_cluster(d):
-    selected = rnd_weighted([
-        scene_fruit, scene_disc, scene_wheel, scene_ring, scene_regular_pair,
-        scene_die, scene_alpha, scene_octacone, scene_tunels, scene_submarine
-    ], list(range(9, 4, -1)) * 2)
-    selected = scene_regular_pair
-    return selected(Glide.random(d))
-
 def make_overall():
     north = Direction(0, 0, 1)
     xv = Direction(5, 0, 0)
@@ -329,7 +325,13 @@ overall = [] if lightened_variant else make_overall()
 
 class scene_objects:
     def __init__(self, n, d):
-        self.g = [rnd_scene_cluster(d) for _ in range(n)]
+        c = [
+            scene_fruit, scene_disc, scene_wheel, scene_ring, scene_regular_pair,
+            scene_die, scene_alpha, scene_octacone, scene_tunels, scene_submarine
+        ]
+        k = len(c)
+        j = int(rnd(k))
+        self.g = [c[(i+j)%k](Glide.random(d)) for i in range(n)]
 
     def __call__(self, t):
         a = []
@@ -381,7 +383,7 @@ class sky:
         return self.s
 
 script = ScriptInvocation.from_sys()
-n = int(script.args.get(0, "11"))
+n = int(script.args.get(0, "10"))
 d = float(script.args.get(1, "4"))
 
 script.run(ParametricWorld(scene_objects(n, d),

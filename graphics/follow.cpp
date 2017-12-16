@@ -1,8 +1,10 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
 
 #include <planar.hpp>
 #include <linear.hpp>
 
-
+#include <unistd.h>
 #include <cstdlib>
 #include <cassert>
 #include <ctime>
@@ -770,8 +772,6 @@ struct FractalMovie
     }
 };
 
-
-extern "C" int isatty(int);
 
 int main()
 {

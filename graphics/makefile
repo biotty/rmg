@@ -1,5 +1,5 @@
 RAY_GUN=$(CURDIR)/ray/gun
-CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -O2
+CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -pedantic -O2
 
 .PHONY: all media heavy_media clean sweep
 
@@ -19,32 +19,31 @@ rgb/librgb.a:
 	@$(MAKE) -C rgb
 
 image.jpeg: py/image1.py ray/gun map.jpeg
-	$< 12 |$(RAY_GUN) 1920x1080 |pnmtojpeg >$@
+	$< |$(RAY_GUN) 1920x1080 |pnmtojpeg >$@
 
 video.mp4: py/image1.py ray/gun map.jpeg map.movie
-	./movie_from_exec.sh $@ "$< -n 736 -C $(RAY_GUN)"
+	./movie.sh $@ "$< -n 736 -C $(RAY_GUN) -o {}"
 
-fluidwave.mp4: flow/fluid flow/wave
-	flow/sh
+fluidwave.mp4: flow/sh flow/fluid flow/wave
+	$<
 
 follow: follow.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -Irgb -Iflow $<
 
 mandelbrot.mp4: follow
-	./follow |./movie_from_pipe.sh $@
+	./movie.sh $@ "./follow |./image_pipe.sh {}"
 
 map.jpeg: py/globe.py
-	$< 512x512 && pnmtojpeg globe.pnm > $@
+	$< 1024x1024 && pnmtojpeg globe.pnm > $@
 
 map.movie: py/atomic.py
-	$< 736 $@ 600x400
+	./movie.sh $@/ "$< -n 736 -r 1280x720 -o {}"
 
 clean:
-	@find py -name "*.pyc" -delete
+	@$(foreach d,ray flow rgb,$(MAKE) $@ -C $(d);)
+	@py3clean py
 
 sweep: clean
-	@rm -f follow globe.pnm *.png *.jpeg *.mp4
-	@ls -d *.movie 2>/dev/null |xargs -i ./movie_directory.sh -D {}
-	@$(MAKE) -C rgb sweep
-	@$(MAKE) -C ray sweep
-	@$(MAKE) -C flow sweep
+	@$(foreach d,ray flow rgb,$(MAKE) $@ -C $(d);)
+	@rm -f follow *.pnm *.png *.jpeg *.mp4
+	@ls -d *.movie 2>/dev/null |xargs -I{} ./storage.sh -D {}

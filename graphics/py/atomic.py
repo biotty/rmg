@@ -7,6 +7,7 @@ from rmg.plane import XY, origo
 from rmg.color import Color, black, white
 from rmg.math_ import rnd, rnd_weighted
 from math import hypot, atan2, sin, cos, pi
+from optparse import OptionParser
 from itertools import product
 from time import time
 import os, sys, operator
@@ -558,31 +559,31 @@ class Printer:
         return Frame(self.width, self.height, overlay, name)
 
 
-def movie_directory(link):
-    f = os.popen("sh movie_directory.sh", "r")
-    name = f.buffer.read().decode('ascii').strip()
-    if not link: return name
-    try: os.symlink(name, link)
-    except FileExistsError: pass  # warning: old link left unaltered
-    return link
-
-_o = dict(enumerate(sys.argv))
-_n = int(_o.get(1, "736"))
-_m = movie_directory(_o.get(2, ""))
-_d = XY(*(int(n) for n in _o.get(3, "1280x720").split("x")))
-_h = 160  # value: height in physical spatial units (at scale of span of atom)
-
 shade_m = .1
 cast_r = 5.5
-total_t = 400  # note: a lab-time unit behaves nicely played in about 1/8 sec.
-t_per_frame = total_t / _n
-intro_n = int(20 / t_per_frame)
-_w = _h * (_d.x / _d.y)
 
+opts = OptionParser()
+opts.add_option("-e", "--height", type="float", default=160)
+opts.add_option("-o", "--movie-directory", type="string", default="")
+opts.add_option("-n", "--frame-count", type="int", default=736)
+opts.add_option("-r", "--resolution", type="string", default="1280x720")
+opts.add_option("-s", "--start-t", type="float", default=20)
+opts.add_option("-t", "--stop-t", type="float", default=400)
+# value: height in physical spatial units; at scale of span of atom
+# note: t -- a lab-time unit behaves nicely played in about 1/8 sec
+o, a = opts.parse_args()
+
+assert o.stop_t > o.start_t
+t_per_frame = (o.stop_t - o.start_t) / o.frame_count
+intro_n = int(o.start_t / t_per_frame)
+img_dir = o.movie_directory
+img_res = XY(*(int(q) for q in o.resolution.split("x")))
+_h = o.height
+_w = _h * (img_res.x / img_res.y)
 par = PhysPars(rnd(1.1, 1.2), rnd(1.4, 1.5), rnd(450, 550), rnd(4, 6))
 lab = Lab(XY(_w, _h), par, t_per_frame,
         Blend(_h * .16, _h * .2, int(rnd(250, 350)), rnd(5, 9)),
         Spoon(rnd(.09, .15), _h * .35, rnd(.1, .2), _h * .15, par.bounce_c, 1),
         Fork(XY(_w, _h) * .46, XY(.19416, .12) * _h, rnd(6, 8), par.bounce_c, 1),
-        Hue6Shift(_w, rnd(.5, .9)), Printer(_d, _m, intro_n))
-lab.run(_n)
+        Hue6Shift(_w, rnd(.5, .9)), Printer(img_res, img_dir, intro_n))
+lab.run(o.frame_count)

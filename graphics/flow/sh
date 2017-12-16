@@ -1,0 +1,13 @@
+#! /usr/bin/env bash
+
+set -e
+o=$(./storage.sh)
+s=$RANDOM
+t=$o/in.flow.pnm
+py/globe.py 1280x720 $t
+pnmtopng $t > $o/in.png && rm $t
+set -x
+flow/fluid -s $s -n 2048 1280x720 -i $o/in.png -o $o/_
+flow/wave -s $s -i ${o}/_%u.jpeg -o $o/
+set +x
+./movie.sh $o fluidwave.mp
