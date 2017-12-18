@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+set -x
 
 d=$(./storage.sh)
 o=$1
 c=${2/\{\}/$d}
-echo $c
+echo "{} = $d"
 eval $c
 
 if [[ "$o" != */ ]]
@@ -19,4 +20,4 @@ then
      exit 1
 fi
 
-mv -T $d $o
+mv -T $d $(dirname $o.)

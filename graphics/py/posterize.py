@@ -25,7 +25,7 @@ def most_central_available(board):
                     min_distance = d
                     the_most = p
     return the_most
- 
+
 
 def status(m):
     stderr.write(m)
@@ -36,9 +36,9 @@ def fill_order(s):
     board = Board([[0]*s for i in range(s)])
     for i in range(s * s):
         p = most_central_available(board)
-        board.matrix[p.y][p.x] = 1 + i
-    #todo: cache this on /tmp/posterize.X_Y.cache
-    #      so that we don't recalculate at each invokation
+        board.set_int(p.x, p.y, 1 + i)
+    # consider: cache this on /tmp/posterize.X_Y.cache
+    #           so that we don't recalculate at each invokation
     return board
 
 
@@ -76,7 +76,7 @@ class Poster:
         a = [0, 0, 0]
         a[self.cmy_index] = 1
         component_ink = InkColor(*a)
-        n = self.board.int_at(x / self.s, y / self.s)
+        n = self.board.int_at(x // self.s, y // self.s)
         s_x = x % self.s
         s_y = y % self.s
         if self.pattern.int_at(s_x, s_y) <= n:

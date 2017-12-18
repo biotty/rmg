@@ -544,10 +544,10 @@ class Frame:
 
 
 class Printer:
-    def __init__(self, dim, movie_d, skip_i):
+    def __init__(self, dim, img_out, skip_i):
         self.width = dim.x
         self.height = dim.y
-        self.name_fmt = movie_d + "/%d.jpeg"
+        self.name_fmt = "%s%%d.jpeg" % (img_out,)
         self.i = -skip_i
 
     def frame(self, overlay):
@@ -564,7 +564,7 @@ cast_r = 5.5
 
 opts = OptionParser()
 opts.add_option("-e", "--height", type="float", default=160)
-opts.add_option("-o", "--movie-directory", type="string", default="")
+opts.add_option("-o", "--out-prefix", type="string", default="")
 opts.add_option("-n", "--frame-count", type="int", default=736)
 opts.add_option("-r", "--resolution", type="string", default="1280x720")
 opts.add_option("-s", "--start-t", type="float", default=20)
@@ -576,7 +576,7 @@ o, a = opts.parse_args()
 assert o.stop_t > o.start_t
 t_per_frame = (o.stop_t - o.start_t) / o.frame_count
 intro_n = int(o.start_t / t_per_frame)
-img_dir = o.movie_directory
+img_out = o.out_prefix
 img_res = XY(*(int(q) for q in o.resolution.split("x")))
 _h = o.height
 _w = _h * (img_res.x / img_res.y)
@@ -585,5 +585,5 @@ lab = Lab(XY(_w, _h), par, t_per_frame,
         Blend(_h * .16, _h * .2, int(rnd(250, 350)), rnd(5, 9)),
         Spoon(rnd(.09, .15), _h * .35, rnd(.1, .2), _h * .15, par.bounce_c, 1),
         Fork(XY(_w, _h) * .46, XY(.19416, .12) * _h, rnd(6, 8), par.bounce_c, 1),
-        Hue6Shift(_w, rnd(.5, .9)), Printer(img_res, img_dir, intro_n))
+        Hue6Shift(_w, rnd(.5, .9)), Printer(img_res, img_out, intro_n))
 lab.run(o.frame_count)

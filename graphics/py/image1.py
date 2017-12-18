@@ -27,17 +27,17 @@ lightened_variant = .65 < rnd(1)
 # note: most reflexive
 def optics_a():
     if lightened_variant:
-        reflection = white * .7
-        absorption = white * .2
+        reflection = white * .71
+        absorption = white * .21
         refraction = black
         passthrough = black
         return Optics(reflection, absorption,
                 -1, refraction, passthrough)
     else:
         color = Color.random().mix(white, .56)
-        reflection = color * .8
+        reflection = color * .81
         refraction = white * .1
-        passthrough = white * .1
+        passthrough = white * .11
         absorption = black
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
@@ -45,18 +45,18 @@ def optics_a():
 # note: most passthrough
 def optics_b():
     if lightened_variant:
-        hint = Color.random().mix(white, .96)
-        reflection = hint * .1
+        hint = Color.random().mix(white, .9)
+        reflection = hint * .11
         absorption = hint * .7
-        refraction = white * .1
+        refraction = white * .11
         passthrough = water * .1
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
     else:
         color = Color.random()
         reflection = color * .2
-        refraction = color.mix(water, .4) * .88
-        passthrough = refraction
+        passthrough = color.mix(water, .2) * .9
+        refraction = passthrough.mix(white, .9)
         absorption = black
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
@@ -68,7 +68,7 @@ def mapping_angle(n, vx):
 
 def optics_c():
     a = SurfaceOptics(black, black, white)
-    b = Optics(black, black, 1, white * .8, white)
+    b = Optics(black, black, 1, white * .9, white)
     def f(pl, vx):
         return CheckersMap(pl.normal * abs(vx),
                 mapping_angle(pl.normal, vx), pl.point, 9, a, b)
@@ -202,7 +202,7 @@ def scene_regular_pair(glide):
         i += 1
         avg = Plane((os[2].point + os[3].point) * .5,
                 (os[2].normal + os[3].normal) * .5)
-        oc = mc(avg, os[1].normal * os[0].radius * 2, path)
+        oc = mc(avg, os[1].normal * os[0].radius * 3, path)
         return [SceneObject(oc, sc)]
     return o
 
@@ -249,7 +249,7 @@ def scene_submarine(glide):
         glide(sa, t)
         glide(sd, t)
         os = sd.objects
-        d = m(os[1], os[2].normal * os[0].radius, "map.jpeg")
+        d = m(os[1], os[2].normal * 2 * r, "map.jpeg")
         return [SceneObject(d, sd),
                 SceneObject(a, sa)]
     return o
@@ -351,24 +351,24 @@ class rnd_circular_orbit:
         return cp.rotation(self.theta, self.phi) * self.cr
 
 class light_spots:
-    def __init__(self):
-        self.ro, self.go, self.bo = [
-            rnd_circular_orbit(rnd(-3, 3), rnd(7, 12)) for _ in range(3)]
+    def __init__(self, n):
+        self.a = [rnd_circular_orbit(rnd(-3, 3), rnd(7, 12)) for _ in range(n)]
         ss, ws = .3, .14
-        self.rc = Color(ss, ws, ws)
-        self.gc = Color(ws, ss, ws)
-        self.bc = Color(ws, ws, ss)
+        self.c = [
+                Color(ss, ws, ws),
+                Color(ws, ss, ws),
+                Color(ws, ws, ss)]
 
     def __call__(self, t):
-        return [
-                LightSpot(self.ro(t), self.rc),
-                LightSpot(self.go(t), self.gc),
-                LightSpot(self.bo(t), self.bc)
-        ] if lightened_variant else []
+        if not lightened_variant:
+            return []
+
+        return [LightSpot(
+            spo(t), self.c[i % 3]) for (i, spo) in enumerate(self.a)]
 
 class scene_observer:
     def __init__(self):
-        self.orbit = rnd_circular_orbit(1, 7)
+        self.orbit = rnd_circular_orbit(1, 5)
         self.tilt = rnd(1)
 
     def __call__(self, t):
@@ -380,11 +380,11 @@ class sky:
         self.s = RgbSky() if .5 > rnd(1) else HsvSky()
 
     def __call__(self, t):
-        return self.s
+        return "sky.jpeg" #self.s
 
 script = ScriptInvocation.from_sys()
 n = int(script.args.get(0, "10"))
 d = float(script.args.get(1, "4"))
 
 script.run(ParametricWorld(scene_objects(n, d),
-    light_spots(), scene_observer(), sky()))
+    light_spots(9), scene_observer(), sky()))

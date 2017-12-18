@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 
 set -e
-cd $1
-touch r
-while sleep 3 && test -e r
+o=$1
+r=$o.r
+echo $$ > $r
+while sleep 3 && test -e "$r"
 do
-    find . -name '*.pnm' |
+    ls $o*.pnm |
     while read f
     do
-        g=$(basename $f .pnm).jpeg
-        pnmtojpeg 2> /dev/null $f > $g && rm $f
+        g=${f/i[.]pnm$/[.]jpeg/}
+        pnmtojpeg 2>/dev/null $f>$g && rm -- "$f"
     done
 done &
-pnmsplit - %d.pnm 2> t
+pnmsplit - $o%d.pnm 2> t
 sleep 5
-rm r
+rm -- "$r"

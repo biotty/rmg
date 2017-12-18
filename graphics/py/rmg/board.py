@@ -149,6 +149,9 @@ class Board:
     def int_at(self, column, row):
         return self.data[self.n_columns * row + column]
 
+    def set_int(self, column, row, i):
+        self.data[self.n_columns * row + column] = i
+
     def color_at(self, column, row):
         return Color.from_int_rgb(self.int_at(column, row))
 
