@@ -2,7 +2,7 @@
 #
 #       © Christian Sommerfeldt Øien
 #       All rights reserved
-import sys, math
+import os, sys, math
 from random import random
 
 SAMPLERATE = 44100
@@ -91,6 +91,11 @@ osc_c = Oscilator(45, 12)
 
 n = BandNoise(21)
 f = CombFilter()
+
+if os.isatty(1):
+    sys.stdout.write("Redirect and process with i.e\n"
+            "aplay -f S16_LE -r %d\n" % (SAMPLERATE,))
+    sys.exit(2)
 
 for t in range(SAMPLERATE * 10):
     if t % 10 == 0:
