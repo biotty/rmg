@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
-from math import exp, log, sin
-from sys import stdout, stderr
+from math import sin, sqrt
+import sys
 
 class Connector:
     def __init__(self):
@@ -27,9 +27,12 @@ class Wire:
         vol_avg = sum(c.vol for c in self.cons) / n
         cur_avg = sum(c.cur for c in self.cons) / n
         for con in self.cons:
-            con.record()
             con.cur -= cur_avg
             con.vol = vol_avg
+
+    def record(self):
+        for con in self.cons:
+            con.record()
 
     def charge(self, vol):
         for con in self.cons:
@@ -51,8 +54,8 @@ class Component:
     def connect(self, cons):
         self.cons = cons
 
-    def perform(self, dt):
-        self.step(dt, *self.cons)
+    def perform(self, p, dt):
+        self.step(p, dt, *self.cons)
 
 def cur_vol(a, b):
     return (.5 * (a.cur - b.cur), b.vol - a.vol)
@@ -61,77 +64,104 @@ class Resistor(Component):
     def __init__(self, r):
         self.r = r  # u: ohm
 
-    def step(self, dt, a, b):
+    def step(self, p, dt, a, b):
         cur_ba, vol_ab = cur_vol(a, b)
         cur_ba_res = vol_ab / self.r
         vol_ab_res = cur_ba * self.r
-        approach_cur(dt, cur_ba_res, a, b)
-        approach_vol(dt, vol_ab_res, a, b)
+        approach_cur(p, cur_ba_res, a, b)
+        approach_vol(p, vol_ab_res, a, b)
 
 class Inductor(Component):
     def __init__(self, l):
         self.l = l  # u: henry
 
-    def step(self, dt, a, b):
+    def step(self, p, dt, a, b):
         cur_ba_d = .5 * (a.cur_d - b.cur_d)
         vol_ab = b.vol - a.vol
         cur_ba_d_ind = dt * vol_ab / self.l
         vol_ab_ind = self.l * cur_ba_d / dt
-        approach_cur(dt, cur_ba_d_ind + .5 * (a.cur - b.cur), a, b)
-        approach_vol(dt, vol_ab_ind, a, b)
+        approach_cur(p, cur_ba_d_ind + .5 * (a.cur - b.cur), a, b)
+        approach_vol(p, vol_ab_ind, a, b)
 
 class Capacitor(Component):
     def __init__(self, c):
         self.c = c  # u: farad
 
-    def step(self, dt, a, b):
+    def step(self, p, dt, a, b):
         cur_ba = .5 * (a.cur - b.cur)
         vol_ab_d = b.vol_d - a.vol_d
         cur_ba_cap = self.c * vol_ab_d / dt
         vol_ab_d_cap = dt * cur_ba / self.c
-        approach_cur(dt, cur_ba_cap, a, b)
-        approach_vol(dt, vol_ab_d_cap + (b.vol - a.vol), a, b)
+        approach_cur(p, cur_ba_cap, a, b)
+        approach_vol(p, vol_ab_d_cap + (b.vol - a.vol), a, b)
 
-def dio_op(r, c, v, cur_ba, vol_ab):
-    m = log(1 + c * r)
-    cur_ba_dio = (exp(vol_ab * m) - 1) / r
-    try: vol_ab_dio = log(cur_ba * r + 1) / m
-    except ValueError: vol_ab_dio = vol_ab  # consider: what
+def dio_op(c, v, cur_ba, vol_ab):
+    # phys: exp -- but model with square to avoid
+    #       discont of inv at zero
+    if cur_ba < 0 or vol_ab < 0: return 0, 0
+    cur_ba_dio = c * (vol_ab / v) ** 2
+    vol_ab_dio = v * sqrt(cur_ba / c)
     return cur_ba_dio, vol_ab_dio
 
 class Diode(Component):
-    def __init__(self, r_zero, c_knee, v_knee):
-        self.r_zero = r_zero
+    def __init__(self, c_knee, v_knee):
         self.c_knee = c_knee
         self.v_knee = v_knee
 
-    def step(self, dt, a, b):
+    def step(self, p, dt, a, b):
         cur_ba, vol_ab = cur_vol(a, b)
         cur_ba_dio, vol_ab_dio = dio_op(
-                self.r_zero, self.c_knee, self.v_knee, cur_ba, vol_ab)
-        approach_cur(dt, cur_ba_dio, a, b)
-        approach_vol(dt, vol_ab_dio, a, b)
+                self.c_knee, self.v_knee, cur_ba, vol_ab)
+        approach_cur(p, cur_ba_dio, a, b)
+        approach_vol(p, vol_ab_dio, a, b)
 
 class Transistor(Component):
-    def __init__(self, r_zero, c_knee, v_knee, beta):
-        self.r_zero = r_zero
+    def __init__(self, c_knee, v_knee, beta):
         self.c_knee = c_knee
         self.v_knee = v_knee
         self.beta = beta
 
-    def step(self, dt, a, b, c):
+    def step(self, p, dt, a, b, c):
         emm, col = (a, c) if a.vol < c.vol else (c, a)
-        cur_col_tr = self.beta * b.cur
-        cur_bem = .5 * (emm.cur + b.cur * (self.beta - 1))
+        act = (col.vol - b.vol) / self.v_knee
+
+        if act < 0:
+            # spec.case: short emm and col
+            # improve: gradually instead of cond
+            cur_ce = .5 * (col.cur + emm.cur)
+            vol_ce = .5 * (col.vol + emm.vol)
+            cur_bce = .5 * (cur_ce - b.cur)
+            vol_ceb = b.vol - vol_ce
+            cur_bce_dio, vol_ceb_dio = dio_op(
+                    self.c_knee, self.v_knee, cur_bce, vol_ceb)
+            b.cur = linear(b.cur, -cur_bce_dio, p)
+            col.cur = linear(col.cur, cur_bce_dio, p)
+            emm.cur = linear(emm.cur, cur_bce_dio, p)
+            sum_vol_dio = b.vol + vol_ce
+            vol_b_tr = .5 * (sum_vol_dio + vol_ceb_dio)
+            vol_ce_tr = .5 * (sum_vol_dio - vol_ceb_dio)
+            b.vol = linear(b.vol, vol_b_tr, p)
+            col.vol = linear(col.vol, vol_ce_tr, p)
+            emm.vol = linear(emm.vol, vol_ce_tr, p)
+            return
+
+        beta = self.beta
+        if act < 1: beta *= act
+        cur_col_tr = beta * b.cur
+        cur_bem = .5 * (emm.cur + b.cur * (beta - 1))
         vol_emb = b.vol - emm.vol
         cur_bem_dio, vol_emb_dio = dio_op(
-                self.r_zero, self.c_knee, self.v_knee, cur_bem, vol_emb)
-        col.cur = linear(col.cur, cur_col_tr, dt)
-        b.cur = linear(b.cur, -cur_bem_dio, dt)
-        emm.cur = linear(emm.cur, cur_bem_dio - cur_col_tr, dt)
-        approach_vol(dt, vol_emb_dio, emm, b)
+                self.c_knee, self.v_knee, cur_bem, vol_emb)
+        col.cur = linear(col.cur, cur_col_tr, p)
+        b.cur = linear(b.cur, -cur_bem_dio, p)
+        emm.cur = linear(emm.cur, cur_bem_dio - cur_col_tr, p)
+        approach_vol(p, vol_emb_dio, emm, b)
 
 class Circuit:
+
+    class Stop(Exception):
+        pass
+
     def __init__(self):
         self.wires = []
         self.compos = []
@@ -147,44 +177,65 @@ class Circuit:
             cons.append(con)
         compo.connect(cons)
 
-    def run(self, inputs, i, outputs, te=1, sr=100):
+    def run(self, inputs, i, outputs, sr=8000, n=8):
+        p = 1 / n
         dt = 1 / sr
-        for h in range(int(sr * te)):
+        h = 0
+        while True:
             t = h * dt
+            h += 1
             outputs(t)
-            inputs(t)
-            for c in self.compos:
-                c.perform(dt)
-            for w in self.wires[i:]:
-                w.smear()
+            try: inputs(t)
+            except Circuit.Stop: return
+            for q in range(n):
+                # consider: slightly scale up p along q
+                #           (as we approach equilibrium)
+                for c in self.compos:
+                    c.perform(p, dt)
+                for w in self.wires[i:]:
+                    w.smear()
+                    w.record()
 
 e = Circuit()
 e.add([1, 3], Resistor(1200))
 e.add([1, 5], Resistor(20e3))
 e.add([0, 4], Resistor( 220))
 e.add([0, 5], Resistor(3600))
-e.add([4, 5, 3], Transistor(1e5, .1, .7, 50))
-e.add([2, 5], Capacitor(1e-2))
+e.add([4, 5, 3], Transistor(1e-2, .7, 40))
+e.add([2, 5], Capacitor(5e-2))
 e.add([0, 4], Capacitor(1e-4))
 
-def output(v):
-    if v > 1: v = 1
-    elif v < -1: v = -1
-    i = int(round(v * 32767))
-    hi = (i >> 8) & 255
-    lo = i & 255
-    stdout.buffer.write(bytes([lo, hi]))
+class AudioSampler:
 
-def of(t, vc):
-    stdout.write("%f" % (t,))
-    for v, c in vc:
-        stdout.write(" %lf" % (v,))
-        stdout.write(" %lf" % (c * 100,))
-    stdout.write("\n")
+    # dec: ie. aplay -f S16_LE -r 8000 sound.raw
 
-def outputs(t):
-    of(t, [(e.wires[o].cons[0].vol,
-        e.wires[o].cons[0].cur) for o in (5, 4, 3, 2)])
+    def __init__(self, wire, oub):
+        self.min = 0
+        self.max = 1e-9
+        self.wire = wire
+        self.oub = oub
+
+    def __call__(self, t):
+        v = self.wire.cons[0].vol
+        if v < self.min: self.min = v
+        if v > self.max: self.max = v
+        u = (v - self.min) / (self.max - self.min) - .5
+        i = int(u * 65535)
+        hi = (i >> 8) & 255
+        lo = i & 255
+        self.oub.write(bytes([lo, hi]))
+
+class PlotSampler:
+    def __init__(self, *js):
+        self.js = js
+
+    def __call__(self, t):
+        sys.stdout.write("%f" % (t,))
+        for j in self.js:
+            con = e.wires[j].cons[0]
+            sys.stdout.write(" %lf" % (con.vol,))
+            sys.stdout.write(" %lf" % (con.cur * 100,))
+        sys.stdout.write("\n")
 
 class Inputs:
     def __init__(self, wires, funcs):
@@ -195,12 +246,14 @@ class Inputs:
 
     def initial(self):
         for w in self.wires:
-            for con in w.cons:
-                con.record()
+            w.record()
 
     def assign(self, t):
         for w, f in zip(self.wires, self.funcs):
-            w.charge(f(t))
+            v = f(t)
+            if v is None:
+                raise Circuit.Stop
+            w.charge(v)
 
 def gnd(t):
     return 0
@@ -208,8 +261,44 @@ def gnd(t):
 def vcc(t):
     return 12
 
-def inp(t):
-    return sin(t * .4) * t / 90
+STABILIZE = 1e-2
+
+class Generator:
+    def __call__(self, t):
+        if t < STABILIZE: return 0
+        if t > 1: return None
+        return sin(t * 5e2) * 1e-4
+
+class Decoder:
+    def __init__(self, ist):
+        self.ist = ist
+        self.prv = 0
+
+    def read_sample(self):
+        a = self.ist.read(2)
+        if len(a) == 2:
+            lo, hi = a
+            w = lo | (hi << 8)
+            if w > 32767:
+                w -= 65536
+            v = w / 32767 - 1
+            # note: comb at nyquist
+            r = .5 * (v + self.prv)
+            self.prv = v
+            return r
+
+    def __call__(self, t):
+        if t < STABILIZE: return 0
+        w = self.read_sample()
+        if w is None: sys.exit(0)
+        return w * 1e-4
+
+if len(sys.argv) > 1:
+    inp = Decoder(open(sys.argv[1], "rb"))
+    oup = AudioSampler(e.wires[3], sys.stdout.buffer)
+else:
+    inp = Generator()
+    oup = PlotSampler(5, 4, 3)
 
 inputs = Inputs(e.wires[:3], (gnd, vcc, inp))
-e.run(inputs.assign, 2, outputs, 90)
+e.run(inputs.assign, 2, oup)
