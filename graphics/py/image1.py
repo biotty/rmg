@@ -3,6 +3,8 @@
 #       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 
+from os.path import exists
+from random import shuffle
 from math import cos, sin, atan2
 from rmg.math_ import rnd, unit_angle, rnd_weighted
 from rmg.color import Color, white, black, Optics
@@ -20,7 +22,7 @@ from rmg.script import ScriptInvocation, ParametricWorld
 
 
 water_index = 2.6
-water = Color(.5, .8, 1)
+water = Color(.7, .9, .97)
 lightened_variant = .65 < rnd(1)
 
 
@@ -34,10 +36,10 @@ def optics_a():
         return Optics(reflection, absorption,
                 -1, refraction, passthrough)
     else:
-        color = Color.random().mix(white, .56)
+        color = Color.random().mix(white, .3)
         reflection = color * .81
-        refraction = white * .1
-        passthrough = white * .11
+        refraction = white * .19
+        passthrough = color * .3
         absorption = black
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
@@ -54,9 +56,9 @@ def optics_b():
                 water_index, refraction, passthrough)
     else:
         color = Color.random()
-        reflection = color * .2
-        passthrough = color.mix(water, .2) * .9
-        refraction = passthrough.mix(white, .9)
+        reflection = color * .16
+        refraction = color.mix(white, .3)
+        passthrough = refraction.mix(water, .3) * .9
         absorption = black
         return Optics(reflection, absorption,
                 water_index, refraction, passthrough)
@@ -68,7 +70,7 @@ def mapping_angle(n, vx):
 
 def optics_c():
     a = SurfaceOptics(black, black, white)
-    b = Optics(black, black, 1, white * .9, white)
+    b = Optics(black, black, 1, white * .92, white)
     def f(pl, vx):
         return CheckersMap(pl.normal * abs(vx),
                 mapping_angle(pl.normal, vx), pl.point, 9, a, b)
@@ -171,8 +173,8 @@ def scene_wheel(glide):
 
 def scene_ring(glide):
     oa = optics_a()
-    dc = Direction.random() * rnd(.1, .9)
-    th, r = rnd(.1, .2), .8
+    dc = Direction.random() * rnd(.05, .25)
+    th, r = rnd(.05, .15), .8
     def o(t):
         cn = Cone_(origo, dc)
         sp = Sphere(origo, r)
@@ -222,7 +224,7 @@ def scene_die(glide):
 
 def scene_tunels(glide):
     oc = optics_b()
-    tr = rnd_uphalf(.025)
+    tr = rnd_uphalf(.03)
     # rem: ^ side-touch is .3819660112380617
     _, theta, phi = Direction.random().spherical()
     def o(t):
@@ -257,6 +259,7 @@ def scene_submarine(glide):
 def scene_octacone(glide):
     ob = optics_b()
     br = rnd(.25, 4)
+    mr = rnd(.3, .7)
     _, theta, phi = Direction.random().spherical()
     def o(t):
         sr = sole_regular(8, 1, theta, phi)
@@ -265,6 +268,7 @@ def scene_octacone(glide):
             ps += pl.normal * .25
         axis = ps * br
         sr.objects.append(Cone(origo, axis))
+        sr.objects.append(Sphere_(origo, mr))
         glide(sr, t)
         return [SceneObject(ob, sr)]
     return o
@@ -276,7 +280,7 @@ def scene_alpha(glide):
     da = rnd_uphalf(3.141592 * 2)
     dz, dx, dy = rnd_uphalf(1), rnd_uphalf(.5), rnd_uphalf(.5)
     _, theta, phi = Direction.random().spherical()
-    ps, cr = RegularSolid(4, .7, theta, phi).inscribed_at_origo()
+    ps, cr = RegularSolid(4, .85, theta, phi).inscribed_at_origo()
     def o(t):
         aa = []
         for i, pl in enumerate(ps):
@@ -324,14 +328,14 @@ def make_overall():
 overall = [] if lightened_variant else make_overall()
 
 class scene_objects:
-    def __init__(self, n, d):
+    def __init__(self, n_prod, d_glide):
         c = [
             scene_fruit, scene_disc, scene_wheel, scene_ring, scene_regular_pair,
             scene_die, scene_alpha, scene_octacone, scene_tunels, scene_submarine
         ]
-        k = len(c)
-        j = int(rnd(k))
-        self.g = [c[(i+j)%k](Glide.random(d)) for i in range(n)]
+        n = len(c)
+        shuffle(c)
+        self.g = [c[i % n](Glide.random(d_glide)) for i in range(n_prod)]
 
     def __call__(self, t):
         a = []
@@ -370,20 +374,24 @@ class scene_observer:
     def __init__(self):
         self.orbit = rnd_circular_orbit(1, 5)
         self.tilt = rnd(1)
+        self.vo = rnd(-.2, .4)
 
     def __call__(self, t):
         p = self.orbit(t)
-        return Observer(p, origo, self.tilt, view_opening = 2)
+        return Observer(p, origo, self.tilt,
+                view_opening = 2 + self.vo * t)
 
 class sky:
     def __init__(self):
-        self.s = RgbSky() if .5 > rnd(1) else HsvSky()
+        self.s = "sky.jpeg"
+        if not exists(self.s):
+            self.s = RgbSky() if .5 > rnd(1) else HsvSky()
 
     def __call__(self, t):
-        return "sky.jpeg" #self.s
+        return self.s
 
 script = ScriptInvocation.from_sys()
-n = int(script.args.get(0, "10"))
+n = int(script.args.get(0, "9" if script.frame_count else "17"))
 d = float(script.args.get(1, "4"))
 
 script.run(ParametricWorld(scene_objects(n, d),

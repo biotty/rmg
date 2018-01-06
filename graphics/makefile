@@ -22,7 +22,7 @@ image.jpeg: py/image1.py ray/gun map.jpeg
 	$< |$(RAY_GUN) 1920x1080 |pnmtojpeg >$@
 
 video.mp4: py/image1.py ray/gun map.jpeg map.movie
-	./movie.sh $@ "$< -n 736 -C $(RAY_GUN) -o {}/"
+	./movie_exec.sh $@ "$< -n 736 -C $(RAY_GUN) -o {}/"
 
 fluidwave.mp4: flow/sh flow/fluid flow/wave
 	$<
@@ -31,13 +31,13 @@ follow: follow.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -Irgb -Iflow $<
 
 mandelbrot.mp4: follow
-	./movie.sh $@ "./follow |./image_pipe.sh {}/"
+	./movie_exec.sh $@ "./follow |./movie_pipe.sh {}/"
 
 map.jpeg: py/globe.py
 	$< 1024x1024 && pnmtojpeg globe.pnm > $@
 
 map.movie: py/atomic.py
-	./movie.sh $@/ "$< -n 736 -r 1280x720 -o {}/"
+	./movie_exec.sh $@/ "$< -n 736 -r 1280x720 -o {}/"
 
 clean:
 	@$(foreach d,ray flow rgb,$(MAKE) $@ -C $(d);)

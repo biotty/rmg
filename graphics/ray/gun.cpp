@@ -333,8 +333,8 @@ produce_trace(world * w, observer * o, int width, int height,
     for (int row = 0; row < height; row++) {
         for (int column = 0; column < width; column++) {
             ray ray_ = observer_ray(o, aspect_ratio,
-                    column /(real) width,
-                    row /(real) height);
+                    (column + (real).5) / width,
+                    (row + (real).5) / height);
             image_write(out, trace(ray_, w));
         }
         if (report_status) std::cerr << "\r" << row;

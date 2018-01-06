@@ -478,7 +478,7 @@ struct hihat : instrument
         tremolo r;
         envelope e = envelope(0, .01, .5, .01, .04);
         whitenoisewave * y = new whitenoisewave();
-        p.insert(sound(n.t, 33, n.l - 12, n.o, waveptr(y), v, r, e));
+        p.insert(sound(n.t, 33, n.l - 15, n.o, waveptr(y), v, r, e));
     }
 };
 
@@ -494,8 +494,8 @@ struct drum : instrument
         choruswave * y = new choruswave(9, 2);
         y->a[0].s = wavefunptr(new sawtoothfun);
         y->a[1].s = wavefunptr(new squarefun);
-        p.insert(sound(n.t, 33, n.l, n.o, waveptr(w), v, r, ew));
-        p.insert(sound(n.t, 21, n.l, n.o, waveptr(y), v, r, ey));
+        p.insert(sound(n.t, 33, n.l - 3, n.o, waveptr(w), v, r, ew));
+        p.insert(sound(n.t, 21, n.l - 3, n.o, waveptr(y), v, r, ey));
     }
 };
 
@@ -509,7 +509,7 @@ public:
         tremolo r = tremolo(rnd(0, -6), rnd(1, 16), w());
         envelope es = envelope(rnd(0, .03), rnd(.05, .1), rnd(.5, .7), n.d, rnd(.03, .1));
         fmwave * y = new fmwave(1.5, 1, w());
-        p.insert(sound(n.t, n.p, n.l - 6, n.o, waveptr(y), v, r, es));
+        p.insert(sound(n.t, n.p, n.l - 3, n.o, waveptr(y), v, r, es));
     }
 };
 
@@ -541,8 +541,8 @@ public:
         envelope ey = envelope(0.1, 0, 1, 0.1, 0.02);
         bandnoisewave * x = new bandnoisewave(19, 5);
         bandnoisewave * y = new bandnoisewave(19, 5);
-        p.insert(sound(n.t, rnd(70, 117), n.l - 3, n.o, waveptr(x), v, r, ex));
-        p.insert(sound(n.t, rnd(70, 117), n.l - 6, n.o, waveptr(y), v, r, ey));
+        p.insert(sound(n.t, rnd(70, 117), n.l - 12, n.o, waveptr(x), v, r, ex));
+        p.insert(sound(n.t, rnd(70, 117), n.l - 18, n.o, waveptr(y), v, r, ey));
     }
 };
 
@@ -554,7 +554,7 @@ public:
     {
         vibrato v;
         tremolo r;
-        envelope e = envelope(0, 0, 1, n.d, 0.6);
+        envelope e = envelope(0.1, 0, 1, n.d, 0.6);
         filter::biquad f;
         f.lowpass(4 * f_of(n.p));
         stringwave * x = new stringwave(n.p, w(), f);

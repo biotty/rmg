@@ -13,6 +13,13 @@
 
 #include <unistd.h>
 
+/* warn:
+ * there are other command-line tools that can prob'ly accomplish
+ * the same as the following operating more directly in the image
+ * format rather than pixel-by-pixel.  the following code will be
+ * replaced by an invokation to the convert program or similar --
+ * however -- the code illustrates usage of the rgb color library
+ */
 
 constexpr static const double ALL = 3;
 

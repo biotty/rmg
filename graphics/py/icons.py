@@ -71,7 +71,7 @@ class Console(avrepr.Writer):
         self.set_color(*avrepr.settings.prompt_pen)
         self.put_text(prompt)
         self.set_color(*avrepr.settings.input_pen)
-    
+
     def put_icon(self, i):
         w, h = self.screen.get_size()
         a, b = i.get_size()
@@ -141,7 +141,7 @@ class Console(avrepr.Writer):
                 pygame.display.flip()
                 scrolled = dirty = False
             self.clock.tick(20)
-    
+
     def execute(self, expr):
         try:
             value = expr(self.locals)
@@ -184,5 +184,5 @@ class Console(avrepr.Writer):
 
 pygame.init()
 pygame.display.set_caption("Workspace")
-screen = pygame.display.set_mode((1024, 600))
+screen = pygame.display.set_mode((1280, 720))
 Console(screen, Recorder(screen)).interact()

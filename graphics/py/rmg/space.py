@@ -22,10 +22,6 @@ class XYZ:
         self.x = x
         self.y = y
         self.z = z
-    @classmethod
-    def at_sphere(cls, theta, phi, r = 1):
-        xyz = cls(0, 0, r)
-        return xyz.rotation(theta, phi)
     def __eq__(self, p):
         return self.xyz() == p.xyz()
     def __neq__(self, p):
@@ -33,26 +29,40 @@ class XYZ:
     def __add__(self, d):
         return self.__class__(self.x + d.x, self.y + d.y, self.z + d.z)
     def __mul__(self, m):
+        """scale
+
+        m (XYZ or float): Scale by component, or all three by one factor
+
+        note: for dot (or cross) product use function by respective name
+        """
+
         if isinstance(m, XYZ):
             return self.__class__(self.x * m.x, self.y * m.y, self.z * m.z)
         else:
             return self.__class__(self.x * m, self.y * m, self.z * m)
     def __sub__(self, d):
-        return self + d*-1
+        return self + d * -1
     def __abs__(self):
         return (self.x * self.x + self.y * self.y + self.z * self.z) ** 0.5
+    def __str__(self):
+        return "%LG %LG %LG" % (self.x, self.y, self.z)
+    def xyz(self):
+        return (self.x, self.y, self.z)
+    def normal(self):
+        return self * (1 / abs(self))
+    def dot(self, o):
+        return self.x * o.x + self.y * o.y + self.z * o.z
     def cross(self, d):
         return Direction(
                 self.y * d.z - self.z * d.y,
                 self.z * d.x - self.x * d.z,
                 self.x * d.y - self.y * d.x)
-    def __str__(self):
-        return "%LG %LG %LG" % (self.x, self.y, self.z)
-    def xyz(self):
-        return (self.x, self.y, self.z)
     def rotation(self, theta, phi):
         v = matrix_multiply(Ry(theta), [self.x, self.y, self.z])
         return self.__class__(*matrix_multiply(Rz(phi), v))
+    @classmethod
+    def at_sphere(cls, theta, phi, r=1):
+        return cls(0, 0, r).rotation(theta, phi)
     def inverse_rotation(self, theta, phi):
         v = matrix_multiply(Rz(-phi), [self.x, self.y, self.z])
         return self.__class__(*matrix_multiply(Ry(-theta), v))

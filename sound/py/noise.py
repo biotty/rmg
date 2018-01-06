@@ -4,6 +4,7 @@
 #       All rights reserved
 import os, sys, math
 from random import random
+from biquad import Biquad
 
 SAMPLERATE = 44100
 
@@ -42,6 +43,7 @@ class NoiseWave:
 class BandNoise:
     def __init__(self, n):
         self.g = [NoiseWave(0, 0) for i in range(n)]
+        self.duration = 10
 
     def setband(self, a, b):
         for w in self.g:
@@ -53,6 +55,37 @@ class BandNoise:
         for w in self.g:
             v += w.get()
         return v / len(self.g)
+
+class Decoder:
+    # consider: move to io module -- same as done in elk.py
+    def __init__(self, ist):
+        self.ist = ist
+        self.prv = 0
+
+    def read_sample(self):
+        a = self.ist.read(2)
+        if len(a) == 2:
+            lo, hi = a
+            w = lo | (hi << 8)
+            if w > 32767:
+                w -= 65536
+            v = w / 32767 - 1
+            # note: comb at nyquist (consider not)
+            r = .5 * (v + self.prv)
+            self.prv = v
+            return r
+
+class Input(Decoder):
+    duration = 3600  # value: arbitrary big
+    def setband(self, a, b):
+        self.bq = Biquad.bandpass(.5 * (a + b), 1)
+
+    def get(self):
+        v = self.read_sample()
+        if v is None:
+            raise EOFError
+        return v
+        return self.bq.shift(v)
 
 class Oscilator:
     def __init__(self, c, r):
@@ -89,7 +122,11 @@ osc_a = Oscilator(50, 24)
 osc_b = Oscilator(69, 24)
 osc_c = Oscilator(45, 12)
 
-n = BandNoise(21)
+if os.isatty(0):
+    n = BandNoise(21)
+else:
+    n = Input(sys.stdin.buffer)
+
 f = CombFilter()
 
 if os.isatty(1):
@@ -97,7 +134,7 @@ if os.isatty(1):
             "aplay -f S16_LE -r %d\n" % (SAMPLERATE,))
     sys.exit(2)
 
-for t in range(SAMPLERATE * 10):
+for t in range(SAMPLERATE * n.duration):
     if t % 10 == 0:
         s = float(t) / SAMPLERATE
         a = mtof(osc_a.get(s + .4))

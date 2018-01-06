@@ -14,7 +14,8 @@ observer_ray(const observer * o, real aspect_ratio,
     point v = o->view;
     move(&v, x);
     move(&v, y);
-    ray ray_ = { .endpoint = v,
+    ray ray_ = {
+        .endpoint = v,
         .head = distance_vector(o->eye, v)
     };
     move(&ray_.endpoint, distance_vector(o->view, o->eye));

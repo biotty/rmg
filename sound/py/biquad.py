@@ -34,6 +34,7 @@ class Biquad:
     def __init__(self, args = None):
         if not args: args = 0, 0, 0, 0, 0
         self.b0, self.b1, self.b2, self.a1, self.a2 = args
+        self.w1 = self.w2 = 0  # use: sample-by-sample state
 
     def args(self):
         return (self.b0, self.b1, self.b2, self.a1, self.a2)
@@ -143,3 +144,10 @@ class Biquad:
         a0 =   1 + p / e
         f.a2 = 1 - p / e
         return f * (1 / a0)
+
+    def shift(self, z):
+        w0 = z - self.a1 * self.w1 - self.a2 * self.w2
+        y = self.b0 * w0 + self.b1 * self.w1 + self.b2 * self.w2
+        self.w2 = self.w1
+        self.w1 = w0
+        return y

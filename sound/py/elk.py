@@ -123,32 +123,9 @@ class Transistor(Component):
 
     def step(self, p, dt, a, b, c):
         emm, col = (a, c) if a.vol < c.vol else (c, a)
-        act = (col.vol - b.vol) / self.v_knee
-
-        if act < 0:
-            # spec.case: short emm and col
-            # improve: gradually instead of cond
-            cur_ce = .5 * (col.cur + emm.cur)
-            vol_ce = .5 * (col.vol + emm.vol)
-            cur_bce = .5 * (cur_ce - b.cur)
-            vol_ceb = b.vol - vol_ce
-            cur_bce_dio, vol_ceb_dio = dio_op(
-                    self.c_knee, self.v_knee, cur_bce, vol_ceb)
-            b.cur = linear(b.cur, -cur_bce_dio, p)
-            col.cur = linear(col.cur, cur_bce_dio, p)
-            emm.cur = linear(emm.cur, cur_bce_dio, p)
-            sum_vol_dio = b.vol + vol_ce
-            vol_b_tr = .5 * (sum_vol_dio + vol_ceb_dio)
-            vol_ce_tr = .5 * (sum_vol_dio - vol_ceb_dio)
-            b.vol = linear(b.vol, vol_b_tr, p)
-            col.vol = linear(col.vol, vol_ce_tr, p)
-            emm.vol = linear(emm.vol, vol_ce_tr, p)
-            return
-
-        beta = self.beta
-        if act < 1: beta *= act
-        cur_col_tr = beta * b.cur
-        cur_bem = .5 * (emm.cur + b.cur * (beta - 1))
+        # phys: ign.cond.that base below collector
+        cur_col_tr = self.beta * b.cur
+        cur_bem = .5 * (emm.cur + b.cur * (self.beta - 1))
         vol_emb = b.vol - emm.vol
         cur_bem_dio, vol_emb_dio = dio_op(
                 self.c_knee, self.v_knee, cur_bem, vol_emb)
@@ -177,7 +154,7 @@ class Circuit:
             cons.append(con)
         compo.connect(cons)
 
-    def run(self, inputs, i, outputs, sr=8000, n=8):
+    def run(self, inputs, i, outputs, sr=8000, n=16):
         p = 1 / n
         dt = 1 / sr
         h = 0
@@ -267,7 +244,7 @@ class Generator:
     def __call__(self, t):
         if t < STABILIZE: return 0
         if t > 1: return None
-        return sin(t * 5e2) * 1e-4
+        return sin(t * 5e2) * 1e-3
 
 class Decoder:
     def __init__(self, ist):
@@ -291,7 +268,7 @@ class Decoder:
         if t < STABILIZE: return 0
         w = self.read_sample()
         if w is None: sys.exit(0)
-        return w * 1e-4
+        return w * 1e-3
 
 if len(sys.argv) > 1:
     inp = Decoder(open(sys.argv[1], "rb"))

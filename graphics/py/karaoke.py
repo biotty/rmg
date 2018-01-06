@@ -4,14 +4,25 @@
 #       All rights reserved
 
 import os, sys, re
+from subprocess import check_call
 
-imagepath = "0.jpeg"
-msd = "/tmp"
+def image_sequence(expr):
+    global is_movie
+    if not expr.endswith("/"):
+        is_movie = False
+        while True:
+            yield expr
 
-try: open(imagepath)
-except:
-    sys.stderr.write("cannot open '%s'" % (imagepath,))
-    sys.exit(1)
+    is_movie = True
+    i = 0
+    while True:
+        path = os.path.join(expr, "%d.jpeg" % (i,))
+        if not os.path.exists(path):
+            break
+        yield path
+        i += 1
+
+input_img = image_sequence(sys.argv[1])
 
 frame_i = 0
 frame_n = 0
@@ -26,15 +37,19 @@ def generate_frame(text, previous):
     a.reverse()
     s = "".join(a)
     sys.stderr.write("\r%d" % (frame_i,))
-    if frame_t != s:
+    if frame_t != s or is_movie:
         sys.stderr.write(" %s" % (re.sub("\n", "", s[-32:]),))
-        c = ("convert %s -fill pink -stroke blue -pointsize 26 -gravity west" \
-            +" -annotate 0 \"%s\" %s/%d.jpeg") % (imagepath, s, msd, frame_i)
+        c = ["convert", next(input_img)]
+        c.extend("-fill pink -stroke blue -pointsize 26 -gravity west"
+                " -annotate 0".split())
+        c.append(s)
+        c.append("%d.jpeg" % (frame_i,))
         frame_n = frame_i
         frame_t = s
     else:
-        c = "ln -sf %s/%d.jpeg %s/%d.jpeg" % (msd, frame_n, msd, frame_i)
-    os.system(c)
+        c = ("ln -sf %d.jpeg %d.jpeg" % (frame_n, frame_i)).split()
+    e = check_call(c)
+    if e: sys.exit(e)
     frame_i += 1
 
 class Karaoke:
@@ -64,10 +79,8 @@ class Karaoke:
 
 fps = 20
 
-os.system("mkdir -p %s" % (msd,))
-os.system("rm %s/*.jpeg 2>/dev/null" % (msd,))
-with open("%s/video" % (msd,), "w") as p:
-    p.write("-r %d\n" % (fps,))
+with open("video_opts", "w") as p:
+    p.write(" -r %d\n" % (fps,))
 
 ko = Karaoke(fps)
 syllables = []
@@ -82,4 +95,3 @@ sys.stderr.write("%d:\n" % int(t * fps + 1))
 for e in syllables: ko.put(*e)
 ko.close()
 sys.stderr.write("\n")
-

@@ -583,7 +583,7 @@ _w = _h * (img_res.x / img_res.y)
 par = PhysPars(rnd(1.1, 1.2), rnd(1.4, 1.5), rnd(450, 550), rnd(4, 6))
 lab = Lab(XY(_w, _h), par, t_per_frame,
         Blend(_h * .16, _h * .2, int(rnd(250, 350)), rnd(5, 9)),
-        Spoon(rnd(.09, .15), _h * .35, rnd(.1, .2), _h * .15, par.bounce_c, 1),
-        Fork(XY(_w, _h) * .46, XY(.19416, .12) * _h, rnd(6, 8), par.bounce_c, 1),
+        Spoon(rnd(.09, .15), _h * .35, rnd(.04, .07), _h * .15, par.bounce_c, 1),
+        Fork(XY(_w, _h) * .46, XY(.19416, .12) * _h, rnd(3, 6), par.bounce_c, 1),
         Hue6Shift(_w, rnd(.5, .9)), Printer(img_res, img_out, intro_n))
 lab.run(o.frame_count)

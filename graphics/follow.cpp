@@ -97,6 +97,19 @@ struct Fractal
 };
 
 
+void subject(std::complex<double> & z, const std::complex<double> c)
+{
+    z *= z;
+    z += c;
+}
+
+
+bool trapped(const std::complex<double> z)
+{
+    return std::abs(z) > 2;
+}
+
+
 struct Mandel : Fractal
 {
     Mandel(XY a, XY b, int n, bool binary) : Fractal(a, b, n, binary) {}
@@ -107,8 +120,8 @@ struct Mandel : Fractal
         const std::complex<double> c(q.x, q.y);
         std::complex<double> z = 0;
         for (int i=0; i<n; i++) {
-            z = z * z + c;
-            if (std::abs(z) > 2) {
+            subject(z, c);
+            if (trapped(z)) {
                 return binary ? 1 : n - i;
             }
         }
@@ -131,8 +144,8 @@ struct Julia : Fractal
         const XY q = onto_square(p, a, b);
         std::complex<double> z(q.x, q.y);
         for (int i=0; i<n; i++) {
-            z = z * z + j;
-            if (std::abs(z) > 2) {
+            subject(z, j);
+            if (trapped(z)) {
                 return binary ? 1 : n - i;
             }
         }
@@ -773,14 +786,28 @@ struct FractalMovie
 };
 
 
-int main()
+int main(int argc, char **argv)
 {
-    if (isatty(1)) {
-        std::cerr << "Please redirect stdout" << std::endl;
-        return 2;
+    bool do_mandel = true;
+    time_t seed = 0;
+    int opt;
+    while ((opt = getopt(argc, argv, "ms:")) >= 0)
+    switch (opt) {
+        default:
+            return 1;
+        case 's':
+            if ((seed = std::atoi(optarg)) <= 0) {
+                std::cerr << "will use time as random-seed\n";
+            }
+            break;
+        case 'm':
+            do_mandel = false;
+            break;
     }
-
-    bool do_mandel = false;  // note: mandel or julia
+    if (seed == 0) {
+        std::time(&seed);
+    }
+    std::srand(seed);
 
     int width = 1280;  // <-- pixel resolution
     int height = 720;  // <-- ^ y
@@ -789,8 +816,6 @@ int main()
     int block_side = 16;   // granularity for grid used to seach border
     int zoom_steps = 32;   // zoom to half frame width this total count
     int images_per_step = 24;   // generates images each half zoom step
-
-    std::srand(std::time(nullptr));
 
     std::cerr << "Initiating focus on random location" << std::endl;
     XY mc = XY(rnd(2) - 1, rnd(2) - 1);  // mandelbrot frame center

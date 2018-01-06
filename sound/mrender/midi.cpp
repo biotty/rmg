@@ -7,6 +7,7 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <map>
 
 
 namespace {
@@ -108,6 +109,7 @@ void channel::compile(std::vector<note> & s)
     unsigned r = 0;
     double o = pan_o(63);
     double l = 0;
+    std::map<int, int> stats;
     for (unsigned k=0; k<e.size(); k++) {
         event & ek = e[k];
         switch (ek.command) {
@@ -149,7 +151,15 @@ void channel::compile(std::vector<note> & s)
                     }
                     n.d = d;
                 }
+                ++stats[n.i.n];
                 s.push_back(n);
+                break;
+        }
+    }
+    if (stats.size()) {
+        std::cerr << "stats ch " << i << ":\n";
+        for (auto item : stats) {
+            std::cerr << " " << item.first << " " << item.second << "\n";
         }
     }
 }
