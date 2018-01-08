@@ -117,6 +117,15 @@ struct JetFunction : FluidFunction
         return false;
     }
 
+    static JetFunction * parse(std::istream & ist, FluidParameters & fp)
+    {
+        size_t i, j;
+        double a, w, r;
+        ist >> i >> j >> a >> w >> r;
+        if ( ! ist.good()) return nullptr;
+        else return new JetFunction(Position(i, j), a, w, r, fp);
+    }
+
 private:
     FluidParameters & params;
 };
@@ -155,27 +164,27 @@ void help()
 "-s N>0     seed for random-number-generator\n"
 "-v REAL    normal and exceptional viscosity, respectively\n"
 "-V REAL\n\n"
-"-x W,H     resolution override\n";
+"-I         read 'i j a w r i j ...'\n"
+"-R W,H     resolution override\n";
 }
-
-// todo: smooth-out borders between colors.  advanced detection must
-//       process and re-arrange when single-pixel peninsulas occure.
 
 
 int main(int argc, char **argv)
 {
+    int n = 512;
     time_t seed = 0;
     unsigned p = 9, q = 9, m = 4;
     std::vector<ColorMatch> d_exc, v_exc;
     double z = 0.2, d = 0.08, D = 0.2, v = 0.4, V = 2.0;
-    const char *image_prefix = "", *photo_filename = "img.png";
-    int n = 512;
+    const char *image_prefix = "",
+          *photo_filename = "img.png",
+          *res_override = nullptr;
+    bool is_to_read = false;
 
     int opt;
-    while ((opt = getopt(argc, argv, "c:C:d:D:hi:m:n:o:p:q:s:v:V:")) >= 0)
+    while ((opt = getopt(argc, argv, "c:C:d:D:hi:m:n:o:p:q:s:v:V:R:I")) >= 0)
     switch (opt) {
-        default:
-            return 1;
+        default: return 1;
         case 'c':
             {
                 char e;
@@ -183,8 +192,8 @@ int main(int argc, char **argv)
                 if (std::sscanf(optarg, "%u,%u,%u/%c", &r, &g, &b, &e) != 4
                         || (e != 'd' && e != 'v')
                         || r > 255 || g > 255 || b > 255) {
-                    std::cerr << "illegal format of exception-color\n"
-                        "please give three X<256 folowed by '/d' or '/v'\n";
+                    std::cerr << "exception-color format is R,G,B/[dv]\n"
+                        "example: -c 255,0,0/d -C .1 for dense red\n";
                     return 1;
                 }
                 std::vector<ColorMatch> & exc = (e == 'd') ? d_exc : v_exc;
@@ -195,64 +204,50 @@ int main(int argc, char **argv)
         case 'C': std::sscanf(optarg, "%lf", &z); break;
         case 'd': std::sscanf(optarg, "%lf", &d); break;
         case 'D': std::sscanf(optarg, "%lf", &D); break;
-        case 'h':
-            help();
-            return 0;
-        case 'i':
-            photo_filename = optarg;
-            break;
-        case 'm':
-            if ((m = std::atoi(optarg)) <= 0) {
-                std::cerr << "illegal optarg of -m\n"
-                    "please give a positive number\n";
-                return 1;
-            }
-            break;
-        case 'n':
-            if ((n = atoi(optarg)) <= 0) {
-                std::cerr << "nothing to produce, as N is zero\n";
-                return 1;
-            }
-            break;
+        case 'h': help(); return 0;
+        case 'i': photo_filename = optarg; break;
+        case 'm': m = std::atoi(optarg); break;
+        case 'n': n = std::atoi(optarg); break;
         case 'o': image_prefix = optarg; break;
         case 'p': p = std::atoi(optarg); break;
         case 'q': q = std::atoi(optarg); break;
-        case 's':
-            if ((seed = std::atoi(optarg)) <= 0) {
-                std::cerr << "will use time as random-seed\n";
-            }
-            break;
+        case 's': seed = std::atoi(optarg); break;
         case 'v': std::sscanf(optarg, "%lf", &v); break;
         case 'V': std::sscanf(optarg, "%lf", &V); break;
+        case 'R': res_override = optarg; break;
+        case 'I': is_to_read = true; break;
+    }
+    if (optind < argc) {
+        std::cerr << "non-option argument\n";
+        return 1;
+    }
+    if (seed == 0) {
+        std::time(&seed);
     }
 
     PhotoColorizer c(photo_filename, image_prefix);
     auto dim = c.painting->dim();
     unsigned w_image = dim.first;
     unsigned h_image = dim.second;
-    if (optind < argc) {
-        if (std::sscanf(argv[optind], "%ux%u", &w_image, &h_image) != 2) {
-            std::cerr << "illegal optarg of -x\n"
-                "please use two numbers separated by a 'x'\n";
+    if (res_override) {
+        if (std::sscanf(res_override, "%ux%u", &w_image, &h_image) != 2) {
+            std::cerr << "resolution value takes format WxH\n";
             return 1;
         }
     }
     if (w_image % m || h_image % m) {
         std::cerr << "illegal dimentions "
             << w_image << "x" << h_image << " for -m " << m << "\n"
-            "please use a number that divides both dimentions\n";
+            "value must divide both width and height\n";
         return 1;
     }
     if (d_exc.empty()) {
-        d_exc.push_back(ColorMatch(0.85, {0, 0, 0}));
+        d_exc.push_back(ColorMatch(0.7, {0, 0, 0}));
         std::cerr << "using dark colors as exceptional density\n";
     }
     if (v_exc.empty()) {
-        v_exc.push_back(ColorMatch(0.85, {1, 1, 1}));
+        v_exc.push_back(ColorMatch(0.7, {1, 1, 1}));
         std::cerr << "using light colors as exceptional viscosity\n";
-    }
-    if (seed == 0) {
-        std::time(&seed);
     }
 
     Tracer<palette_index_type> tracer(h_image, w_image);
@@ -269,18 +264,28 @@ int main(int argc, char **argv)
         pos.push_back(Position(i, j));
         // ^ pick prng sequence for just positions
     }
-    for (unsigned k = 0; k < p; ++k)
+    for (unsigned k = 0; k < p; ++k) {
         functions.push_back(new ExtraFunction(pos[k], .98 + rnd(.04)));
-    for (unsigned k = p; k < p + q; ++k)
+    }
+    for (unsigned k = p; k < p + q; ++k) {
         functions.push_back(new JetFunction(pos[k],
                     rnd(6.283), rnd(.01), .1 + rnd(.9), fp));
+    }
     pos.clear(); // nice: done with these
+    if (is_to_read) {
+        std::cerr << "read jets until eof\n";
+        while (JetFunction * f = JetFunction::parse(std::cin, fp)) {
+            if (f->pos.i >= h) std::cerr << "jet pos.i overflows h\n";
+            if (f->pos.j >= w) std::cerr << "jet pos.j overflows w\n";
 
+            functions.push_back(f);
+        }
+    }
     functions.push_back(new EdgeFunction<FluidCell>());
     CompositeFunction<FluidCell> cf(functions);
     FluidAnimation anim(h, w, fp, cf);
 
     fp.configure(color_tracer, d, v, d_exc, D, v_exc, V);
     anim.run(n, color_tracer);
-    for (size_t k = 0; k <=/*counting edge-function*/ q; ++k) delete functions[k];
+    for (size_t k = 0; k < functions.size(); ++k) delete functions[k];
 }

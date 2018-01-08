@@ -4,13 +4,12 @@
 #       All rights reserved
 
 from rmg.math_ import rnd, unit_angle, rnd_weighted
-from rmg.plane import XY
-from rmg.bodies import Placement
-from rmg.solids import intersect_regulars, sole_regular
 from rmg.space import Point, Direction, origo, random_orbit
-from rmg.color import Color, Optics, white, black
+from rmg.solids import intersect_regulars, sole_regular
 from rmg.scene import SceneObject, LightSpot, Observer, RgbSky
 from rmg.script import ParametricWorld, ScriptInvocation
+from rmg.color import Color, Optics, white, black
+from rmg.bodies import Placement
 
 
 def random_optics():
@@ -38,7 +37,7 @@ class RandomSceneObject:
     def __call__(self, t):
         position = self.orbit(t)
         i = sole_regular(self.n, 1, 0, 0)
-        m = Placement(.1, self.theta, self.phi, position)
+        m = Placement(.3, self.theta, self.phi, position)
         i.place(m)
         return SceneObject(self.optics, i)
 

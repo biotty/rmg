@@ -10,13 +10,13 @@ from rmg.bodies import Sphere
 from rmg.space import Point, Direction, origo, random_orbit
 from rmg.color import Color, Optics, white, black
 from rmg.mapping import Map, OpticsFactor
-from rmg.scene import SceneObject, LightSpot, Observer, PhotoSky
+from rmg.scene import SceneObject, LightSpot, Observer, PhotoSky, RgbSky, HsvSky
 from rmg.script import ParametricWorld, ScriptInvocation
 from globe import GlobeMapRenderer
 import os
 
 
-names = ["%s.pnm" % (name,) for name in "abcde"]
+names = ["%s.jpeg" % (name,) for name in "abcde"]
 count = 5
 
 
@@ -32,14 +32,13 @@ class RandomOptics:
         self.pole = Direction.random()
         self.spin = 3 * (i % 9 + 1)
         self.spin_offset = rnd(1)
-        self.text = roundrobin(names, i)
+        self.path = roundrobin(names, i)
         self.factor = OpticsFactor(white * .3, white * .1, water * .5)
         self.adjust = Optics(white * .1, white * .1, 1.3, water * .5, water * water)
 
     def __call__(self, t):
-        return Map(self.pole, self.text,
-                XY((self.spin*t + self.spin_offset)%1, 0),
-                self.factor, self.adjust)
+        return Map(self.pole, self.spin*t + self.spin_offset,
+                self.path, self.factor, self.adjust)
 
 
 class RandomSceneObject:
@@ -56,20 +55,32 @@ class RandomSceneObject:
 param_scene_objects = [RandomSceneObject(i) for i in range(count)]
 
 
-def scene_objects(t): return [s(t) for s in param_scene_objects]
-def sky(t): return PhotoSky("globe.pnm")
+class scene_objects:
+    def __call__(self, t):
+        return [s(t) for s in param_scene_objects]
 
-def observer(t):
-    a = unit_angle(t)
-    d = Direction(cos(a), sin(a), 1)
-    d *= 1 / abs(d)
-    return Observer(d*-2, d, view_opening = .65)
+class sky:
+    def __init__(self):
+        self.s = "sky.jpeg"
+        if not os.path.exists(self.s):
+            self.s = RgbSky() if .5 > rnd(1) else HsvSky()
 
-def light_spots(t):
-    return [
-        LightSpot(Point(-20, 15, -30), Color(0.7, 0.1, 0.1)),
-        LightSpot(Point(5, 30, -10), Color(0.1, 0.7, 0.1)),
-        LightSpot(Point(30, 20, -15), Color(0.1, 0.1, 0.7))]
+    def __call__(self, t):
+        return self.s
+
+class observer:
+    def __call__(self, t):
+        a = unit_angle(t)
+        d = Direction(cos(a), sin(a), 1)
+        d *= 1 / abs(d)
+        return Observer(d*-2, d, view_opening = .65)
+
+class light_spots:
+    def __call__(self, t):
+        return [
+            LightSpot(Point(-20, 15, -30), Color(0.7, 0.1, 0.1)),
+            LightSpot(Point(5, 30, -10), Color(0.1, 0.7, 0.1)),
+            LightSpot(Point(30, 20, -15), Color(0.1, 0.1, 0.7))]
 
 
 def globe_map(width, height, path):
@@ -82,6 +93,6 @@ for n in names:
         globe_map(32, 32, n)
 
 
-pw = ParametricWorld(scene_objects, light_spots, observer, sky)
+pw = ParametricWorld(scene_objects(), light_spots(), observer(), sky())
 script = ScriptInvocation.from_sys()
 script.run(pw)

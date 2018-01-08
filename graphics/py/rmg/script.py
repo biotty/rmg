@@ -24,12 +24,13 @@ class ParametricWorld:
 class ScriptInvocation:
 
     def __init__(self, frame_resolution, frame_count,
-            trace_command, output_path, time_offset, args):
+            trace_command, output_path, time_offset, world_tee, args):
         self.frame_resolution = frame_resolution
         self.frame_count = frame_count
         self.trace_command = trace_command
         self.output_path = output_path
         self.time_offset = time_offset
+        self.world_tee = world_tee
         self.args = dict(enumerate(args))  # purpose: get with default
 
     @classmethod
@@ -40,9 +41,10 @@ class ScriptInvocation:
         opts.add_option("-r", "--resolution", type="string", default="1280x720")
         opts.add_option("-C", "--trace-command", type="string", default="gun")
         opts.add_option("-t", "--time-offset", type="float", default="0")
+        opts.add_option("-w", "--world-tee", action="store_true")
         o, a = opts.parse_args()
         return cls(o.resolution, o.frame_count,
-                o.trace_command, o.output_path, o.time_offset, a)
+                o.trace_command, o.output_path, o.time_offset, o.world_tee, a)
 
     def image(self, world, path):
         data = bytes(str(world), 'ascii')
@@ -61,7 +63,10 @@ class ScriptInvocation:
         else:
             stderr.write("%d\n+" % (self.frame_count,))
             for i in range(self.frame_count):
-                self.image(parametric_world(
-                    float(i) / self.frame_count + self.time_offset),
-                    "%s%d.jpeg" % (self.output_path, i,))
+                world = parametric_world(
+                    float(i) / self.frame_count + self.time_offset)
+                if self.world_tee:
+                    with open("%s%d.world" % (self.output_path, i,), "w") as f:
+                        f.write("%s\n" % (world,))
+                self.image(world, "%s%d.jpeg" % (self.output_path, i,))
                 stderr.write("\r%d" % (i,))

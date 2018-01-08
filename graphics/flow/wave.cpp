@@ -98,6 +98,14 @@ struct ShakeFunction : WaveFlowFunction
         t += step_t;
         return false;
     }
+    static ShakeFunction * parse(std::istream & ist)
+    {
+        size_t i, j;
+        double a, f, af, tz, ts;
+        ist >> i >> j >> a >> f >> af >> tz >> ts;
+        if ( ! ist.good()) return nullptr;
+        else return new ShakeFunction(Position(i, j), a, f, af, tz, ts);
+    }
 
 private:
     double frequency;
@@ -137,47 +145,41 @@ void help()
 "-o PATH    prefix for path to JPEG output-files\n"
 "-q N>0     number of force-spots applied to surface\n"
 "-s N>0     seed for random-number-generator\n\n"
-"W,H        resolution override\n";
+"-I         read 'i j a f af tz ts i j ...'\n"
+"-R W,H     resolution override\n";
 }
 
 
 int main(int argc, char **argv)
 {
     time_t seed = 0;
-    const char *image_prefix = "", *photo_filename = "image.jpeg";
+    const char *image_prefix = "",
+          *photo_filename = "image.jpeg",
+          *res_override = nullptr;
     unsigned m = 2, q = 18, n = 0;
+    bool is_to_read = false;
 
     int opt;
-    while ((opt = getopt(argc, argv, "hi:m:n:o:q:s:")) >= 0)
+    while ((opt = getopt(argc, argv, "hi:m:n:o:q:s:R:I")) >= 0)
     switch (opt) {
-        default:
-            return 1;
-        case 'h':
-            help();
-            return 0;
-        case 'i':
-            photo_filename = optarg;
-            break;
+        default: return 1;
+        case 'i': photo_filename = optarg; break;
         case 'm':
             if ((m = std::atoi(optarg)) <= 0) {
-                std::cerr << "illegal optarg of -m\n"
-                    "please give a positive number\n";
+                std::cerr << "tile side must be a positive number\n";
                 return 1;
             }
             break;
-        case 'n':
-            if ((n = atoi(optarg)) <= 0) {
-                std::cerr << "nothing to produce, as N is zero\n";
-                return 1;
-            }
-            break;
+        case 'n': n = std::atoi(optarg); break;
         case 'o': image_prefix = optarg; break;
         case 'q': q = std::atoi(optarg); break;
-        case 's':
-            if ((seed = std::atoi(optarg)) <= 0) {
-                std::cerr << "will use time as random-seed\n";
-            }
-            break;
+        case 's': seed = std::atoi(optarg); break;
+        case 'R': res_override = optarg; break;
+        case 'I': is_to_read = true; break;
+    }
+    if (optind < argc) {
+        std::cerr << "non-option argument\n";
+        return 1;
     }
     if (seed == 0) {
         std::time(&seed);
@@ -188,17 +190,16 @@ int main(int argc, char **argv)
     unsigned w_image;
     unsigned h_image;
     pic.dim(w_image, h_image);
-    if (optind < argc) {
-        if (std::sscanf(argv[optind], "%ux%u", &w_image, &h_image) != 2) {
-            std::cerr << "illegal optarg of -x\n"
-                "please use two numbers separated by a 'x'\n";
+    if (res_override) {
+        if (std::sscanf(res_override, "%ux%u", &w_image, &h_image) != 2) {
+            std::cerr << "resolution value takes format WxH\n";
             return 1;
         }
     }
     if (w_image % m || h_image % m) {
         std::cerr << "illegal dimentions "
             << w_image << "x" << h_image << " for -m " << m << "\n"
-            "please use a number that divides both dimentions\n";
+            "value must divide both width and height\n";
         return 1;
     }
     size_t h = h_image / m;
@@ -216,16 +217,25 @@ int main(int argc, char **argv)
     for (size_t k = 0; k < q; ++k) {
         double a = rnd(1) + 0.5;
         double f = 1 / (rnd(7) + 1);
+        double af = .01 / (rnd(6) + 1);
         double tz = rnd(3.14);
         double ts = rnd(0.2) - 0.1;
-        double af = .01 / (rnd(6) + 1);
         functions.push_back(new ShakeFunction(pos[k], a, f, af, tz, ts));
     }
     pos.clear(); // nice: done with these
+    if (is_to_read) {
+        std::cerr << "read shakers until eof\n";
+        while (ShakeFunction * f = ShakeFunction::parse(std::cin)) {
+            if (f->pos.i >= h) std::cerr << "jet pos.i overflows h\n";
+            if (f->pos.j >= w) std::cerr << "jet pos.j overflows w\n";
+
+            functions.push_back(f);
+        }
+    }
     functions.push_back(new EdgeFunction<WaveCell>());
     CompositeFunction<WaveCell> f(functions);
     WaveFlowAnimation a(h, w, p, f);
     SqueezeIndicator indicator(pic, h_image, w_image, image_prefix);
     a.run(n, 2, 8, indicator);
-    for (size_t k = 0; k <=/*counting edge-function*/ q; ++k) delete functions[k];
+    for (size_t k = 0; k < functions.size(); ++k) delete functions[k];
 }

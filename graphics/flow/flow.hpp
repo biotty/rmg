@@ -89,4 +89,3 @@ struct EdgeFunction : FlowFunction<T>
 
 
 #endif
-
