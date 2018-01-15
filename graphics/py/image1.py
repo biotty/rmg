@@ -3,16 +3,16 @@
 #       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 
+from random import choice
 from os.path import exists
-from random import shuffle
 from math import cos, sin, atan2
-from rmg.math_ import rnd, unit_angle, rnd_weighted
-from rmg.color import Color, white, black, Optics
+from rmg.math_ import rnd, unit_angle
+from rmg.color import Color, Optics, white, black
 from rmg.space import Point, Direction, origo
 from rmg.plane import XY, XYCircle
-from rmg.bodies import (Plane, Sphere, Parabol,
-        Sphere_, Cylinder, Cylinder_, Cone, Cone_, Saddle, Saddle_,
-        Hyperbol, Hyperbol_, Intersection, Placement)
+from rmg.bodies import (Plane, Sphere, Parabol, Sphere_, Cylinder, Cylinder_,
+        Cone, Cone_, Saddle, Saddle_, Hyperbol, Hyperbol_,
+        Intersection, Placement)
 from rmg.solids import (intersect_regulars, RegularSolid,
         sole_regular, cube_faces)
 from rmg.scene import SceneObject, World, LightSpot, Observer, RgbSky, HsvSky
@@ -103,24 +103,27 @@ def optics_e(mapcls):
 def scene_disc(glide):
     oa = optics_a()
     ob = optics_b()
+    co = XYCircle(XY(0, 0), rnd(.4, .7))(rnd(0, 1))
+    ci = XYCircle(XY(0, 0), rnd(.2, .5))(rnd(0, 1))
     _, theta, phi = Direction.random().spherical()
-    s1 = XYCircle(XY(0, 0), rnd(.2, .6))(rnd(0, 1))
-    s2 = XYCircle(XY(0, 0), rnd(.2, .6))(rnd(0, 1))
-    qo = Point(s1.x, s1.y, 0).rotation(theta, phi)
-    qi = Point(s2.x, s2.y, 0).rotation(theta, phi)
-    po = Point(0, 0, rnd(.05, .2)).rotation(theta, phi)
-    dp = Direction(0, 0, 1).rotation(theta, phi)
-    r, rk = .9, rnd(.2, .4)
-    ro = rnd(.2, .4)
-    ri = rnd(.2, .4)
+    qo = Point(co.x, co.y, 0).rotation(theta, phi)
+    qi = Point(ci.x, ci.y, 0).rotation(theta, phi)
+    pp = Point(0, 0, rnd(.04, .25)).rotation(theta, phi)
+    pn = Direction(0, 0, 1).rotation(theta, phi)
+    rc = rnd(.9, 1)
+    rk = rnd(.1, .5)
+    ro = rnd(.1, .6)
+    ri = rnd(.1, .3)
+    sc = rnd_uphalf(rc)
+    sk = rnd_uphalf(rk)
     def o(t):
         sa = Sphere(qo, ro)
-        pl = Plane(po, dp)
         sb = Intersection([
             Sphere_(qi, ri),
-            Hyperbol(origo, dp * r, r),
-            Hyperbol_(origo, dp * rk, rk),
-            pl, Plane(po * -1, dp * -1)
+            Hyperbol(origo, pn * sc, rc),
+            Hyperbol_(origo, pn * sk, rk),
+            Plane(pp * -1, pn * -1),
+            Plane(pp, pn)
         ])
         glide(sa, t)
         glide(sb, t)
@@ -154,14 +157,14 @@ def scene_fruit(glide):
             Sphere_(q2, r2)
         ])
         glide(sb, t)
-        return [SceneObject(oa, sa),
-                SceneObject(ob, sb)]
+        return [SceneObject(ob, sb),
+                SceneObject(oa, sa)]
     return o
 
 def scene_wheel(glide):
     ob = optics_b()
     dc = Direction.random() * rnd(1, 2)
-    th, r = rnd(.02, .15), .8
+    th, r = rnd(.05, .2), .8
     def o(t):
         ce = Cone(origo, dc)
         sp = Sphere(origo, r)
@@ -191,7 +194,7 @@ def scene_regular_pair(glide):
         _, theta, phi = Direction.random().spherical()
         mid_r = rnd(.9, 1)
         return RegularSolid(n, mid_r, theta, phi)
-    fr = lambda: rnd_weighted([4, 6, 8, 12, 30])
+    fr = lambda: choice([4, 6, 8, 12, 30])
     ra = rnd_tilted(fr())
     rb = rnd_tilted(fr())
     i = 0
@@ -278,7 +281,7 @@ def scene_alpha(glide):
     ob = optics_b()
     dv = rnd(3.141592)
     da = rnd_uphalf(3.141592 * 2)
-    dz, dx, dy = rnd_uphalf(1), rnd_uphalf(.5), rnd_uphalf(.5)
+    dz, dx, dy = rnd_uphalf(1), rnd_uphalf(1), rnd_uphalf(1)
     _, theta, phi = Direction.random().spherical()
     ps, cr = RegularSolid(4, .85, theta, phi).inscribed_at_origo()
     def o(t):
@@ -328,18 +331,21 @@ def make_overall():
 overall = [] if lightened_variant else make_overall()
 
 class scene_objects:
-    def __init__(self, n_prod, d_glide):
-        c = [
-            scene_fruit, scene_disc, scene_wheel, scene_ring, scene_regular_pair,
-            scene_die, scene_alpha, scene_octacone, scene_tunels, scene_submarine
-        ]
+    def __init__(self, q, d):
+        c = [ scene_regular_pair, scene_submarine, scene_tunels,
+            scene_die, scene_octacone, scene_fruit, scene_alpha,
+            scene_disc, scene_wheel, scene_ring ]
         n = len(c)
-        shuffle(c)
-        self.g = [c[i % n](Glide.random(d_glide)) for i in range(n_prod)]
+        if lightened_variant:
+            c.append(c.pop(0))
+        j = int(rnd(n))
+        f = [choice(c) for _ in range(q)]
+        f.sort(key = lambda e: - c.index(e))
+        self.o = [g(Glide.random(d)) for g in f]
 
     def __call__(self, t):
         a = []
-        for o in self.g:
+        for o in self.o:
             a.extend(o(t))
         a.extend(overall)
         return a

@@ -44,7 +44,7 @@ struct Picture
     Picture(std::string fn_expr, unsigned & _n) : expr(fn_expr), i(-1)
     {
         ph = photo_create(filename(0).c_str());
-        if (_n == 0 && std::strchr(const_cast<char *>(expr.c_str()), '%')) {
+        if (std::strchr(const_cast<char *>(expr.c_str()), '%')) {
             _n = n = discover_n();
         }
     }

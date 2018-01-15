@@ -157,11 +157,12 @@ void help()
 "-D REAL\n"
 "-h         output this help to stdandard err\n"
 "-i PATH    filename of PNG image to start with\n"
-"-m N>0     output-image pixel-widths per fluid-cell\n"
-"-n N>0     count of output-images to produce\n"
+"-m N       output-image pixel-widths per fluid-cell\n"
+"-n N       count of output-images to produce\n"
 "-o PATH    prefix for path to JPEG output-files\n"
-"-q N>0     number of force-spots applied to fluid\n"
-"-s N>0     seed for random-number-generator\n"
+"-q N       number of force-spots applied to fluid\n"
+"-p N       number of extract/inject spots applied\n"
+"-s N       seed for random-number-generator\n"
 "-v REAL    normal and exceptional viscosity, respectively\n"
 "-V REAL\n\n"
 "-I         read 'i j a w r i j ...'\n"
@@ -173,9 +174,9 @@ int main(int argc, char **argv)
 {
     int n = 512;
     time_t seed = 0;
-    unsigned p = 9, q = 9, m = 4;
+    unsigned p = 2, q = 9, m = 4;
     std::vector<ColorMatch> d_exc, v_exc;
-    double z = 0.2, d = 0.08, D = 0.2, v = 0.4, V = 2.0;
+    double z = 0.2, d = 0.08, D = 0.4, v = 0.4, V = 2.0;
     const char *image_prefix = "",
           *photo_filename = "img.png",
           *res_override = nullptr;
@@ -243,11 +244,11 @@ int main(int argc, char **argv)
     }
     if (d_exc.empty()) {
         d_exc.push_back(ColorMatch(0.7, {0, 0, 0}));
-        std::cerr << "using dark colors as exceptional density\n";
+        std::cerr << "using dark colors for except.density\n";
     }
     if (v_exc.empty()) {
         v_exc.push_back(ColorMatch(0.7, {1, 1, 1}));
-        std::cerr << "using light colors as exceptional viscosity\n";
+        std::cerr << "using light colors for except.viscosity\n";
     }
 
     Tracer<palette_index_type> tracer(h_image, w_image);

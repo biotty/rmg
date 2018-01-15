@@ -1,13 +1,14 @@
 #! /usr/bin/env bash
 
+img=${1:-map.jpeg}
+out=${2:-flow.mp4}
+
 set -e
-o=$(./storage.sh)
 s=$RANDOM
-t=$o/in.flow.pnm
+o=$(./storage.sh)
 echo $o
-py/globe.py 1280x720 $t
-pnmtopng $t > $o/in.png && rm $t
+jpegtopnm $img | pnmtopng > $o/img.png
 set -x
-flow/fluid -s $s -n 836 -i $o/in.png -o $o/_
-flow/wave -s $s -i ${o}/_%u.jpeg -o $o/
-./compiler.sh $o fluidwave.mp4
+flow/fluid -m10 -s $s -n 500 -i $o/img.png -o $o/_
+flow/wave -m2 -s $s -i ${o}/_%u.jpeg -o $o/
+./compiler.sh $o/ $out

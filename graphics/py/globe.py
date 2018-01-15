@@ -102,7 +102,7 @@ if __name__ == "__main__":
     options.add_option("-p", "--pen-thickness", default="15")
     (opts, args) = options.parse_args()
     size = args[0].split("x")
-    oname = args[1] if len(args) > 1 else "globe.pnm"
+    oname = args[1] if len(args) > 1 else "globe.jpeg"
     width = int(size[0])
     height = int(size[1])
 

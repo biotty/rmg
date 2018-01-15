@@ -3,21 +3,23 @@
 #       (c) Christian Sommerfeldt OEien
 #       All rights reserved
 
-from math import cos, sin
-from rmg.math_ import rnd, rnd_weighted, unit_angle
-from rmg.plane import XY
 from rmg.bodies import Sphere
+from rmg.math_ import rnd, unit_angle
 from rmg.space import Point, Direction, origo, random_orbit
 from rmg.color import Color, Optics, white, black
 from rmg.mapping import Map, OpticsFactor
 from rmg.scene import SceneObject, LightSpot, Observer, PhotoSky, RgbSky, HsvSky
 from rmg.script import ParametricWorld, ScriptInvocation
-from globe import GlobeMapRenderer
 import os
 
 
-names = ["%s.jpeg" % (name,) for name in "abcde"]
-count = 5
+names = []
+for count in range(26):
+    letter = chr(97 + count)
+    name = letter + ".jpeg"
+    if not os.path.exists(name):
+        break
+    names.append(name)
 
 
 def roundrobin(a, i):
@@ -28,16 +30,15 @@ def roundrobin(a, i):
 class RandomOptics:
 
     def __init__(self, i):
-        water = Color(.9, .92, .98)
         self.pole = Direction.random()
-        self.spin = 3 * (i % 9 + 1)
-        self.spin_offset = rnd(1)
+        self.r = 3 * (i % 9 + 1)
+        self.roff = rnd(1)
         self.path = roundrobin(names, i)
-        self.factor = OpticsFactor(white * .3, white * .1, water * .5)
-        self.adjust = Optics(white * .1, white * .1, 1.3, water * .5, water * water)
+        self.factor = OpticsFactor(white * .6, white * .6, black)
+        self.adjust = Optics(black, black, -1, black, black)
 
     def __call__(self, t):
-        return Map(self.pole, self.spin*t + self.spin_offset,
+        return Map(self.pole, self.r * t + self.roff,
                 self.path, self.factor, self.adjust)
 
 
@@ -48,8 +49,7 @@ class RandomSceneObject:
         self.orbit = random_orbit()
 
     def __call__(self, t):
-        return SceneObject(self.optics(t),
-                Sphere(self.orbit(t), .65))
+        return SceneObject(self.optics(t), Sphere(self.orbit(t), 1))
 
 
 param_scene_objects = [RandomSceneObject(i) for i in range(count)]
@@ -68,29 +68,23 @@ class sky:
     def __call__(self, t):
         return self.s
 
+
+
+
 class observer:
+    def __init__(self):
+        self.d = Direction.random()
+
     def __call__(self, t):
-        a = unit_angle(t)
-        d = Direction(cos(a), sin(a), 1)
-        d *= 1 / abs(d)
-        return Observer(d*-2, d, view_opening = .65)
+        return Observer(self.d * 2, self.d * -1)
 
 class light_spots:
+    def __init__(self):
+        self.s = [Direction.random() * 19 for _ in range(9)]
+
     def __call__(self, t):
-        return [
-            LightSpot(Point(-20, 15, -30), Color(0.7, 0.1, 0.1)),
-            LightSpot(Point(5, 30, -10), Color(0.1, 0.7, 0.1)),
-            LightSpot(Point(30, 20, -15), Color(0.1, 0.1, 0.7))]
-
-
-def globe_map(width, height, path):
-    gm = GlobeMapRenderer.random(16, 24, unit_angle(.065))
-    gm.render(width, height, path)
-
-
-for n in names:
-    if not os.path.exists(n):
-        globe_map(32, 32, n)
+        return [LightSpot(s, white * (2 / len(self.s)))
+                for s in self.s]
 
 
 pw = ParametricWorld(scene_objects(), light_spots(), observer(), sky())

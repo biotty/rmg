@@ -70,10 +70,9 @@ static inline real sqroot(real r) { return sqrt(r); }
 #endif
 
 static inline real square(real r) { return r * r; }
-static inline real zoom(const real r, real x) {
-    x *= r;
-    x -= rfloor(x);
-    return (x == 1) ? 0 : x;
+static inline void mod1(real * x) {
+    *x -= rfloor(*x);
+    if (*x == 1) *x = 0;
 }
 static inline real max(real a, real b) { if (a > b) return a; else return b; }
 static inline real min(real a, real b) { if (a < b) return a; else return b; }

@@ -110,10 +110,17 @@ texture_map(const texture_application * t, const photo * ph, real x, real y,
 }
 
     static void
-zoom_(const real r, real * x, real * y)
+zoom_(const real r, real * x, real * y, bool repeat)
 {
-    *x = zoom(r, *x);
-    *y = zoom(r, *y);
+    *x = *x * r + .5;
+    *y = *y * r + .5;
+    if (repeat) {
+        mod1(x);
+        mod1(y);
+    } else {
+        if (*x < 0 || *x >= 1 || *y < 0 || *y >= 1)
+            *x = *y = 0;
+    }
 }
 
     static void
@@ -132,9 +139,9 @@ normal_decoration(const ray * ray_, void * decoration_arg,
     const texture_arg * da = decoration_arg;
     real x, y;
     direction d = inverse_rotation(ray_->head, da->theta, da->phi);
+    rotate_(da->cos_w, da->sin_w, &d.x, &d.y);
     direction_to_unitsquare(&d, &x, &y);
-    rotate_(da->cos_w, da->sin_w, &x, &y);
-    zoom_(da->r, &x, &y);
+    zoom_(da->r, &x, &y, false);
     texture_map(&da->a, da->photo, x, y, so, adjust);
 }
 
@@ -149,13 +156,7 @@ planar_decoration_(const ray * ray_, void * decoration_arg,
     real x = d.x;
     real y = d.y;
     rotate_(da->cos_w, da->sin_w, &x, &y);
-    if (repeat) zoom_(da->r, &x, &y);
-    else {
-        x = .5 + x * da->r;
-        y = .5 + y * da->r;
-        if (x < 0 || x >= 1 || y < 0 || y >= 1)
-            x = y = 0;
-    }
+    zoom_(da->r, &x, &y, repeat);
     texture_map(&da->a, da->photo, x, y, so, adjust);
 }
 
@@ -178,13 +179,13 @@ relative_decoration(const ray * ray_, void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
     const texture_origin_arg * da = decoration_arg;
+    real x, y;
     direction d = inverse_rotation(
             distance_vector(da->o, ray_->endpoint),
             da->theta, da->phi);
-    real x, y;
+    rotate_(da->cos_w, da->sin_w, &d.x, &d.y);
     direction_to_unitsquare(&d, &x, &y);
-    rotate_(da->cos_w, da->sin_w, &x, &y);
-    zoom_(da->r, &x, &y);
+    zoom_(da->r, &x, &y, false);
     texture_map(&da->a, da->photo, x, y, so, adjust);
 }
 

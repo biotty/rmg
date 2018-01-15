@@ -156,7 +156,7 @@ int main(int argc, char **argv)
     const char *image_prefix = "",
           *photo_filename = "image.jpeg",
           *res_override = nullptr;
-    unsigned m = 2, q = 18, n = 0;
+    unsigned m = 2, q = 10, n = 0;
     bool is_to_read = false;
 
     int opt;
@@ -226,8 +226,8 @@ int main(int argc, char **argv)
     if (is_to_read) {
         std::cerr << "read shakers until eof\n";
         while (ShakeFunction * f = ShakeFunction::parse(std::cin)) {
-            if (f->pos.i >= h) std::cerr << "jet pos.i overflows h\n";
-            if (f->pos.j >= w) std::cerr << "jet pos.j overflows w\n";
+            if (f->pos.i >= h) std::cerr << "shaker pos.i overflows h\n";
+            if (f->pos.j >= w) std::cerr << "shaker pos.j overflows w\n";
 
             functions.push_back(f);
         }
