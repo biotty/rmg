@@ -34,7 +34,7 @@ mandelbrot.mp4: follow
 	./movie_exec.sh $@ "./follow |./movie_pipe.sh {}/"
 
 map.jpeg: py/globe.py
-	$< 1000x1000 $@
+	$< 500x500 $@
 
 map.movie: py/atomic.py
 	./movie_exec.sh $@/ "$< -n 500 -o {}/"

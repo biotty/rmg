@@ -31,8 +31,8 @@
 
 double const lim_amp = .8;
 double const amp_per_sec = 1;
-double const ear_secs = .0007;
-double const dist_amp = .6;
+double const dist_amp = .995;
+double const ear_secs = .00065;
 double const pi = 3.1415926535;
 double sign(double r) { return r >= 0 ? 1 : -1; }
 double linear(double a, double b, double r) { return a * (1 - r) + b * r; }
@@ -433,7 +433,8 @@ class sound
     tremolo r;
     envelope e;
     filter::biquad f;
-    filter::delay g;
+    filter::biquad g;
+    filter::delay h;
 public:
     double t;
     double z;
@@ -449,17 +450,19 @@ public:
         z = t + e.span() + fardelay;
         n = fardelay * SAMPLERATE;
 
-        double frombehind = .5 * (1 - sin(o));
-        f.lowpass(linear(8000, 1000, frombehind));
+        const double frombehind = .3 * (1 - sin(o));
+        const double fromside = frombehind + .4 * fabs(cos(o));
+        f.lowpass(linear(8e+3, 8e+2, frombehind));
+        g.lowpass(linear(8e+3, 8e+2, fromside));
     }
-    void alloc() { g.alloc(n); }
+    void alloc() { h.alloc(n); }
     stereo get(double s)
     {
         if (s < t || s > z) return stereo(0, 0);
         s -= t;
-        const double y = a * r.get(s) * w->get(d * v.get(s));
-        const double near = e.get(s) * f.shift(y);
-        const double far = g.shift(near) * m;
+        const double y = a * e.get(s) * r.get(s) * w->get(d * v.get(s));
+        const double near = f.shift(y);
+        const double far = m * g.shift(h.shift(y));
         return fromright ? stereo(far, near) : stereo(near, far);
     }
     bool operator<(const sound & other) const { return t < other.t; }
