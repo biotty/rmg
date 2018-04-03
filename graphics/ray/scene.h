@@ -5,7 +5,6 @@
 
 #include "color.h"
 #include "ray.h"
-#include "bitarray.h"
 #include "stack.h"
 #include "stddef.h"
 
@@ -45,15 +44,12 @@ typedef struct scene_object scene_object;
 typedef struct scene scene;
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void init_inside(bitarray *, scene s, const ray *);
-scene_object * closest_surface(ray *, const scene s, bitarray * inside, stack * toggled);
-
-#ifdef __cplusplus
-}
-#endif
+struct bitarray;
+void init_inside(struct bitarray * inside, scene s, const ray * ray_);
+scene_object * closest_surface(
+    ray *,
+    const scene s,
+    struct bitarray * inside,
+    stack * toggled);
 
 #endif

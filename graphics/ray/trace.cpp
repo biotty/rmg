@@ -2,6 +2,7 @@
 //      All rights reserved
 
 #include "trace.h"
+#include "bitarray.hpp"
 #include <cassert>
 #include <iostream>
 
@@ -10,7 +11,9 @@ struct detector {
     color lens;
     ray ray_;
     int hop;
-    bitarray * inside;
+    mutable bitarray inside;
+
+    detector(ray t, int q) : lens{1, 1, 1}, ray_(t), hop(max_hops), inside(q) {}
 };
 
 
@@ -21,15 +24,12 @@ static color ray_trace(const detector *, world *);
 trace(ray t, world * w)
 {
     const size_t q = w->scene_.object_count;
-    detector detector_ = {{1, 1, 1}, t, max_hops,
-        (bitarray *)calloc(1, ba_size(q))};
-    ba_init(detector_.inside, q);
-    init_inside(detector_.inside, w->scene_, &t);
-    if (debug && ba_firstset(detector_.inside) >= 0)
+    detector detector_(t, q);
+    init_inside(&detector_.inside, w->scene_, &t);
+    if (debug && detector_.inside.firstset() >= 0)
         std::cerr << "initial detector is at inside of "
-                << ba_firstset(detector_.inside) << std::endl;
+                << detector_.inside.firstset() << std::endl;
     const color detected = ray_trace(&detector_, w);
-    free(detector_.inside);
     return detected;
 }
 
@@ -99,11 +99,11 @@ reflection_trace(compact_color reflection_filter, ray ray_, bool exits, int i,
     direction normal_ = ray_.head;
     if (exits) {
         scale(&normal_, -1);
-        if (debug && ! ba_isset(detector_->inside, i))
+        if (debug && ! detector_->inside.isset(i))
             std::cerr << "hit from inside of surface "
                 "but book-keeped as outside-of " << i << std::endl;
     } else {
-        if (debug && ba_isset(detector_->inside, i))
+        if (debug && detector_->inside.isset(i))
             std::cerr << "hit from outside of surface "
                 "but book-keeped as inside-of " << i << std::endl;
     }
@@ -129,25 +129,25 @@ refraction_trace(ray ray_, const scene_object * so,
         const detector * detector_, world * w, color * result)
 {
     const ptrdiff_t i = so - w->scene_.objects;
-    int outside_i = ba_firstset(detector_->inside);
+    int outside_i = detector_->inside.firstset();
     const bool enters = (outside_i != i);
 
-    class scoped_bit_toggler {
-        bitarray * const a; const int i; const bool enters;
+    class scoped_bit_flipper {
+        bitarray & a; const int i; const bool enters;
         public:
-        scoped_bit_toggler(bitarray * a, int i, bool enters)
+        scoped_bit_flipper(bitarray & a, int i, bool enters)
             : a(a), i(i), enters(enters)
         {
-            ba_assign(a, i, enters);
+            a.assign(i, enters);
         }
-        ~scoped_bit_toggler()
+        ~scoped_bit_flipper()
         {
-            ba_assign(a, i, !enters);
+            a.assign(i, !enters);
         }
     };
-    scoped_bit_toggler sbt(detector_->inside, i, enters);
+    scoped_bit_flipper sbf(detector_->inside, i, enters);
 
-    if ( ! enters) outside_i = ba_firstset(detector_->inside);
+    if ( ! enters) outside_i = detector_->inside.firstset();
     unsigned long outside_refraction_index_nano = 1000000000;
     if (outside_i >= 0) {
         outside_refraction_index_nano
@@ -197,10 +197,10 @@ ray_trace(const detector * detector_, world * w)
     }
     ray surface = detector_->ray_;
     assert(is_near(length(surface.head), 1));
-    stack toggled = EMPTY_STACK;
-    const int detector_inside_i = ba_firstset(detector_->inside);
+    stack flips = EMPTY_STACK;
+    const int detector_inside_i = detector_->inside.firstset();
     const scene_object * closest_object
-        = closest_surface(&surface, w->scene_, detector_->inside, &toggled);
+        = closest_surface(&surface, w->scene_, &detector_->inside, &flips);
     if ( ! closest_object) {
         const int adinf_i = detector_inside_i;
         if (adinf_i >= 0) {
@@ -226,10 +226,10 @@ ray_trace(const detector * detector_, world * w)
                 &auto_store, &closest_object->optics);
         optics = &auto_store;
     }
-    const int inside_i = ba_firstset(detector_->inside);
+    const int inside_i = detector_->inside.firstset();
     if (inside_i < 0) {
         const color absorbed = spot_absorption(
-                &surface, optics, w, detector_->inside);
+                &surface, optics, w, &detector_->inside);
         // consider: function of angle so that up at angle_max
         //           gives 1/cos(a) factor and stays there up
         //           to a right angle.
@@ -260,9 +260,9 @@ ray_trace(const detector * detector_, world * w)
         passthrough_apply(&detected, &io->optics,
                 distance(detector_->ray_.endpoint, surface.endpoint));
     }
-    int toggled_i;
-    while ((toggled_i = st_pop(&toggled)) != STACK_VOID)
-        ba_toggle(detector_->inside, toggled_i);
+    int flipped_i;
+    while ((flipped_i = st_pop(&flips)) != STACK_VOID)
+        detector_->inside.flip(flipped_i);
 
     return detected;
 }
