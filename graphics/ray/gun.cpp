@@ -361,15 +361,14 @@ main(int argc, char *argv[])
     if (scene_object_count <= 0) fail("no scene objects\n");
     if (inter_count > scene_object_count) fail("intersecions count overflow\n");
 
-    world world_ = { color_sky, NULL, 0,
-        { scene_object_count, new scene_object[scene_object_count] }
-    };
+    world world_(color_sky, scene_object_count);
     int non_inter_count = scene_object_count - inter_count;
     init_arg_pool(non_inter_count, inter_count, member_count);
     void ** decoration_args = new void *[scene_object_count];
     int decoration_index = 0;
 
-    for (int i = 0; i < world_.scene_.object_count; i++) {
+    const size_t k = world_.scene_.size();
+    for (size_t i = 0; i < k; i++) {
         object_intersection fi;
         object_normal fn;
         std::string name;
@@ -399,7 +398,7 @@ main(int argc, char *argv[])
             if (n != 1) fail("optics [%d] error\n", i);
         }
         scene_object o = { fi, fn, a, get_object_optics(r_), df, d };
-        world_.scene_.objects[i] = o;
+        world_.scene_[i] = o;
     }
 
     world_.sky = get_scene_sky();
@@ -417,7 +416,6 @@ main(int argc, char *argv[])
     while ( -- decoration_index >= 0)
         delete_decoration(decoration_args[decoration_index]);
     delete [] decoration_args;
-    delete [] world_.scene_.objects;
     delete [] world_.spots;
     if (report_status) std::cerr << "\n";
 }

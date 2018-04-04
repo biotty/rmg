@@ -25,7 +25,7 @@ static color ray_trace(const detector *, world *);
     color
 trace(ray t, world * w)
 {
-    const size_t q = w->scene_.object_count;
+    const size_t q = w->scene_.size();
     detector detector_(t, q);
     init_inside(detector_.inside, w->scene_, &t);
     if (debug && detector_.inside.firstset() >= 0)
@@ -130,7 +130,7 @@ refraction_trace(ray ray_, const scene_object * so,
         compact_color optics_refraction_filter,
         const detector * detector_, world * w, color * result)
 {
-    const ptrdiff_t i = so - w->scene_.objects;
+    const ptrdiff_t i = so - &w->scene_[0];
     int outside_i = detector_->inside.firstset();
     const bool enters = (outside_i != i);
 
@@ -153,7 +153,7 @@ refraction_trace(ray ray_, const scene_object * so,
     unsigned long outside_refraction_index_nano = 1000000000;
     if (outside_i >= 0) {
         outside_refraction_index_nano
-            = w->scene_.objects[outside_i].optics.refraction_index_nano;
+            = w->scene_[outside_i].optics.refraction_index_nano;
         if (0 == outside_refraction_index_nano) {
             if (debug) {
                 if (detector_->hop != max_hops) /* (view _can_ happen to be inside) */
@@ -207,7 +207,7 @@ ray_trace(const detector * detector_, world * w)
         const int adinf_i = detector_inside_i;
         if (adinf_i >= 0) {
             compact_color f
-                = w->scene_.objects[adinf_i].optics.passthrough_filter;
+                = w->scene_[adinf_i].optics.passthrough_filter;
             if (f.r != 255 || f.g != 255 || f.b != 255) {
                 return detected;
             }
@@ -216,8 +216,8 @@ ray_trace(const detector * detector_, world * w)
             ? DIRECT_SKY : w->sky(detector_->ray_.head);
     }
 
-    const ptrdiff_t i = closest_object - w->scene_.objects;
-    assert(i >= 0 && i < w->scene_.object_count);
+    const ptrdiff_t i = closest_object - &w->scene_[0];
+    assert(i >= 0 && i < static_cast<ptrdiff_t>(w->scene_.size()));
     const bool exits = 0 < scalar_product(
             surface.head, detector_->ray_.head);
     const object_optics * optics = &closest_object->optics;
@@ -258,7 +258,7 @@ ray_trace(const detector * detector_, world * w)
         color_add(&detected, reflected);
     }
     if (detector_inside_i >= 0) {
-        scene_object * io = w->scene_.objects + detector_inside_i;
+        scene_object * io = &w->scene_[detector_inside_i];
         passthrough_apply(&detected, &io->optics,
                 distance(detector_->ray_.endpoint, surface.endpoint));
     }

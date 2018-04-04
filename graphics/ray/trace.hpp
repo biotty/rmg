@@ -4,7 +4,7 @@
 #define TRACE_HPP
 
 #include "sky.h"
-#include "scene.h"
+#include "scene.hpp"
 
 static const bool debug = false;
 static const bool verbose = false;
@@ -23,6 +23,13 @@ struct world {
     struct light_spot * spots;
     int spot_count;
     scene scene_;
+
+    world(scene_sky s, size_t q)
+        : sky(s)
+        , spots()
+        , spot_count()
+        , scene_(q)
+    {}
 };
 
 color trace(ray t, world *);

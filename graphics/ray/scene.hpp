@@ -6,9 +6,12 @@
 #include "scene.h"
 #include "bitarray.hpp"
 #include "stack.hpp"
+#include <vector>
 
-void init_inside(bitarray & inside, scene, const ray *);
-scene_object * closest_surface(scene, ray * const t,
+using scene = std::vector<scene_object>;
+
+void init_inside(bitarray & inside, scene const &, const ray *);
+scene_object const * closest_surface(scene const &, ray * const t,
     bitarray & inside, stack * flipped);
 
 #endif

@@ -7,18 +7,19 @@
 #include "stack.hpp"
 
     void
-init_inside(bitarray & inside, scene s, const ray * t)
+init_inside(bitarray & inside, scene const & s, const ray * t)
 {
-    for (int i = 0; i < s.object_count; i++) {
-        void * arg = s.objects[i].object_arg;
-        object_intersection oi = s.objects[i].intersection;
+    const size_t n = s.size();
+    for (size_t i = 0; i < n; i++) {
+        void * arg = s[i].object_arg;
+        object_intersection oi = s[i].intersection;
         real_pair p = oi(t, arg);
         inside.assign(i, p.first <= 0 && p.second >= 0);
     }
 }
 
     static real
-intersect(const ray * t, scene_object * so, bool is_inside)
+intersect(const ray * t, scene_object const * so, bool is_inside)
 {
         void * intersection_arg = so->object_arg;
         const real_pair p = so->intersection(t, intersection_arg);
@@ -31,20 +32,21 @@ intersect(const ray * t, scene_object * so, bool is_inside)
             : p.second;
 }
 
-    scene_object *
-closest_surface(scene s, ray * const t, bitarray & inside, stack * flipped)
+    scene_object const *
+closest_surface(scene const & s, ray * const t, bitarray & inside, stack * flipped)
 {
     advance(t, - TINY_REAL);
-    scene_object * closest_object = NULL;
+    scene_object const * closest_object = NULL;
     real closest_r = -1;
     int closest_i = -1;
-    for (int i = 0; i < s.object_count; i++) {
+    const size_t n = s.size();
+    for (size_t i = 0; i < n; i++) {
         const bool inside_ = inside.isset(i);
-        const real r = intersect(t, &s.objects[i], inside_);
+        const real r = intersect(t, &s[i], inside_);
         if (r >= 0 && (closest_r < 0 || r < closest_r)) {
-            closest_object = &s.objects[i];
+            closest_object = &s[i];
             closest_r = r;
-            closest_i = i;
+            closest_i = static_cast<int>(i);
         }
     }
     if (closest_r >= 0 && closest_r < HUGE_REAL) {

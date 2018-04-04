@@ -32,11 +32,6 @@ struct scene_object {
     void * decoration_arg;
 };
 
-struct scene {
-    int object_count;
-    struct scene_object * objects;
-};
-
 #ifndef __cplusplus
 typedef struct object_optics object_optics;
 typedef struct scene_object scene_object;
