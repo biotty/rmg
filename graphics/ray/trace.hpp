@@ -18,18 +18,13 @@ struct light_spot {
     color light;
 };
 
+using spots = std::vector<light_spot>;
+
 struct world {
     scene_sky sky;
-    struct light_spot * spots;
-    int spot_count;
+    spots spots_;
     scene scene_;
-
-    world(scene_sky s, size_t q)
-        : sky(s)
-        , spots()
-        , spot_count()
-        , scene_(q)
-    {}
+    world() : sky() {}
 };
 
 color trace(ray t, world *);

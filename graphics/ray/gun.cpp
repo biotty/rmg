@@ -312,15 +312,14 @@ get_scene_sky()
     void
 get_spots(world * w)
 {
-    int k;
-    std::cin >> k;
-    w->spot_count = k;
-    w->spots = new light_spot[k];
-    for (int x=0; x<k; x++) {
+    unsigned light_spot_count;
+    std::cin >> light_spot_count;
+    for (size_t i = 0; i < light_spot_count; i++) {
+        assert(i == w->spots_.size());
         light_spot s;
         std::cin >> s.spot;
         std::cin >> s.light;
-        w->spots[x] = s;
+        w->spots_.push_back(s);
     }
 }
 
@@ -354,21 +353,21 @@ main(int argc, char *argv[])
         fail("dimention argument '%s' not on 'WxH' format\n", argv[1]);
 
     observer obs = get_observer();
-    int scene_object_count;
-    int inter_count;
-    int member_count;
+    unsigned scene_object_count;
+    unsigned inter_count;
+    unsigned member_count;
     std::cin >> scene_object_count >> inter_count >> member_count;
     if (scene_object_count <= 0) fail("no scene objects\n");
     if (inter_count > scene_object_count) fail("intersecions count overflow\n");
 
-    world world_(color_sky, scene_object_count);
+    world world_;
     int non_inter_count = scene_object_count - inter_count;
     init_arg_pool(non_inter_count, inter_count, member_count);
     void ** decoration_args = new void *[scene_object_count];
     int decoration_index = 0;
 
-    const size_t k = world_.scene_.size();
-    for (size_t i = 0; i < k; i++) {
+    for (size_t i = 0; i < scene_object_count; i++) {
+        assert(i == world_.scene_.size());
         object_intersection fi;
         object_normal fn;
         std::string name;
@@ -398,7 +397,7 @@ main(int argc, char *argv[])
             if (n != 1) fail("optics [%d] error\n", i);
         }
         scene_object o = { fi, fn, a, get_object_optics(r_), df, d };
-        world_.scene_[i] = o;
+        world_.scene_.push_back(o);
     }
 
     world_.sky = get_scene_sky();
@@ -416,6 +415,5 @@ main(int argc, char *argv[])
     while ( -- decoration_index >= 0)
         delete_decoration(decoration_args[decoration_index]);
     delete [] decoration_args;
-    delete [] world_.spots;
     if (report_status) std::cerr << "\n";
 }

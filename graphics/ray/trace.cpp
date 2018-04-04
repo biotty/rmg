@@ -73,12 +73,13 @@ spot_absorption(const ray * surface, const object_optics * so,
         const world * w, bitarray & inside)
 {
     color sum_ = {0, 0, 0};
-    for (int i=0; i<w->spot_count; i++) {
-        const light_spot * lamp = &w->spots[i];
-        color color_ = lamp->light;
+    const size_t n = w->spots_.size();
+    for (size_t i = 0; i < n; i++) {
+        const light_spot * ls = &w->spots_[i];
+        color color_ = ls->light;
         filter(&color_, so->absorption_filter);
         if (ignorable_color(color_)) continue;
-        direction to_spot = distance_vector(surface->endpoint, lamp->spot);
+        direction to_spot = distance_vector(surface->endpoint, ls->spot);
         normalize(&to_spot);
         // consider: inv-scale with up to |to_spot|^2 (global setting 0-1)
         const real a = scalar_product(surface->head, to_spot);
