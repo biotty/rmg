@@ -3,6 +3,7 @@
 
 #include "trace.h"
 #include "bitarray.hpp"
+#include "stack.hpp"
 #include <cassert>
 #include <iostream>
 
@@ -197,7 +198,7 @@ ray_trace(const detector * detector_, world * w)
     }
     ray surface = detector_->ray_;
     assert(is_near(length(surface.head), 1));
-    stack flips = EMPTY_STACK;
+    stack flips;
     const int detector_inside_i = detector_->inside.firstset();
     const scene_object * closest_object
         = closest_surface(&surface, w->scene_, &detector_->inside, &flips);
@@ -261,7 +262,7 @@ ray_trace(const detector * detector_, world * w)
                 distance(detector_->ray_.endpoint, surface.endpoint));
     }
     int flipped_i;
-    while ((flipped_i = st_pop(&flips)) != STACK_VOID)
+    while ((flipped_i = flips.pop()) >= 0)
         detector_->inside.flip(flipped_i);
 
     return detected;

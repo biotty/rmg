@@ -3,6 +3,7 @@
 
 #include "scene.h"
 #include "bitarray.hpp"
+#include "stack.hpp"
 
     void
 init_inside(bitarray * inside, scene s, const ray * ray_)
@@ -52,7 +53,7 @@ closest_surface(ray * ray_, const scene s, bitarray * inside, stack * flipped)
             inside->flip(closest_i);
             closest_object = closest_surface(ray_, s, inside, flipped);
             if (closest_object && flipped != NULL)
-                st_push(flipped, closest_i);
+                flipped->push(closest_i);
             else
                 inside->flip(closest_i);
         } else {

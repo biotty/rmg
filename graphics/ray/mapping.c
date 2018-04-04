@@ -4,8 +4,7 @@
 #include "mapping.h"
 #include "photo.h"
 #include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include <stdint.h>
 
 typedef struct {
     photo * photo;

@@ -26,7 +26,7 @@ ray.o:      ray.h
 observer.o: observer.h
 matrix.o:   matrix.h
 bitarray.o: bitarray.hpp
-stack.o:    stack.h
+stack.o:    stack.hpp
 scene.o:    scene.h
 sky.o:      sky.h
 trace.o:    trace.h

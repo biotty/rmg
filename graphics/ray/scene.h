@@ -5,7 +5,6 @@
 
 #include "color.h"
 #include "ray.h"
-#include "stack.h"
 #include "stddef.h"
 
 typedef real_pair (* object_intersection)(const ray *, void * object_arg);
@@ -46,10 +45,12 @@ typedef struct scene scene;
 
 struct bitarray;
 void init_inside(struct bitarray * inside, scene s, const ray * ray_);
+
+struct stack;
 scene_object * closest_surface(
     ray *,
     const scene s,
     struct bitarray * inside,
-    stack * toggled);
+    struct stack * flipped);
 
 #endif
