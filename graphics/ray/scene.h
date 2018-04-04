@@ -43,14 +43,4 @@ typedef struct scene_object scene_object;
 typedef struct scene scene;
 #endif
 
-struct bitarray;
-void init_inside(struct bitarray * inside, scene s, const ray * ray_);
-
-struct stack;
-scene_object * closest_surface(
-    ray *,
-    const scene s,
-    struct bitarray * inside,
-    struct stack * flipped);
-
 #endif

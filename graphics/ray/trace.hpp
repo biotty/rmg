@@ -1,10 +1,10 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
-#ifndef TRACE_H
-#define TRACE_H
+#ifndef TRACE_HPP
+#define TRACE_HPP
 
-#include "scene.h"
 #include "sky.h"
+#include "scene.h"
 
 static const bool debug = false;
 static const bool verbose = false;
@@ -25,19 +25,6 @@ struct world {
     scene scene_;
 };
 
-#ifndef __cplusplus
-typedef struct light_spot light_spot;
-typedef struct world world;
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 color trace(ray t, world *);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

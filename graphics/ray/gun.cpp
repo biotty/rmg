@@ -4,8 +4,8 @@
 #include "inter.h"
 #include "mapping.h"
 #include "observer.h"
-#include "trace.h"
 #include "image.h"
+#include "trace.hpp"
 #include <cstdio>
 #include <cctype>
 #include <cstdarg>

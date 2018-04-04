@@ -29,7 +29,7 @@ bitarray.o: bitarray.hpp
 stack.o:    stack.hpp
 scene.o:    scene.h
 sky.o:      sky.h
-trace.o:    trace.h
+trace.o:    trace.hpp
 
 .PHONY:
 clean:

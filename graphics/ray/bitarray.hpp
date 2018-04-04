@@ -1,7 +1,7 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
-#ifndef BITARRAY_H
-#define BITARRAY_H
+#ifndef BITARRAY_HPP
+#define BITARRAY_HPP
 
 #include <vector>
 

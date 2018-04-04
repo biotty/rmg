@@ -1,7 +1,7 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
-#ifndef STACK_H
-#define STACK_H
+#ifndef STACK_HPP
+#define STACK_HPP
 
 #include <vector>
 #include <cstdint>

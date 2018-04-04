@@ -1,7 +1,8 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 
-#include "trace.h"
+#include "trace.hpp"
+#include "scene.hpp"
 #include "bitarray.hpp"
 #include "stack.hpp"
 #include <cassert>
@@ -26,7 +27,7 @@ trace(ray t, world * w)
 {
     const size_t q = w->scene_.object_count;
     detector detector_(t, q);
-    init_inside(&detector_.inside, w->scene_, &t);
+    init_inside(detector_.inside, w->scene_, &t);
     if (debug && detector_.inside.firstset() >= 0)
         std::cerr << "initial detector is at inside of "
                 << detector_.inside.firstset() << std::endl;
@@ -69,7 +70,7 @@ passthrough_apply(color * color_, const object_optics * so,
 
     static color
 spot_absorption(const ray * surface, const object_optics * so,
-        const world * w, bitarray * inside)
+        const world * w, bitarray & inside)
 {
     color sum_ = {0, 0, 0};
     for (int i=0; i<w->spot_count; i++) {
@@ -83,7 +84,7 @@ spot_absorption(const ray * surface, const object_optics * so,
         const real a = scalar_product(surface->head, to_spot);
         if (a <= 0) continue;
         ray s = { surface->endpoint, to_spot };
-        if (NULL == closest_surface(&s, w->scene_, inside, NULL)) {
+        if (NULL == closest_surface(w->scene_, &s, inside, NULL)) {
             const real ua = acos(1 - a) * (2/REAL_PI);
             sum_.r += color_.r * ua;
             sum_.g += color_.g * ua;
@@ -201,7 +202,7 @@ ray_trace(const detector * detector_, world * w)
     stack flips;
     const int detector_inside_i = detector_->inside.firstset();
     const scene_object * closest_object
-        = closest_surface(&surface, w->scene_, &detector_->inside, &flips);
+        = closest_surface(w->scene_, &surface, detector_->inside, &flips);
     if ( ! closest_object) {
         const int adinf_i = detector_inside_i;
         if (adinf_i >= 0) {
@@ -230,7 +231,7 @@ ray_trace(const detector * detector_, world * w)
     const int inside_i = detector_->inside.firstset();
     if (inside_i < 0) {
         const color absorbed = spot_absorption(
-                &surface, optics, w, &detector_->inside);
+                &surface, optics, w, detector_->inside);
         // consider: function of angle so that up at angle_max
         //           gives 1/cos(a) factor and stays there up
         //           to a right angle.
