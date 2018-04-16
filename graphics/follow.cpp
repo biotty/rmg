@@ -79,6 +79,15 @@ public:
 };
 
 
+struct FractalArg
+{
+    XY a;
+    XY b;
+    int n;
+    bool binary;
+};
+
+
 struct Fractal
 {
     virtual ~Fractal() {};
@@ -88,9 +97,9 @@ struct Fractal
     const XY a;
     const XY b;
     const int n;
-    bool binary;
-    Fractal(XY a, XY b, int n, bool binary)
-        : a(a) , b(b), n(n), binary(binary)
+    const bool binary;
+    Fractal(FractalArg arg)
+        : a(arg.a) , b(arg.b), n(arg.n), binary(arg.binary)
     {}
 
     virtual value_type value(XY p) const = 0;
@@ -99,7 +108,7 @@ struct Fractal
 
 void subject(std::complex<double> & z, const std::complex<double> c)
 {
-    z *= z;
+    z = pow(z, 4.);
     z += c;
 }
 
@@ -112,7 +121,7 @@ bool trapped(const std::complex<double> z)
 
 struct Mandel : Fractal
 {
-    Mandel(XY a, XY b, int n, bool binary) : Fractal(a, b, n, binary) {}
+    using Fractal::Fractal;
 
     value_type value(XY p) const
     {
@@ -134,8 +143,8 @@ struct Julia : Fractal
 {
     const std::complex<double> j;
 
-    Julia(XY j, XY a, XY b, int n, bool binary)
-        : Fractal(a, b, n, binary)
+    Julia(XY j, FractalArg arg)
+        : Fractal(arg)
         , j(j.x, j.y)
     {}
 
@@ -196,8 +205,10 @@ struct Image
 };
 
 
-struct Grid
+class Grid
 {
+    std::vector<Block> blocks;
+public:
     const std::unique_ptr<Fractal> f;
     const int width;
     const int height;
@@ -205,6 +216,7 @@ struct Grid
     const short n_rows;
     const short n_columns;
     std::vector<JI> interest;
+    Fractal::value_type max_value;
 
     Block & block(int i, int j)
     {
@@ -212,7 +224,7 @@ struct Grid
     }
 
     Grid(std::unique_ptr<Fractal> && _f, int width, int height, int s,
-            const std::vector<JI> & edge)
+            const std::vector<JI> & edge={})
         : f(std::move(_f))
         , width(width)
         , height(height)
@@ -369,10 +381,17 @@ struct Grid
             }
         }
     }
+};
 
-    Fractal::value_type max_value;
-private:
-    std::vector<Block> blocks;
+
+struct FrameArg {
+    int width;
+    int height;
+    XY c;
+    double z;
+    int s;
+    int n;
+    double similarity;
 };
 
 
@@ -390,6 +409,12 @@ struct Frame
     virtual std::unique_ptr<Fractal> fractal(int n, bool binary) = 0;
     virtual std::unique_ptr<Frame> child(double similarity) =  0;
 
+    void init(FrameArg a)
+    {
+        orient(a.c, a.z, a.width, a.height);
+        setup(a.width, a.height, a.n, a.s, a.similarity);
+    }
+
     void orient(XY c, double z, int width, int height)
     {
         const double w = z * width / (double)height;
@@ -405,7 +430,7 @@ struct Frame
         --n;
         std::unique_ptr<Grid> prev_g;
         for (;;) {
-            g.reset(new Grid(fractal(n, true), width, height, s, {}));
+            g = std::make_unique<Grid>(fractal(n, true), width, height, s);
             if (prev_g && prev_g->similar_to(*g.get(), similarity))
                 return;
             ++n;
@@ -426,8 +451,9 @@ struct Frame
         XY prev_b = b;
         orient(c, z);
         auto transform = PixelTransform(prev_a, prev_b, a, b);
-        g.reset(new Grid(fractal(n, false), g->width, g->height, g->s,
-                transform(prev_edge, g->width, g->height)));
+        g = std::make_unique<Grid>(fractal(n, false),
+                g->width, g->height, g->s,
+                transform(prev_edge, g->width, g->height));
     }
 
     XY target()
@@ -519,27 +545,29 @@ struct Frame
                 a, b);
         return max_dist;
     }
+
+    FrameArg child_arg(double similarity)
+    {
+        return FrameArg{ g->width, g->height, target(),
+            (b.y - a.y) * .5, g->s, g->f->n, similarity};
+    }
 };              
+
+
 
 
 struct MandelFrame : Frame
 {
-    MandelFrame(int width, int height, XY c, double z, int s, int n, double similarity)
-    {
-        orient(c, z, width, height);
-        setup(width, height, n, s, similarity);
-    }
+    MandelFrame(FrameArg a) { init(a); }
 
     std::unique_ptr<Fractal> fractal(int n, bool binary)
     {
-        return std::unique_ptr<Fractal>(new Mandel(a, b, n, binary));
+        return std::make_unique<Mandel>(FractalArg{a, b, n, binary});
     }
 
     std::unique_ptr<Frame> child(double similarity)
     {
-        return std::unique_ptr<Frame>(new MandelFrame(
-                    g->width, g->height, target(),
-                    (b.y - a.y) * .5, g->s, g->f->n, similarity));
+        return std::make_unique<MandelFrame>(child_arg(similarity));
     }
 };
 
@@ -548,23 +576,16 @@ struct JuliaFrame : Frame
 {
     XY j;
 
-    JuliaFrame(XY j, int width, int height, XY c, double z, int s, int n, double similarity)
-        : j(j)
-    {
-        orient(c, z, width, height);
-        setup(width, height, n, s, similarity);
-    }
+    JuliaFrame(XY j, FrameArg a) : j(j) { init(a); }
 
     std::unique_ptr<Fractal> fractal(int n, bool binary)
     {
-        return std::unique_ptr<Fractal>(new Julia(j, a, b, n, binary));
+        return std::make_unique<Julia>(j, FractalArg{a, b, n, binary});
     }
 
     std::unique_ptr<Frame> child(double similarity)
     {
-        return std::unique_ptr<Frame>(new JuliaFrame(j,
-                    g->width, g->height, target(),
-                    (b.y - a.y) * .5, g->s, g->f->n, similarity));
+        return std::make_unique<JuliaFrame>(j, child_arg(similarity));
     }
 };
         
@@ -681,8 +702,9 @@ struct FractalMovie
                 auto r = retries.top();
                 counts.resize(i = r.i);
                 frame->orient(r.c, r.z);
-                frame->g.reset(new Grid(frame->fractal(counts.back(), true),
-                            frame->g->width, frame->g->height, frame->g->s, {}));
+                frame->g = std::make_unique<Grid>(
+                        frame->fractal(counts.back(), true),
+                        frame->g->width, frame->g->height, frame->g->s);
                 retries.pop();
                 std::cerr << i << ":RETRY";
                 if (lost) {
@@ -824,17 +846,17 @@ int main(int argc, char **argv)
     double jh = 2;  // julia-set ^
 
     std::cerr << "Localizing Mandelbrot coordinate" << std::endl;
-    FractalMovie m(std::unique_ptr<Frame>(
-                new MandelFrame(width, height, mc, mh, block_side, 30, .6)),
-            do_mandel ? zoom_steps : .4 * zoom_steps,
-            do_mandel ? similarity : .9 * similarity);
+    FractalMovie m{std::make_unique<MandelFrame>(
+            FrameArg{width, height, mc, mh, block_side, 30, .6}),
+            do_mandel ? zoom_steps : int(.4 * zoom_steps),
+            do_mandel ? similarity : .9 * similarity};
     if (do_mandel) {
         m.generate(images_per_step);
     } else {
         std::cerr << "Using location for Julia Set" << std::endl;
-        FractalMovie j(std::unique_ptr<Frame>(
-                    new JuliaFrame(m.frame->a, width, height, jc, jh, block_side, 90, .5)),
-                zoom_steps, similarity);
+        FractalMovie j{std::make_unique<JuliaFrame>(m.frame->a,
+                FrameArg{width, height, jc, jh, block_side, 90, .5}),
+                     zoom_steps, similarity};
         j.generate(images_per_step);
     }
 }

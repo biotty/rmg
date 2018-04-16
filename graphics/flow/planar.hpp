@@ -85,7 +85,7 @@ private:
     }
     size_t discover_n() const
     {
-        typename ::stat buf;
+        struct ::stat buf;
         for (size_t j=0;;j++) if (::stat(filename(j).c_str(), &buf)) return j;
     }
 

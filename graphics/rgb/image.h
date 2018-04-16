@@ -11,7 +11,7 @@ typedef void * image;
 extern "C" {
 #endif
 
-image image_create(const char * name, int x, int y);
+image image_create(const char * path, int x, int y);
 void image_write(image, color);
 void image_close(image);
 

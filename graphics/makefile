@@ -1,5 +1,5 @@
 RAY_GUN=$(CURDIR)/ray/gun
-CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -pedantic -O2
+CXXFLAGS=-Wall -Wextra -Werror -std=c++14 -pedantic -O2
 
 .PHONY: all media heavy_media clean sweep
 

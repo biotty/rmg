@@ -36,19 +36,21 @@ static inline void saturated_add(compact_color * x, compact_color y)
 static inline bool similar(double esq, const color * x, const color * y)
 {
     if ( ! esq) {
-        return x->r == y->r && x->r == y->r && x->r == y->r;
-    } else {
-        color w = { x->r - y->r, x->g - y->g, x->b - y->b };
-        return esq > w.r * w.r + w.g * w.g + w.b * w.b;
+        return x->r == y->r && x->g == y->g && x->b == y->b;
     }
+
+    color w = { x->r - y->r, x->g - y->g, x->b - y->b };
+    return esq > w.r * w.r + w.g * w.g + w.b * w.b;
 }
 
 static inline real dec_stimulus(unsigned char c)
 {
     const real s = c / 255.0;
+    if (s <= 0.04045) {
+        return s / 12.92;
+    }
 
-    if (s <= 0.04045) return s / 12.92;
-    else return rpow(((s + 0.055) / 1.055), 2.4);
+    return rpow(((s + 0.055) / 1.055), 2.4);
 }
 
 static inline unsigned char enc_stimulus(real s)
