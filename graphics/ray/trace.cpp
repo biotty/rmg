@@ -127,7 +127,7 @@ enum refraction_ret {
 
     static enum refraction_ret
 refraction_trace(ray ray_, const scene_object * so,
-        unsigned long optics_refraction_index_nano,
+        float optics_refraction_index,
         compact_color optics_refraction_filter,
         const detector * detector_, world * w, color * result)
 {
@@ -151,11 +151,11 @@ refraction_trace(ray ray_, const scene_object * so,
     scoped_bit_flipper sbf(detector_->inside, i, enters);
 
     if ( ! enters) outside_i = detector_->inside.firstset();
-    unsigned long outside_refraction_index_nano = 1000000000;
+    float outside_refraction_index = 1.0;
     if (outside_i >= 0) {
-        outside_refraction_index_nano
-            = w->scene_[outside_i].optics.refraction_index_nano;
-        if (0 == outside_refraction_index_nano) {
+        outside_refraction_index
+            = w->scene_[outside_i].optics.refraction_index;
+        if (0 == outside_refraction_index) {
             if (debug) {
                 if (detector_->hop != max_hops) /* (view _can_ happen to be inside) */
                     std::cerr << "we got inside opaque object " << i << std::endl;
@@ -165,17 +165,18 @@ refraction_trace(ray ray_, const scene_object * so,
     }
     if (transparent_on_equal_index
             && so->decoration == nullptr
-            && outside_refraction_index_nano
-            == optics_refraction_index_nano) {
+            && outside_refraction_index
+            == optics_refraction_index) {
         ray_.head = detector_->ray_.head;
         compact_color transparent_ = {255, 255, 255};
         *result = trace_hop(ray_, transparent_, detector_, w);
         return transparent;
     }
-    real refraction_index = outside_refraction_index_nano
-            /(real) optics_refraction_index_nano;
-    if ( ! enters) {
-        refraction_index = 1 / refraction_index;
+    real refraction_index;
+    if (enters) {
+        refraction_index = outside_refraction_index / optics_refraction_index;
+    } else {
+        refraction_index = optics_refraction_index / outside_refraction_index;
         scale(&ray_.head, -1);
     }
     ray_.head = refraction(ray_.head, detector_->ray_.head,
@@ -240,11 +241,11 @@ ray_trace(const detector * detector_, world * w)
     }
     enum refraction_ret r = opaque;
     compact_color reflection_filter = optics->reflection_filter;
-    if (optics->refraction_index_nano) {
+    if (optics->refraction_index) {
         color refraction_color;
         r = refraction_trace(
                 surface, closest_object,
-                optics->refraction_index_nano,
+                optics->refraction_index,
                 optics->refraction_filter,
                 detector_, w, &refraction_color);
         if (r == reflect || r == transparent) {

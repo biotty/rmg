@@ -8,8 +8,7 @@
 struct cone {
     direction translate;
     float inv_r;
-    float theta;
-    float phi;
+    rotation_arg rota;
 };
 
 #ifndef __cplusplus

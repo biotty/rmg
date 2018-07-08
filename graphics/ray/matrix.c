@@ -3,7 +3,8 @@
 
 #include "matrix.h"
 
-void multiply(const real * matrix, int columns, int rows, const real * m, real * r)
+void multiply(const real * restrict matrix, int columns, int rows,
+        const real * restrict m, real * restrict r)
 {
     for (int row=0; row<rows; row++) {
         const real * matrix_row = & matrix[row * columns];

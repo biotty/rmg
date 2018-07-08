@@ -7,8 +7,7 @@
 
 struct saddle {
     direction translate;
-    float theta;
-    float phi;
+    rotation_arg rota;
     float v;
     point scale;
 };

@@ -14,12 +14,22 @@ typedef xyz direction;
 #define point_from_origo(xyz) (xyz)
 #define direction_from_origo(xyz) (xyz)
 
-#ifdef __cplusplus
+struct rotation_arg
+{
+    float theta_cos;
+    float theta_sin;
+    float phi_cos;
+    float phi_sin;
+};
+
+#ifndef __cplusplus
+typedef struct rotation_arg rotation_arg;
+#else
 extern "C" {
 #endif
 
     static inline real
-length(direction direction_)
+length(const direction direction_)
 {
     return distance_to_origo(point_from_origo(direction_));
 }
@@ -66,9 +76,10 @@ distance_vector(point from, point to)
 direction reflection(direction normal, direction);
 direction refraction(direction normal, direction, real w, real minimum_det);
 void spherical(direction, real * r, real * theta, real * phi);
+void spherical_arg(direction d, real * r, rotation_arg * arg);
 void direction_to_unitsquare(const direction * d, real * x, real * y);
-direction rotation(direction d, real phi, real theta);
-direction inverse_rotation(direction d, real phi, real theta);
+direction rotation(direction d, rotation_arg arg);
+direction inverse_rotation(direction d, rotation_arg arg);
 
 #ifdef __cplusplus
 }

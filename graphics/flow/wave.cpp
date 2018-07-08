@@ -57,8 +57,8 @@ private:
 
     color shaded_color(color c, double sq)
     {
-        double v = 1;
-        double u = sq;
+        real v = 1;
+        real u = sq;
         if (u < 0) {
             v = 0;
             u *= -1;

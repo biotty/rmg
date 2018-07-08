@@ -91,14 +91,15 @@ get_object(std::string name,
     }
 
     if (name == "cylinder" || name == "-cylinder") {
-        real r, theta, phi;
+        real r;
+        rotation_arg rota;
         point p;
         direction axis;
         std::cin >> p;
         std::cin >> axis;
-        spherical(axis, &r, &theta, &phi);
+        spherical_arg(axis, &r, &rota);
         cylinder cylinder_ = {{-p.x, -p.y, -p.z},
-            (float)square(r), (float)theta, (float)phi};
+            (float)square(r), rota};
         if (name[0] == '-') {
             *fi = _cylinder_intersection;
             *fn = _cylinder_normal;
@@ -111,14 +112,15 @@ get_object(std::string name,
     }
 
     if (name == "cone" || name == "-cone") {
-        real r, theta, phi;
+        real r;
+        rotation_arg rota;
         point apex;
         direction axis;
         std::cin >> apex;
         std::cin >> axis;
-        spherical(axis, &r, &theta, &phi);
+        spherical_arg(axis, &r, &rota);
         cone cone_ = {{-apex.x, -apex.y, -apex.z},
-            1/(float)r, (float)theta, (float)phi};
+            1/(float)r, rota};
         if (name[0] == '-') {
             *fi = _cone_intersection;
             *fn = _cone_normal;
@@ -131,15 +133,16 @@ get_object(std::string name,
     }
 
     if (name == "parabol" || name == "-parabol") {
-        real r_half, theta, phi;
+        real r_half;
+        rotation_arg rota;
         point vertex;
         direction focus;
         std::cin >> vertex;
         std::cin >> focus;
-        spherical(focus, &r_half, &theta, &phi);
+        spherical_arg(focus, &r_half, &rota);
         parabol parabol_ = {
             distance_vector(vertex, point_from_origo(focus)),
-            2*(float)r_half, (float)theta, (float)phi};
+            2 *(float) r_half, rota};
         if (name[0] == '-') {
             *fi = _parabol_intersection;
             *fn = _parabol_normal;
@@ -152,16 +155,17 @@ get_object(std::string name,
     }
 
     if (name == "hyperbol" || name == "-hyperbol") {
-        real r, theta, phi;
+        real r;
+        rotation_arg rota;
         point center;
         direction axis;
         real vertex;
         std::cin >> center;
         std::cin >> axis;
         std::cin >> vertex;
-        spherical(axis, &r, &theta, &phi);
+        spherical_arg(axis, &r, &rota);
         hyperbol hyperbol_ = {{-center.x, -center.y, -center.z},
-            (float)theta, (float)phi, 1/(float)r, 1/(float)vertex};
+            rota, 1/(float)r, 1/(float)vertex};
         if (name[0] == '-') {
             *fi = _hyperbol_intersection;
             *fn = _hyperbol_normal;
@@ -174,7 +178,8 @@ get_object(std::string name,
     }
 
     if (name == "saddle" || name == "-saddle") {
-        real r, theta, phi;
+        real r;
+        rotation_arg rota;
         point center;
         direction axis;
         real v, x, y;
@@ -183,10 +188,9 @@ get_object(std::string name,
         std::cin >> v;
         std::cin >> x;
         std::cin >> y;
-        spherical(axis, &r, &theta, &phi);
+        spherical_arg(axis, &r, &rota);
         saddle saddle_ = {{-center.x, -center.y, -center.z},
-            (float)theta, (float)phi, (float)v,
-            {1/(float)x, 1/(float)y, 1/(float)r }};
+            rota, (float)v, {1/(float)x, 1/(float)y, 1/(float)r }};
         *fi = saddle_intersection;
         *fn = saddle_normal;
         if (name[0] == '-') {
@@ -231,10 +235,7 @@ get_object_optics(real first)
     object_optics ret;
     ret.reflection_filter = z_filter(c);
     std::cin >> ret.absorption_filter;
-    real r;
-    std::cin >> r;
-    if (r >= ULONG_MAX / 1e9) fail("refraction index overflow\n");
-    ret.refraction_index_nano = static_cast<unsigned long>(r * 1e9);
+    std::cin >> ret.refraction_index;
     std::cin >> ret.refraction_filter;
     std::cin >> ret.passthrough_filter;
     return ret;

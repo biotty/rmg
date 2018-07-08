@@ -18,7 +18,7 @@ extern "C" {
 #endif
 
 void advance(ray * ray_, real r);
-void inverse_rotation_ray(ray * ray_, real phi, real theta);
+void inverse_rotation_ray(ray * ray_, rotation_arg arg);
 
 #ifdef __cplusplus
 }

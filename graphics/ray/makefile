@@ -1,6 +1,6 @@
 GRAPHICS=..
 LDFLAGS=-L$(GRAPHICS)/rgb -lrgb -lm
-CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -O2 -pedantic -I$(GRAPHICS)/rgb
+CXXFLAGS=-Wall -Wextra -Werror -std=c++14 -pedantic -O2 -I$(GRAPHICS)/rgb
 CFLAGS=-Wall -Wextra -Werror -std=c11 -pedantic -O2 -I$(GRAPHICS)/rgb
 
 gun: gun.o tracer.a

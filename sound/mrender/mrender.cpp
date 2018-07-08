@@ -72,67 +72,64 @@ double sawtoothpull(double x, double p)
 }
 
 struct wavefun { virtual double operator()(double x) = 0; };
-struct whitenoisefun : wavefun { double operator()(double) { return rnd(-1, 1); } };
-struct sinefun : wavefun { double operator()(double x) { return sine(x); } };
-struct squarefun : wavefun { double operator()(double x) { return square(x); } };
-struct sawtoothfun : wavefun { double operator()(double x) { return sawtooth(x); } };
+struct whitenoisefun : wavefun { double operator()(double) final { return rnd(-1, 1); } };
+struct sinefun : wavefun { double operator()(double x) final { return sine(x); } };
+struct squarefun : wavefun { double operator()(double x) final { return square(x); } };
+struct sawtoothfun : wavefun { double operator()(double x) final { return sawtooth(x); } };
 
 struct qshapefun : wavefun
 {
-    double q;
     qshapefun(double a) : q(pow(10, -a)) {}
-    double operator()(double x) { return squareshape(sine(x), q); }
+    double operator()(double x) final { return squareshape(sine(x), q); }
+private:
+    double q;
 };
 
 struct wshapefun : wavefun
 {
-    double w;
     wshapefun(double a) : w(pow(10, -a)) {}
-    double operator()(double x) { return sine(sawtoothpull(x, w)); }
+    double operator()(double x) final { return sine(sawtoothpull(x, w)); }
+private:
+    double w;
 };
 
 struct qwshapefun : wavefun
 {
-    double q, w;
     qwshapefun(double a, double b)
         : q(pow(10, -a)), w(pow(10, -b))
     {}
-    double operator()(double x) {
+    double operator()(double x) final {
         return squareshape(sine(sawtoothpull(x, w)), q);
     }
+private:
+    double q, w;
 };
 
 typedef std::vector<float> samples;
 
-double enveloping_amplitude(samples::iterator b, samples::iterator e)
+double enveloping_amplitude(samples const & s)
 {
     double r = 0;
-    for (samples::iterator it = b; it != e; ++it) {
-        const float a = fabsf(*it);
+    for (float b : s) {
+        const float a = fabsf(b);
         if (a > r) r = a;
     }
     return r;
 }
 
-struct sampler
+class sampler
 {
     samples c;
     double i, s, g;
-    sampler(double i = amp_per_sec/10) : i(i), s(), g() {}
-    void write(samples w)
+    void put(double y)
     {
-        double a = enveloping_amplitude(w.begin(), w.end());
-        const double h = lim_amp;
-        const double m = (a >= h) ? h/a : h;
-        if ( ! c.empty()) {
-            double t = s;
-            if (t > m) t = m;
-            if (t > g+i) t = g+i;
-            flush(t);
-        } else
-            g = m;
-        s = m;
-        c = w;
+        if (y < -1) y = -1;
+        else if (y > 1) y = 1;
+        int i = y * 32767;
+        signed char cd[2];
+        cd[0] = i >> 8;
+        cd[1] = i & 255;
+        fwrite(cd, 2, 1, stdout);
     }
     void flush(double t)
     {
@@ -146,21 +143,28 @@ struct sampler
         }
         g = t;
     }
+public:
+    sampler(double i = amp_per_sec/10) : i(i), s(), g() {}
+    void write(samples w)
+    {
+        double a = enveloping_amplitude(w);
+        const double h = lim_amp;
+        const double m = (a >= h) ? h/a : h;
+        if ( ! c.empty()) {
+            double t = s;
+            if (t > m) t = m;
+            if (t > g+i) t = g+i;
+            flush(t);
+        } else
+            g = m;
+        s = m;
+        c = w;
+    }
     void close()
     {
         if (c.empty()) return;
         flush(0);
         c.resize(0);
-    }
-    void put(double y)
-    {
-        if (y < -1) y = -1;
-        else if (y > 1) y = 1;
-        int i = y * 32767;
-        signed char cd[2];
-        cd[0] = i >> 8;
-        cd[1] = i & 255;
-        fwrite(cd, 2, 1, stdout);
     }
 };
 
@@ -170,10 +174,6 @@ wavefunptr defaultfun() { return wavefunptr(new sinefun); }
 
 struct vibrato
 {
-    double a;
-    double f;
-    wavefunptr s;
-
     vibrato() : a(), f(1), s(defaultfun()) {}
     vibrato(double p, double e, double f, wavefunptr s = defaultfun()) : f(f), s(s)
     {
@@ -185,14 +185,14 @@ struct vibrato
     {
         return 1 + a * (*s)(x * f);
     }
+private:
+    double a;
+    double f;
+    wavefunptr s;
 };
 
 struct tremolo
 {
-    double k;
-    double f;
-    wavefunptr s;
-
     tremolo() : k(), f(1), s(defaultfun()) {}
     tremolo(double l, double f, wavefunptr s = defaultfun())
         : k((1 - a_of(l)) / 2), f(f), s(s)
@@ -201,19 +201,14 @@ struct tremolo
     {
         return 1 + k * ((*s)(x * f) - 1);
     }
+private:
+    double k;
+    double f;
+    wavefunptr s;
 };
 
-class envelope
+struct envelope
 {
-    double a, d, s, r, k, u, q;
-    double f(double x)
-    {
-        return (x < a) ? x / a
-                : (x < a + d)
-                    ? linear(1, s, (x - a) / d)
-                    : s;
-    }
-public:
     envelope(double a, double d, double s, double u, double r)
         : a(a), d(d), s(s), r(r), k(1 / r), u(u), q(f(u)) {}
     double get(double x)
@@ -229,14 +224,23 @@ public:
     {
         return u + r;
     }
+private:
+    double a, d, s, r, k, u, q;
+    double f(double x)
+    {
+        return (x < a) ? x / a
+                : (x < a + d)
+                    ? linear(1, s, (x - a) / d)
+                    : s;
+    }
 };
 
 struct sourcewave
 {
     virtual double get(double d) = 0;
     sourcewave() : x() {}
-    virtual void start() {}
 protected:
+    virtual void start() {}
     void advance(double d)
     {
         x += d;
@@ -246,31 +250,37 @@ protected:
     double x;
 };
 
-struct whitenoisewave : sourcewave
+struct funwave : sourcewave
 {
-    double get(double)
+    funwave(wavefunptr s = defaultfun()) : s(s) {}
+    double get(double d)
     {
-        return rnd(-1, 1);
+        double r = (*s)(x);
+        advance(d);
+        return r;
     }
+private:
+    wavefunptr s;
 };
 
 struct bandgrainwave : sourcewave
 {
-    double b;
-    double e;
     bandgrainwave(double b) : b(b), e() { start(); x = rnd(0, 1); }
-    void start() { e = rnd(1, 1 + b); }
     double get(double d)
     {
         double r = sine(x);
         advance(d * e);
         return r;
     }
+protected:
+    void start() final { e = rnd(1, 1 + b); }
+private:
+    double b;
+    double e;
 };
 
 struct bandnoisewave : sourcewave
 {
-    std::vector<bandgrainwave> w;
     bandnoisewave(unsigned n, double b) : w(n, b) {}
     double get(double d)
     {
@@ -278,12 +288,12 @@ struct bandnoisewave : sourcewave
         for (unsigned i=0; i<w.size(); i++) r += w[i].get(d);
         return r / w.size();
     }
+private:
+    std::vector<bandgrainwave> w;
 };
 
 struct modulatorwave : private sourcewave
 {
-    double t, a;
-    wavefunptr s;
     modulatorwave(double t, double a, wavefunptr s = defaultfun()) : t(t), a(a), s(s) {}
     double get(double d)
     {
@@ -291,12 +301,13 @@ struct modulatorwave : private sourcewave
         advance(d * t);
         return r;
     }
+private:
+    double t, a;
+    wavefunptr s;
 };
 
 struct fmwave : sourcewave
 {
-    wavefunptr s;
-    modulatorwave m;
     fmwave(double r, double f, wavefunptr s = defaultfun())
         : s(s), m(f, r)
     {}
@@ -306,14 +317,13 @@ struct fmwave : sourcewave
         advance(d * (1 + m.get(d)));
         return r;
     }
+private:
+    wavefunptr s;
+    modulatorwave m;
 };
 
 struct stringwave : sourcewave
 {
-    filter::biquad f;
-    wavefunptr s;
-    samples a;
-    unsigned i;
     stringwave(double p, wavefunptr s, filter::biquad f)
         : f(f), s(s), a(SAMPLERATE / F_OF_JUST(p)), i()
     {
@@ -321,19 +331,21 @@ struct stringwave : sourcewave
         for (unsigned i=0; i<n; i++)
             a[i] = (*s)(i /(double) n);
     }
-
     double get(double /*d*/)
     {
         const double r = a[i] = f.shift(a[i]);
         if (++i >= a.size()) i = 0;
         return r;
     }
+private:
+    filter::biquad f;
+    wavefunptr s;
+    samples a;
+    unsigned i;
 };
 
 struct participantwave : private sourcewave
 {
-    double t;
-    wavefunptr s;
     participantwave(double t, wavefunptr s = defaultfun()) : t(t), s(s)
     { x = rnd(0, 1); }
     double get(double d)
@@ -342,19 +354,23 @@ struct participantwave : private sourcewave
         advance(d * t);
         return r;
     }
+private:
+    double t;
+    wavefunptr s;
 };
 
 struct choruswave : sourcewave
 {
-    std::vector<participantwave> a;
-    choruswave(unsigned n, double t = .01)
-    { for (unsigned i=0; i<n; i++) a.push_back(participantwave(1 + t)); }
+    choruswave(std::vector<wavefunptr> fs, double t = .01)
+    { for (wavefunptr f : fs) a.push_back(participantwave(1 + t, f)); }
     double get(double d)
     {
         double r = 0;
         for (unsigned i=0; i<a.size(); i++) r += a[i].get(d);
         return r / (a.size());
     }
+private:
+    std::vector<participantwave> a;
 };
 
 struct formant
@@ -374,11 +390,8 @@ private:
     double p, q, y, a, r;
 };
 
-class harmonicwave : public sourcewave
+struct harmonicwave : sourcewave
 {
-    std::vector<double> a;
-public:
-    bool p;
     harmonicwave(std::vector<formant> o, bool p = false)
         : p(p)
     {
@@ -417,6 +430,9 @@ public:
         advance(d);
         return r / a.size();
     }
+private:
+    bool p;
+    std::vector<double> a;
 };
 
 typedef std::shared_ptr<sourcewave> waveptr;
@@ -480,7 +496,7 @@ struct hihat : instrument
         vibrato v;
         tremolo r;
         envelope e = envelope(0, .01, .5, .01, .04);
-        whitenoisewave * y = new whitenoisewave();
+        funwave * y = new funwave(wavefunptr(new whitenoisefun));
         p.insert(sound(n.t, 33, n.l - 15, n.o, waveptr(y), v, r, e));
     }
 };
@@ -494,9 +510,10 @@ struct drum : instrument
         envelope ew = envelope(0, 0, 1, 0.03, 0.2);
         envelope ey = envelope(0.04, 0, 1, 0.04, 0.1);
         bandnoisewave * w = new bandnoisewave(19, 3);
-        choruswave * y = new choruswave(9, 2);
-        y->a[0].s = wavefunptr(new sawtoothfun);
-        y->a[1].s = wavefunptr(new squarefun);
+        std::vector<wavefunptr> a = {
+            wavefunptr(new sawtoothfun),
+            wavefunptr(new squarefun) };
+        choruswave * y = new choruswave(a, 2);
         p.insert(sound(n.t, 33, n.l - 3, n.o, waveptr(w), v, r, ew));
         p.insert(sound(n.t, 21, n.l - 3, n.o, waveptr(y), v, r, ey));
     }

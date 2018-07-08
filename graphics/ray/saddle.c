@@ -41,7 +41,7 @@ saddle_intersection(
     ray t = *ray_;
     const saddle * saddle_ = saddle__;
     move(&t.endpoint, saddle_->translate);
-    inverse_rotation_ray(&t, saddle_->theta, saddle_->phi);
+    inverse_rotation_ray(&t, saddle_->rota);
     const real v = - saddle_->v;
     const real R[4] = { cos(v), -sin(v), sin(v), cos(v) };
     xy_ray(&t, R);
@@ -59,8 +59,7 @@ saddle_normal(point p, void * saddle__, bool at_second)
     (void)at_second;
     const saddle * saddle_ = saddle__;
     move(&p, saddle_->translate);
-    const direction m = inverse_rotation(direction_from_origo(p),
-            saddle_->theta, saddle_->phi);
+    const direction m = inverse_rotation(direction_from_origo(p), saddle_->rota);
     const real m_xy[2] = { m.x, m.y };
     const real v = - saddle_->v;
     real R[4] = { cos(v), -sin(v), sin(v), cos(v) };
@@ -75,5 +74,5 @@ saddle_normal(point p, void * saddle__, bool at_second)
     direction n = { n_xy[0], n_xy[1], saddle_->scale.z };
     normalize(&n);
 
-    return rotation(n, saddle_->theta, saddle_->phi);
+    return rotation(n, saddle_->rota);
 }

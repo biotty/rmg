@@ -13,9 +13,9 @@ reflection(direction normal, direction d)
     normal.x += d.x;
     normal.y += d.y;
     normal.z += d.z;
-    if ( ! is_near(length(normal), 1)) {
-        normalize(&normal);
-    }
+    //if ( ! is_near(length(normal), 1)) {
+    //    normalize(&normal);
+    //}
     return normal;
 }
 
@@ -60,6 +60,17 @@ spherical(direction d, real * r, real * theta, real * phi)
 }
 
     void
+spherical_arg(direction d, real * r, rotation_arg * arg)
+{
+    real theta, phi;
+    spherical(d, r, &theta, &phi);
+    arg->theta_cos = cosf(theta);
+    arg->theta_sin = sinf(theta);
+    arg->phi_cos = cosf(phi);
+    arg->phi_sin = sinf(phi);
+}
+
+    void
 direction_to_unitsquare(const direction * d, real * x, real * y)
 {
     static const real pi = REAL_PI;
@@ -72,69 +83,65 @@ direction_to_unitsquare(const direction * d, real * x, real * y)
 }   
 
     static void
-transform(direction * d, const real T[9])
+transform(direction * d, const real trm[9])
 {
     const real v[3] = {d->x, d->y, d->z};
     real r[3];
-    multiply(T, 3, 3, v, r);
+    multiply(trm, 3, 3, v, r);
     d->x = r[0];
     d->y = r[1];
     d->z = r[2];
 }
 
     static inline void
-rotate_xz_xy(direction  * d, const real a, const real b)
+rotate_xz_xy(direction  * d, const rotation_arg arg)
 {
-    const real ca = cos(a);
-    const real sa = sin(a);
-    const real cb = cos(b);
-    const real sb = sin(b);
-    const real RzRy[3 * 3] = {
+    const real ca = arg.theta_cos;
+    const real sa = arg.theta_sin;
+    const real cb = arg.phi_cos;
+    const real sb = arg.phi_sin;
+    const real RzRy[9] = {
         cb * ca, -sb, cb * sa,
         sb * ca, cb, sb * sa,
         -sa, 0, ca
     };
+
     transform(d, RzRy);
 }
 
     static inline void
-rotate_xy_xz(direction * d, const real a, const real b)
+rotate_xy_xz(direction * d, const rotation_arg arg)
 {
-    const real ca = cos(a);
-    const real sa = sin(a);
-    const real cb = cos(b);
-    const real sb = sin(b);
-    const real RyRz[3 * 3] = {
+    const real ca = arg.theta_cos;
+    const real sa = arg.theta_sin;
+    const real cb = arg.phi_cos;
+    const real sb = arg.phi_sin;
+    const real RyRz[9] = {
         cb * ca, -cb * sa, sb,
         sa, ca, 0,
         -sb * ca, sb * sa, cb
     };
+
     transform(d, RyRz);
 }
 
-#if 0 /*unused*/
-    static void
-rotate_yz(direction * d, real a)
-{
-    const real Rx[3 * 3] = {
-        1, 0, 0,
-        0, cos(a), -sin(a),
-        0, sin(a), cos(a),
-    };
-    transform(d, Rx);
-}
-#endif
-
     direction
-rotation(direction d, real theta, real phi)
+rotation(direction d, rotation_arg arg)
 {
-    rotate_xz_xy(&d, theta, phi);
+    rotate_xz_xy(&d, arg);
     return d;
 }
 
     direction
-inverse_rotation(direction d, real theta, real phi)
+inverse_rotation(direction d, rotation_arg arg)
 {
-    rotate_xy_xz(&d, -phi, -theta);
+    const rotation_arg inv = {
+        arg.phi_cos,
+        -arg.phi_sin,
+        arg.theta_cos,
+        -arg.theta_sin
+    };
+
+    rotate_xy_xz(&d, inv);
     return d;
 }

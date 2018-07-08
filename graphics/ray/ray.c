@@ -14,9 +14,9 @@ advance(ray * ray_, real r)
 }
 
     void
-inverse_rotation_ray(ray * ray_, real theta, real phi)
+inverse_rotation_ray(ray * ray_, rotation_arg arg)
 {
-    ray_->endpoint = inverse_rotation(direction_from_origo(ray_->endpoint), theta, phi);
+    ray_->endpoint = inverse_rotation(direction_from_origo(ray_->endpoint), arg);
     // improve: re-use transformation-matrices
-    ray_->head = inverse_rotation(ray_->head, theta, phi);
+    ray_->head = inverse_rotation(ray_->head, arg);
 }

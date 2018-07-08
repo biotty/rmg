@@ -9,7 +9,7 @@
 transform_(point p, const cone * cone_)
 {
     move(&p, cone_->translate);
-    direction endpoint = inverse_rotation(direction_from_origo(p), cone_->theta, cone_->phi);
+    direction endpoint = inverse_rotation(direction_from_origo(p), cone_->rota);
     return endpoint;
 }
 
@@ -17,7 +17,7 @@ transform_(point p, const cone * cone_)
 transform_ray_(ray * ray_, const cone * cone_)
 {
     move(&ray_->endpoint, cone_->translate);
-    inverse_rotation_ray(ray_, cone_->theta, cone_->phi);
+    inverse_rotation_ray(ray_, cone_->rota);
 }
 
     real_pair
@@ -68,7 +68,7 @@ cone_normal(point p, void * cone__, bool at_second)
     n.z *= - square(cone_->inv_r);
     normalize(&n);
 
-    return rotation(n, cone_->theta, cone_->phi);
+    return rotation(n, cone_->rota);
 }
 
     direction

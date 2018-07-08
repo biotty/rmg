@@ -4,6 +4,7 @@
 #include "inter.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdalign.h>
 #include <assert.h>
 
 typedef struct {
@@ -12,11 +13,8 @@ typedef struct {
     object_arg_union arg;
 } object;
 
-typedef struct {
-    union {
-        real align_as_object_arg_union;
-        int count;
-    };
+typedef struct { alignas(object_arg_union)
+    int count;
     int hit_i;
     int hit_j;
     object objects[];
@@ -107,7 +105,7 @@ inter_intersection(const ray * ray_, void * inter__)
         if (p.first < 0 && p.second < 0)
             return (real_pair){-1, -1};
         if (p.second < p.first) {
-            subs[n_subs++] = (partition){p, i, 123456789/*unused*/};
+            subs[n_subs++] = (partition){p, i, 12345/*unused*/};
             continue;
         }
         if (p.first >= 0 && p.first > part.p.first) {

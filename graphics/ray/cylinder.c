@@ -9,14 +9,14 @@
 transform_(point p, const cylinder * cylinder_)
 {
     move(&p, cylinder_->translate);
-    return inverse_rotation(direction_from_origo(p), cylinder_->theta, cylinder_->phi);
+    return inverse_rotation(direction_from_origo(p), cylinder_->rota);
 }
 
     static void
 transform_ray_(ray * ray_, const cylinder * cylinder_)
 {
     move(&ray_->endpoint, cylinder_->translate);
-    inverse_rotation_ray(ray_, cylinder_->theta, cylinder_->phi);
+    inverse_rotation_ray(ray_, cylinder_->rota);
 }
 
     real_pair
@@ -62,7 +62,7 @@ cylinder_normal(point p, void * cylinder__, bool at_second)
     n.z = 0;
     normalize(&n);
 
-    return rotation(n, cylinder_->theta, cylinder_->phi);
+    return rotation(n, cylinder_->rota);
 }
 
     direction

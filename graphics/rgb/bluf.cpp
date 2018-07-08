@@ -86,11 +86,11 @@ parse_color(const char * hex)
     char * endptr;
     unsigned rgb = strtol(hex, &endptr, 16);
     if (endptr - hex == 6) {
-        return {(255 & (rgb >> 16)) / 255.0,
-                (255 & (rgb >> 8)) / 255.0, (255 & (rgb)) / 255.0};
+        return {(255 & (rgb >> 16)) /(real) 255,
+                (255 & (rgb >> 8)) /(real) 255, (255 & (rgb)) /(real) 255};
     } else if (endptr - hex == 3) {
-        return {(15 & (rgb >> 8)) / 15.0,
-                (15 & (rgb >> 4)) / 15.0, (15 & (rgb)) / 15.0};
+        return {(15 & (rgb >> 8)) /(real) 15,
+                (15 & (rgb >> 4)) /(real) 15, (15 & (rgb)) /(real) 15};
     }
 
     std::cerr << "Invalid pre-colon token in " << hex

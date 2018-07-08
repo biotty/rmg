@@ -1,5 +1,5 @@
 GRAPHICS=..
-CXXFLAGS=-Wall -Wextra -Werror -std=c++11 -pedantic -O2 -I$(GRAPHICS)/rgb
+CXXFLAGS=-Wall -Wextra -Werror -std=c++14 -pedantic -O2 -I$(GRAPHICS)/rgb
 LDFLAGS=-L$(GRAPHICS)/rgb -lrgb
 
 FLOW=flow.hpp cellular.hpp planar.hpp linear.hpp

@@ -9,7 +9,7 @@
 transform_(point p, const parabol * parabol_)
 {
     move(&p, parabol_->translate);
-    direction endpoint = inverse_rotation(direction_from_origo(p), parabol_->theta, parabol_->phi);
+    direction endpoint = inverse_rotation(direction_from_origo(p), parabol_->rota);
     return endpoint;
 }
 
@@ -17,7 +17,7 @@ transform_(point p, const parabol * parabol_)
 transform_ray_(ray * ray_, const parabol * parabol_)
 {
     move(&ray_->endpoint, parabol_->translate);
-    inverse_rotation_ray(ray_, parabol_->theta, parabol_->phi);
+    inverse_rotation_ray(ray_, parabol_->rota);
 }
 
     real_pair
@@ -60,7 +60,7 @@ parabol_normal(point p, void * parabol__, bool at_second)
         normalize(&n);
     }
 
-    return rotation(n, parabol_->theta, parabol_->phi);
+    return rotation(n, parabol_->rota);
 }
 
     direction

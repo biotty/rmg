@@ -12,7 +12,7 @@ _hyperbol_intersection(
     ray t = *ray_;
     const hyperbol * hyperbol_ = hyperbol__;
     move(&t.endpoint, hyperbol_->translate);
-    inverse_rotation_ray(&t, hyperbol_->theta, hyperbol_->phi);
+    inverse_rotation_ray(&t, hyperbol_->rota);
     t.endpoint.x *= hyperbol_->inv_v;
     t.endpoint.y *= hyperbol_->inv_v;
     t.endpoint.z *= hyperbol_->inv_h;
@@ -43,11 +43,11 @@ hyperbol_normal(point p, void * hyperbol__, bool at_second)
     (void)at_second;
     const hyperbol * hyperbol_ = hyperbol__;
     move(&p, hyperbol_->translate);
-    direction n = inverse_rotation(direction_from_origo(p), hyperbol_->theta, hyperbol_->phi);
+    direction n = inverse_rotation(direction_from_origo(p), hyperbol_->rota);
     n.z *= - hyperbol_->inv_v / hyperbol_->inv_h;
     normalize(&n);
 
-    return rotation(n, hyperbol_->theta, hyperbol_->phi);
+    return rotation(n, hyperbol_->rota);
 }
 
     direction
