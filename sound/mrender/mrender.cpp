@@ -497,7 +497,7 @@ struct hihat : instrument
         tremolo r;
         envelope e = envelope(0, .01, .5, .01, .04);
         funwave * y = new funwave(wavefunptr(new whitenoisefun));
-        p.insert(sound(n.t, 33, n.l - 15, n.o, waveptr(y), v, r, e));
+        p.insert(sound(n.t, 33, n.l - 12, n.o, waveptr(y), v, r, e));
     }
 };
 
@@ -514,8 +514,8 @@ struct drum : instrument
             wavefunptr(new sawtoothfun),
             wavefunptr(new squarefun) };
         choruswave * y = new choruswave(a, 2);
-        p.insert(sound(n.t, 33, n.l - 3, n.o, waveptr(w), v, r, ew));
-        p.insert(sound(n.t, 21, n.l - 3, n.o, waveptr(y), v, r, ey));
+        p.insert(sound(n.t, 16, n.l - 12, n.o, waveptr(w), v, r, ew));
+        p.insert(sound(n.t, 12, n.l - 9, n.o, waveptr(y), v, r, ey));
     }
 };
 
@@ -529,7 +529,7 @@ public:
         tremolo r = tremolo(rnd(0, -6), rnd(1, 16), w());
         envelope es = envelope(rnd(0, .03), rnd(.05, .1), rnd(.5, .7), n.d, rnd(.03, .1));
         fmwave * y = new fmwave(1.5, 1, w());
-        p.insert(sound(n.t, n.p, n.l - 3, n.o, waveptr(y), v, r, es));
+        p.insert(sound(n.t, n.p, n.l - 9, n.o, waveptr(y), v, r, es));
     }
 };
 
@@ -641,12 +641,11 @@ class conductor // destructive -- eats the set of targeted sound
     }
 public:
     conductor(std::multiset<sound> & s) : s(s) {}
-#   define UNTIL(c) while(!(c))
     void run()
     {
         unsigned k = 0;
         std::list<sound> p;
-        UNTIL (p.empty() && s.empty()) {
+        while (!p.empty() || !s.empty()) {
             trim(.1 * (k + 1), p);
             std::cerr << "\r" << std::setw(3) << int(p.size()) << " @" << k;
             samples a;
@@ -723,4 +722,3 @@ int main(int argc, char **argv)
     conductor q(s);
     q.run();
 }
-

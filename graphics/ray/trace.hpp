@@ -27,6 +27,6 @@ struct world {
     world() : sky() {}
 };
 
-color trace(ray t, world *);
+color trace(ray t, const world &);
 
 #endif

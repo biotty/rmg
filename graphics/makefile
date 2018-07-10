@@ -22,7 +22,7 @@ image.jpeg: py/image1.py ray/gun map.jpeg
 	$< |$(RAY_GUN) 1920x1080 |pnmtojpeg >$@
 
 video.mp4: py/image1.py ray/gun map.jpeg map.movie
-	./movie_exec.sh $@ "$< -n 500 -C $(RAY_GUN) -o {}/"
+	./movie_exec.sh $@ "$< -n 500 -j 2 -C $(RAY_GUN) -o {}/"
 
 fluidwave.mp4: flow/sh flow/fluid flow/wave map.jpeg
 	$< map.jpeg $@
@@ -34,7 +34,7 @@ mandelbrot.mp4: follow
 	./movie_exec.sh $@ "./follow |./movie_pipe.sh {}/"
 
 map.jpeg: py/globe.py
-	$< 500x500 $@
+	$< 32x32 $@
 
 map.movie: py/atomic.py
 	./movie_exec.sh $@/ "$< -n 500 -o {}/"

@@ -325,7 +325,7 @@ get_spots(world * w)
 }
 
     void
-produce_trace(world * w, observer * o, int width, int height,
+produce_trace(world & w, observer * o, int width, int height,
         const char * out_path, bool report_status)
 {
     image out = image_create(out_path, width, height);
@@ -410,7 +410,7 @@ main(int argc, char *argv[])
         if ( ! std::isspace(c)) fail("non-space trailer. got '%c'\n", c);
     } // wait till we get end-of-file (polite to not break the pipe)
     
-    produce_trace(&world_, &obs, width, height, out_path, report_status);
+    produce_trace(world_, &obs, width, height, out_path, report_status);
 
     fini_arg_pool();
     while ( -- decoration_index >= 0)
