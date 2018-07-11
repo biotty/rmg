@@ -20,14 +20,14 @@ reflection(direction normal, direction d)
 }
 
     direction
-refraction(direction normal, direction d, real w, real minimum_det)
+refraction(direction normal, direction d, real w)
 {
   /*assert(is_near(length(normal), 1));
     assert(is_near(length(d), 1));*/
     scale(&d, w);
     const real a = - scalar_product(d, normal);
     const real det = 1 - square(w) * (1 - square(a));
-    if (det < minimum_det) return DISORIENTED;
+    if (det < TINY_REAL) return DISORIENTED;
     const real b = sqroot(det);
     scale(&normal, w * a - b);
     d.x += normal.x;

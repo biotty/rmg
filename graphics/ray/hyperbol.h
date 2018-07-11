@@ -20,11 +20,11 @@ typedef struct hyperbol hyperbol;
 extern "C" {
 #endif
 
-real_pair hyperbol_intersection(const ray *, void * hyperbol_);
-direction hyperbol_normal(point, void * hyperbol_, bool at_second);
+real_pair hyperbol_intersection(const ray *, const void * hyperbol_, int * hit);
+direction hyperbol_normal(point, const void * hyperbol_, int hit);
 
-real_pair _hyperbol_intersection(const ray *, void * hyperbol_);
-direction _hyperbol_normal(point, void * hyperbol_, bool at_second);
+real_pair _hyperbol_intersection(const ray *, const void * hyperbol_, int * hit);
+direction _hyperbol_normal(point, const void * hyperbol_, int hit);
 
 #ifdef __cplusplus
 }

@@ -8,8 +8,10 @@
 real_pair
 _sphere_intersection(
         const ray * ray_,
-        void * sphere__)
+        const void * sphere__,
+        int * hit)
 {
+    (void)hit;
     const sphere * sphere_ = sphere__;
     const direction d = distance_vector(sphere_->center, ray_->endpoint);
     const real b = 2 * scalar_product(d, ray_->head);
@@ -21,15 +23,16 @@ _sphere_intersection(
 real_pair
 sphere_intersection(
         const ray * ray_,
-        void * sphere__)
+        const void * sphere__,
+        int * hit)
 {
-    return invert(_sphere_intersection(ray_, sphere__));
+    return invert(_sphere_intersection(ray_, sphere__, hit));
 }
 
     direction
-sphere_normal(point p, void * sphere__, bool at_second)
+sphere_normal(point p, const void * sphere__, int hit)
 {
-    (void)at_second;
+    (void)hit;
     const sphere * sphere_ = sphere__;
     direction translate = sphere_->center;
     scale(&translate, -1);
@@ -40,9 +43,9 @@ sphere_normal(point p, void * sphere__, bool at_second)
 }
 
     direction
-_sphere_normal(point p, void * sphere__, bool at_second)
+_sphere_normal(point p, const void * sphere__, int hit)
 {
-    direction d = sphere_normal(p, sphere__, at_second);
+    direction d = sphere_normal(p, sphere__, hit);
     scale(&d, -1);
     return d;
 }

@@ -23,8 +23,10 @@ transform_ray_(ray * ray_, const cone * cone_)
     real_pair
 cone_intersection(
         const ray * ray_,
-        void * cone__)
+        const void * cone__,
+        int * hit)
 {
+    (void)hit;
     ray t = *ray_;
     const cone * cone_ = cone__;
     transform_ray_(&t, cone_);
@@ -53,15 +55,16 @@ cone_intersection(
     real_pair
 _cone_intersection(
         const ray * ray_,
-        void * cone__)
+        const void * cone__,
+        int * hit)
 {
-    return invert(cone_intersection(ray_, cone__));
+    return invert(cone_intersection(ray_, cone__, hit));
 }
 
     direction
-cone_normal(point p, void * cone__, bool at_second)
+cone_normal(point p, const void * cone__, int hit)
 {
-    (void)at_second;
+    (void)hit;
     const cone * cone_ = cone__;
     direction n = transform_(p, cone_);
 
@@ -72,9 +75,9 @@ cone_normal(point p, void * cone__, bool at_second)
 }
 
     direction
-_cone_normal(point p, void * cone__, bool at_second)
+_cone_normal(point p, const void * cone__, int hit)
 {
-    direction d = cone_normal(p, cone__, at_second);
+    direction d = cone_normal(p, cone__, hit);
     scale(&d, -1);
     return d;
 }

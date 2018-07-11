@@ -15,8 +15,6 @@ typedef struct {
 
 typedef struct { alignas(object_arg_union)
     int count;
-    int hit_i;
-    int hit_j;
     object objects[];
 } inter;
 
@@ -63,7 +61,7 @@ partition_substract(partition part, const partition * subs, int n_subs)
         const int i = subs[x].i;
         const real_pair p = subs[x].p;
         assert(p.second < p.first);
-        if ((p.second < 2*TINY_REAL && part.p.first < 0)
+        if ((p.second < TINY_REAL && part.p.first < 0)
                 || (p.second < part.p.first && p.first > part.p.first)) {
             if (p.first > part.p.second) return EMPTY_PARTITION;
             else {
@@ -71,7 +69,7 @@ partition_substract(partition part, const partition * subs, int n_subs)
                 part.i = i;
             }
         } else if (p.second < part.p.second && p.first > part.p.second) {
-            if ((p.second < 2*TINY_REAL && part.p.first < 0)
+            if ((p.second < TINY_REAL && part.p.first < 0)
                     || p.second < part.p.first)
                 return EMPTY_PARTITION;
             else {
@@ -94,14 +92,14 @@ partition_substract(partition part, const partition * subs, int n_subs)
 }
 
     real_pair
-inter_intersection(const ray * ray_, void * inter__)
+inter_intersection(const ray * ray_, const void * inter__, int * hit)
 {
-    inter * inter_ = inter__;
+    const inter * inter_ = inter__;
     partition subs[inter_->count], part = EMPTY_PARTITION;
     int n_subs = 0;
     for (int i = 0; i < inter_->count; i++) {
-        void * a = &inter_->objects[i].arg;
-        const real_pair p = inter_->objects[i].intersection(ray_, a);
+        const void * a = &inter_->objects[i].arg;
+        const real_pair p = inter_->objects[i].intersection(ray_, a, NULL);
         if (p.first < 0 && p.second < 0)
             return (real_pair){-1, -1};
         if (p.second < p.first) {
@@ -122,18 +120,16 @@ inter_intersection(const ray * ray_, void * inter__)
             return (real_pair){-1, -1};
     }
     const partition _ = partition_substract(part, subs, n_subs);
-    inter_->hit_i = _.i;
-    inter_->hit_j = _.j;
+    *hit = (*hit) ? _.j : _.i;  // shall be un-needed: could use (_.p.first < 0)
     return _.p;
 }
 
     direction
-inter_normal(point p, void * inter__, bool at_second)
+inter_normal(point p, const void * inter__, int hit)
 {
-    inter * inter_ = inter__;
-    int i = at_second ? inter_->hit_j : inter_->hit_i;
-    assert(i >= 0 && i < inter_->count);
-    return inter_->objects[i].normal(p, &inter_->objects[i].arg, at_second);
+    const inter * inter_ = inter__;
+    assert(hit >= 0 && hit < inter_->count);
+    return inter_->objects[hit].normal(p, &inter_->objects[hit].arg, -1);
 }
 
     void *

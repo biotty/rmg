@@ -23,8 +23,10 @@ transform_ray_(ray * ray_, const parabol * parabol_)
     real_pair
 parabol_intersection(
         const ray * ray_,
-        void * parabol__)
+        const void * parabol__,
+        int * hit)
 {
+    (void)hit;
     ray t = *ray_;
     const parabol * parabol_ = parabol__;
     transform_ray_(&t, parabol_);
@@ -41,15 +43,16 @@ parabol_intersection(
     real_pair
 _parabol_intersection(
         const ray * ray_,
-        void * parabol__)
+        const void * parabol__,
+        int * hit)
 {
-    return invert(_parabol_intersection(ray_, parabol__));
+    return invert(_parabol_intersection(ray_, parabol__, hit));
 }
 
     direction
-parabol_normal(point p, void * parabol__, bool at_second)
+parabol_normal(point p, const void * parabol__, int hit)
 {
-    (void)at_second;
+    (void)hit;
     const parabol * parabol_ = parabol__;
     direction q = transform_(p, parabol_);
     direction n;
@@ -64,9 +67,9 @@ parabol_normal(point p, void * parabol__, bool at_second)
 }
 
     direction
-_parabol_normal(point p, void * parabol__, bool at_second)
+_parabol_normal(point p, const void * parabol__, int hit)
 {
-    direction d = _parabol_normal(p, parabol__, at_second);
+    direction d = parabol_normal(p, parabol__, hit);
     scale(&d, -1);
     return d;
 }

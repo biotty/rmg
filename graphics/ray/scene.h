@@ -7,11 +7,11 @@
 #include "ray.h"
 #include "stddef.h"
 
-typedef real_pair (* object_intersection)(const ray *, void * object_arg);
-typedef direction (* object_normal)(point, void * object_arg, bool at_second);
+typedef real_pair (* object_intersection)(const ray *, const void * object_arg, int * hit);
+typedef direction (* object_normal)(point, const void * object_arg, int hit);
 
 struct object_optics;
-typedef void (* object_decoration)(const ray *, void * arg,
+typedef void (* object_decoration)(const ray *, const void * arg,
         struct object_optics * so, const struct object_optics * adjust);
 typedef void (* decoration_delete)(void *);
 
@@ -26,10 +26,10 @@ struct object_optics {
 struct scene_object {
     object_intersection intersection;
     object_normal normal;
-    void * object_arg;
+    const void * object_arg;
     struct object_optics optics;
     object_decoration decoration;
-    void * decoration_arg;
+    const void * decoration_arg;
 };
 
 #ifndef __cplusplus

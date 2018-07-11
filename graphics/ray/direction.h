@@ -74,7 +74,7 @@ distance_vector(point from, point to)
 }
 
 direction reflection(direction normal, direction);
-direction refraction(direction normal, direction, real w, real minimum_det);
+direction refraction(direction normal, direction, real w);
 void spherical(direction, real * r, real * theta, real * phi);
 void spherical_arg(direction d, real * r, rotation_arg * arg);
 void direction_to_unitsquare(const direction * d, real * x, real * y);

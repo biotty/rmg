@@ -6,8 +6,10 @@
 real_pair
 plane_intersection(
         const ray * ray_,
-        void * plane__)
+        const void * plane__,
+        int * hit)
 {
+    (void)hit;
     const plane * plane_ = plane__;
     const real b = scalar_product(plane_->normal, ray_->head);
     const direction v = distance_vector(ray_->endpoint, plane_->at);
@@ -25,9 +27,9 @@ plane_intersection(
 }
 
 direction
-plane_normal(point p, void * plane__, bool at_second)
+plane_normal(point p, const void * plane__, int hit)
 {
-    (void)at_second;
+    (void)hit;
     const plane * plane_ = plane__;
     const direction d = plane_->normal;
     (void)p;

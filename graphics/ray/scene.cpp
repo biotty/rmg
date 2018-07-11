@@ -9,40 +9,41 @@
     void
 init_inside(bitarray & inside, scene const & s, const ray * t)
 {
+    int dummy = 0;
     const size_t n = s.size();
     for (size_t i = 0; i < n; i++) {
-        void * arg = s[i].object_arg;
+        const void * arg = s[i].object_arg;
         object_intersection oi = s[i].intersection;
-        real_pair p = oi(t, arg);
+        real_pair p = oi(t, arg, &dummy);
         inside.assign(i, p.first <= 0 && p.second >= 0);
     }
 }
 
     static real
-intersect(const ray * t, scene_object const * so, bool is_inside)
+intersect(const ray * t, scene_object const * so, int * hit)
 {
-        void * intersection_arg = so->object_arg;
-        const real_pair p = so->intersection(t, intersection_arg);
+        const void * intersection_arg = so->object_arg;
+        const bool is_inside = *hit != 0;
+        const real_pair p = so->intersection(t, intersection_arg, hit);
         //if (is_inside != (p.first <= 0 && p.second >= 0)) {
         //    fprintf(stderr, "inside-tracking error.  correcting\n");
         //    is_inside = ! is_inside; // inside->flip(i);
         //}
-        return ( ! is_inside)
-            ? p.first
-            : p.second;
+        return is_inside ? p.second : p.first;
 }
 
     scene_object const *
 closest_surface(scene const & s, ray * const t, bitarray & inside, stack * flipped)
 {
-    advance(t, - TINY_REAL);
+    advance(t, TINY_REAL);
     scene_object const * closest_object = nullptr;
     real closest_r = -1;
     int closest_i = -1;
     const size_t n = s.size();
+    std::vector<int> hits(n);
     for (size_t i = 0; i < n; i++) {
-        const bool inside_ = inside.isset(i);
-        const real r = intersect(t, &s[i], inside_);
+        hits[i] = inside.isset(i);
+        const real r = intersect(t, &s[i], &hits[i]);
         if (r >= 0 && (closest_r < 0 || r < closest_r)) {
             closest_object = &s[i];
             closest_r = r;
@@ -52,7 +53,7 @@ closest_surface(scene const & s, ray * const t, bitarray & inside, stack * flipp
     if (closest_r >= 0 && closest_r < HUGE_REAL) {
         int precedent_i = inside.firstset();
         if (precedent_i >= 0 && closest_i > precedent_i) {
-            advance(t, closest_r + TINY_REAL);
+            advance(t, closest_r);
             inside.flip(closest_i);
             closest_object = closest_surface(s, t, inside, flipped);
             if (closest_object && flipped != nullptr)
@@ -61,9 +62,8 @@ closest_surface(scene const & s, ray * const t, bitarray & inside, stack * flipp
                 inside.flip(closest_i);
         } else {
             advance(t, closest_r);
-            const bool inside_ = inside.isset(closest_i);
-            void * normal_arg = closest_object->object_arg;
-            t->head = closest_object->normal(t->endpoint, normal_arg, inside_);
+            const void * normal_arg = closest_object->object_arg;
+            t->head = closest_object->normal(t->endpoint, normal_arg, hits[closest_i]);
         }
         return closest_object;
     } else {

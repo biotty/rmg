@@ -36,8 +36,10 @@ xy_ray(ray * ray_, const real R[4])
     real_pair
 saddle_intersection(
         const ray * ray_,
-        void * saddle__)
+        const void * saddle__,
+        int * hit)
 {
+    (void)hit;
     ray t = *ray_;
     const saddle * saddle_ = saddle__;
     move(&t.endpoint, saddle_->translate);
@@ -54,9 +56,9 @@ saddle_intersection(
 }
 
     direction
-saddle_normal(point p, void * saddle__, bool at_second)
+saddle_normal(point p, const void * saddle__, int hit)
 {
-    (void)at_second;
+    (void)hit;
     const saddle * saddle_ = saddle__;
     move(&p, saddle_->translate);
     const direction m = inverse_rotation(direction_from_origo(p), saddle_->rota);

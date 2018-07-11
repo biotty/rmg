@@ -110,7 +110,7 @@ reflection_trace(compact_color reflection_filter, ray ray_, bool exits, int i,
             std::cerr << "hit from outside of surface "
                 "but book-keeped as inside-of " << i << std::endl;
     }
-    const ray reflection_ = { ray_.endpoint,
+    ray reflection_ = { ray_.endpoint,
         reflection(normal_, detector_.ray_.head) };
 
     return trace_hop(reflection_, reflection_filter,
@@ -179,8 +179,7 @@ refraction_trace(ray ray_, const scene_object * so,
         refraction_index = optics_refraction_index / outside_refraction_index;
         scale(&ray_.head, -1);
     }
-    ray_.head = refraction(ray_.head, detector_.ray_.head,
-            refraction_index, TINY_REAL);
+    ray_.head = refraction(ray_.head, detector_.ray_.head, refraction_index);
     if (is_DISORIENTED(&ray_.head)) {
         return total_reflect;
     }

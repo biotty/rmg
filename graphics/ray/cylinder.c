@@ -22,8 +22,10 @@ transform_ray_(ray * ray_, const cylinder * cylinder_)
     real_pair
 _cylinder_intersection(
         const ray * ray_,
-        void * cylinder__)
+        const void * cylinder__,
+        int * hit)
 {
+    (void)hit;
     ray t = *ray_;
     const cylinder * cylinder_ = cylinder__;
     transform_ray_(&t, cylinder_);
@@ -47,15 +49,16 @@ _cylinder_intersection(
 real_pair
 cylinder_intersection(
         const ray * ray_,
-        void * cylinder__)
+        const void * cylinder__,
+        int * hit)
 {
-    return invert(_cylinder_intersection(ray_, cylinder__));
+    return invert(_cylinder_intersection(ray_, cylinder__, hit));
 }
 
     direction
-cylinder_normal(point p, void * cylinder__, bool at_second)
+cylinder_normal(point p, const void * cylinder__, int hit)
 {
-    (void)at_second;
+    (void)hit;
     const cylinder * cylinder_ = cylinder__;
     direction n = transform_(p, cylinder_);
     
@@ -66,9 +69,9 @@ cylinder_normal(point p, void * cylinder__, bool at_second)
 }
 
     direction
-_cylinder_normal(point p, void * cylinder__, bool at_second)
+_cylinder_normal(point p, const void * cylinder__, int hit)
 {
-    direction d = cylinder_normal(p, cylinder__, at_second);
+    direction d = cylinder_normal(p, cylinder__, hit);
     scale(&d, -1);
     return d;
 }

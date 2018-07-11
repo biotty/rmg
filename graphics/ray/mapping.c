@@ -128,7 +128,7 @@ rotate_(const real cos_w, const real sin_w, real * x_, real * y_)
 }
 
     static void
-normal_decoration(const ray * ray_, void * decoration_arg,
+normal_decoration(const ray * ray_, const void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
     const texture_arg * da = decoration_arg;
@@ -141,7 +141,7 @@ normal_decoration(const ray * ray_, void * decoration_arg,
 }
 
     static void
-planar_decoration_(const ray * ray_, void * decoration_arg,
+planar_decoration_(const ray * ray_, const void * decoration_arg,
         object_optics * so, const object_optics * adjust, bool repeat)
 {
     const texture_origin_arg * da = decoration_arg;
@@ -155,21 +155,21 @@ planar_decoration_(const ray * ray_, void * decoration_arg,
 }
 
     static void
-planar_decoration(const ray * ray_, void * decoration_arg,
+planar_decoration(const ray * ray_, const void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
     planar_decoration_(ray_, decoration_arg, so, adjust, true);
 }
 
     static void
-planar1_decoration(const ray * ray_, void * decoration_arg,
+planar1_decoration(const ray * ray_, const void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
     planar_decoration_(ray_, decoration_arg, so, adjust, false);
 }
 
     static void
-relative_decoration(const ray * ray_, void * decoration_arg,
+relative_decoration(const ray * ray_, const void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
     const texture_origin_arg * da = decoration_arg;
@@ -183,7 +183,7 @@ relative_decoration(const ray * ray_, void * decoration_arg,
 }
 
     static void
-axial_decoration_(const ray * ray_, void * decoration_arg,
+axial_decoration_(const ray * ray_, const void * decoration_arg,
         object_optics * so, const object_optics * adjust, bool repeat)
 {
     static const real pi = REAL_PI;
@@ -212,21 +212,21 @@ axial_decoration_(const ray * ray_, void * decoration_arg,
 }
 
     static void
-axial_decoration(const ray * ray_, void * decoration_arg,
+axial_decoration(const ray * ray_, const void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
     axial_decoration_(ray_, decoration_arg, so, adjust, true);
 }
 
     static void
-axial1_decoration(const ray * ray_, void * decoration_arg,
+axial1_decoration(const ray * ray_, const void * decoration_arg,
         object_optics * so, const object_optics * adjust)
 {
     axial_decoration_(ray_, decoration_arg, so, adjust, false);
 }
 
     static void
-checkers_decoration(const ray * ray_, void * decoration_arg,
+checkers_decoration(const ray * ray_, const void * decoration_arg,
         object_optics * so, const object_optics * b)
 {
     const checkers_arg * da = decoration_arg;

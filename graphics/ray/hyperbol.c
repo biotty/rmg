@@ -7,8 +7,10 @@
     real_pair
 _hyperbol_intersection(
         const ray * ray_,
-        void * hyperbol__)
+        const void * hyperbol__,
+        int * hit)
 {
+    (void)hit;
     ray t = *ray_;
     const hyperbol * hyperbol_ = hyperbol__;
     move(&t.endpoint, hyperbol_->translate);
@@ -32,15 +34,16 @@ _hyperbol_intersection(
     real_pair
 hyperbol_intersection(
         const ray * ray_,
-        void * hyperbol__)
+        const void * hyperbol__,
+        int * hit)
 {
-    return invert(_hyperbol_intersection(ray_, hyperbol__));
+    return invert(_hyperbol_intersection(ray_, hyperbol__, hit));
 }
 
     direction
-hyperbol_normal(point p, void * hyperbol__, bool at_second)
+hyperbol_normal(point p, const void * hyperbol__, int hit)
 {
-    (void)at_second;
+    (void)hit;
     const hyperbol * hyperbol_ = hyperbol__;
     move(&p, hyperbol_->translate);
     direction n = inverse_rotation(direction_from_origo(p), hyperbol_->rota);
@@ -51,9 +54,9 @@ hyperbol_normal(point p, void * hyperbol__, bool at_second)
 }
 
     direction
-_hyperbol_normal(point p, void * hyperbol__, bool at_second)
+_hyperbol_normal(point p, const void * hyperbol__, int hit)
 {
-    direction d = hyperbol_normal(p, hyperbol__, at_second);
+    direction d = hyperbol_normal(p, hyperbol__, hit);
     scale(&d, -1);
     return d;
 }
