@@ -220,7 +220,7 @@ def scene_die(glide):
     def o(t):
         sa = sole_regular(6, 1, theta, phi)
         for pl in sa.objects[1:]:
-            sa.objects.append(Parabol(pl.point *.5, pl.point * er))
+            sa.objects.append(Parabol(pl.point * .5, pl.point * er))
         glide(sa, t)
         return [SceneObject(oa, sa)]
     return o

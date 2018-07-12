@@ -46,7 +46,7 @@ _parabol_intersection(
         const void * parabol__,
         int * hit)
 {
-    return invert(_parabol_intersection(ray_, parabol__, hit));
+    return invert(parabol_intersection(ray_, parabol__, hit));
 }
 
     direction

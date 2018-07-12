@@ -3,9 +3,7 @@
 
 #include "inter.h"
 #include "mapping.h"
-#include "observer.h"
-#include "image.h"
-#include "trace.hpp"
+#include "observer.hpp"
 #include <cstdio>
 #include <cctype>
 #include <cstdarg>
@@ -226,10 +224,10 @@ get_member(object_intersection * fi, object_normal * fn)
 }
 
     object_optics
-get_object_optics(real first)
+get_object_optics()
 {
     color c;
-    c.r = first;
+    std::cin >> c.r;
     std::cin >> c.g;
     std::cin >> c.b;
     object_optics ret;
@@ -324,30 +322,11 @@ get_spots(world * w)
     }
 }
 
-    void
-produce_trace(world & w, observer * o, int width, int height,
-        const char * out_path, bool report_status)
-{
-    image out = image_create(out_path, width, height);
-    const real aspect_ratio = width /(real) height;
-    for (int row = 0; row < height; row++) {
-        for (int column = 0; column < width; column++) {
-            ray ray_ = observer_ray(o, aspect_ratio,
-                    (column + (real).5) / width,
-                    (row + (real).5) / height);
-            image_write(out, trace(ray_, w));
-        }
-        if (report_status) std::cerr << "\r" << row;
-    }
-    image_close(out);
-}
-
     int
 main(int argc, char *argv[])
 {
-    bool report_status = getenv("GUN_RS") != NULL;
     if (argc < 2) fail("dimention argument missing\n");
-    char * out_path = (argc == 2) ? NULL : argv[2];
+    char * out_path = (argc == 2) ? nullptr : argv[2];
     int width;
     int height;
     if (2 != sscanf(argv[1], "%dx%d", &width, &height))
@@ -364,8 +343,7 @@ main(int argc, char *argv[])
     world world_;
     int non_inter_count = scene_object_count - inter_count;
     init_arg_pool(non_inter_count, inter_count, member_count);
-    void ** decoration_args = new void *[scene_object_count];
-    int decoration_index = 0;
+    std::vector<void *> decoration_args;
 
     for (size_t i = 0; i < scene_object_count; i++) {
         assert(i == world_.scene_.size());
@@ -373,7 +351,7 @@ main(int argc, char *argv[])
         object_normal fn;
         std::string name;
         std::cin >> name;
-        void * a = NULL;
+        void * a = nullptr;
         if (name == "x") {
             int n_members;
             std::cin >> n_members;
@@ -381,23 +359,20 @@ main(int argc, char *argv[])
         } else {
             a = make_object(name, &fi, &fn);
         }
-        if (a == NULL) fail("object [%d] error\n", i);
+        if ( ! a) fail("object [%d] error\n", i);
 
-        object_decoration df = NULL;
-        void * d = NULL;
+        object_decoration df = nullptr;
+        void * d = nullptr;
         std::string alt;
         std::cin >> alt;
-        real r_;
-        if (std::isalpha(alt[0])) {
+        if (alt != "optics") {
             d = get_decoration(alt, &df);
-            if (d == NULL) fail("decoration [%d] error\n", i);
-            decoration_args[decoration_index ++ ] = d;
-            std::cin >> r_;
-        } else {
-            const int n = std::sscanf(alt.c_str(), REAL_FMT, &r_);
-            if (n != 1) fail("optics [%d] error\n", i);
+            if ( ! d) fail("decoration [%d] error\n", i);
+            std::cin >> alt;
+            if (alt != "optics") fail("optics [%d] error\n", i);
+            decoration_args.push_back(d);
         }
-        scene_object o = { fi, fn, a, get_object_optics(r_), df, d };
+        scene_object o = { fi, fn, a, get_object_optics(), df, d };
         world_.scene_.push_back(o);
     }
 
@@ -410,11 +385,10 @@ main(int argc, char *argv[])
         if ( ! std::isspace(c)) fail("non-space trailer. got '%c'\n", c);
     } // wait till we get end-of-file (polite to not break the pipe)
     
-    produce_trace(world_, &obs, width, height, out_path, report_status);
+    int n_workers = getenv("GUN_SINGLE") ? 1 : 0/* n.cores */;
+    produce_trace(out_path, width, height, world_, obs, n_workers);
 
     fini_arg_pool();
-    while ( -- decoration_index >= 0)
-        delete_decoration(decoration_args[decoration_index]);
-    delete [] decoration_args;
-    if (report_status) std::cerr << "\n";
+    for (void * d : decoration_args)
+        delete_decoration(d);
 }

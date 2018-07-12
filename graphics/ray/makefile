@@ -1,6 +1,6 @@
 GRAPHICS=..
-LDFLAGS=-L$(GRAPHICS)/rgb -lrgb -lm
-CXXFLAGS=-Wall -Wextra -Werror -std=c++1y -pedantic -O3 -I$(GRAPHICS)/rgb
+LDFLAGS=-L$(GRAPHICS)/rgb -lrgb -lm -pthread
+CXXFLAGS=-Wall -Wextra -Werror -std=c++14 -pedantic -O3 -I$(GRAPHICS)/rgb
 CFLAGS=-Wall -Wextra -Werror -std=c11 -pedantic -O3 -I$(GRAPHICS)/rgb
 
 gun: gun.o tracer.a
@@ -23,7 +23,7 @@ saddle.o:   saddle.h
 direction.o:direction.h
 point.o:    point.h
 ray.o:      ray.h
-observer.o: observer.h
+observer.o: observer.hpp
 matrix.o:   matrix.h
 bitarray.o: bitarray.hpp
 stack.o:    stack.hpp

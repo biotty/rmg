@@ -265,7 +265,7 @@ class Optics:
         self.passthrough_filter = passthrough
 
     def __str__(self):
-        return "%s %s\n%LG %s %s" % (
+        return "optics %s %s\n%LG %s %s" % (
                 self.reflection_filter,
                 self.absorption_filter,
                 self.refraction_index,
