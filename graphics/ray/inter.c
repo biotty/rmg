@@ -18,33 +18,6 @@ typedef struct { alignas(object_arg_union)
     object objects[];
 } inter;
 
-struct {
-    char * buf;
-    size_t used;
-} arg_pool;
-
-    void
-init_arg_pool(int n, int i, int m)
-{
-    arg_pool.buf = malloc(n * sizeof (object_arg_union)
-        + i * sizeof (inter) + m * sizeof (object));
-    arg_pool.used = 0;
-}
-
-    void
-fini_arg_pool()
-{
-    free(arg_pool.buf);
-}
-
-    void *
-arg_alloc(size_t s)
-{
-    void * p = &arg_pool.buf[arg_pool.used];
-    arg_pool.used += s;
-    return p;
-}
-
 typedef struct {
     segment p;
     int i, /*j is index of intersection-member hit at p.exit_*/
@@ -136,7 +109,7 @@ inter_normal(point p, const void * inter__, int hit)
 make_inter(object_intersection * fi, object_normal * fn,
         int m, object_generator get)
 {
-    inter * inter_ = arg_alloc(sizeof (inter) + m * sizeof (object));
+    inter * inter_ = malloc(sizeof (inter) + m * sizeof (object));
     inter_->count = m;
     for (int i=0; i<m; i++) {
         object o;

@@ -110,14 +110,11 @@ class World:
 
     def __str__(self):
         n = len(self.scene_objects)
-        inter_counts = [len(so.object_arg.objects) for so in self.scene_objects
-            if isinstance(so.object_arg, Intersection)]
-        i = len(inter_counts)
-        m = sum(inter_counts)
+        m = sum(int(isinstance(so.object_arg, Intersection)) for so in self.scene_objects)
         sorted_objects = sorted(self.scene_objects, key = lambda o: o.precedence)
-        return "%s\n%d %d %d\n%s\n%s\n%d\n%s" % (
+        return "%s\n%d %d\n%s\n%s\n%d\n%s" % (
             self.observer,
-            n, i, m,
+            n, m,
             "\n".join([str(o) for o in sorted_objects]),
             self.sky,
             len(self.light_spots),

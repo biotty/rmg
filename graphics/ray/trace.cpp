@@ -183,8 +183,6 @@ refraction_trace(ray ray_, const scene_object * so,
     if (is_DISORIENTED(&ray_.head)) {
         return total_reflect;
     }
-    // consider: light density changes with angle, so that
-    //           we must scale the result proportionally.
     *result = trace_hop(ray_, optics_refraction_filter, detector_, w);
     return reflect;
 }

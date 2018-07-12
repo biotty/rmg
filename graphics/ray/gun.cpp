@@ -205,16 +205,6 @@ get_object(std::string name,
     fail("scene object type \"%s\"?\n", name.c_str());
 }
 
-    object_arg_union *
-make_object(std::string name,
-        object_intersection * fi, object_normal * fn)
-{
-    object_arg_union * arg
-        = static_cast<object_arg_union *>(arg_alloc(sizeof *arg));
-    *arg = get_object(name, fi, fn);
-    return arg;
-}
-
     object_arg_union
 get_member(object_intersection * fi, object_normal * fn)
 {
@@ -335,15 +325,15 @@ main(int argc, char *argv[])
     observer obs = get_observer();
     unsigned scene_object_count;
     unsigned inter_count;
-    unsigned member_count;
-    std::cin >> scene_object_count >> inter_count >> member_count;
-    if (scene_object_count <= 0) fail("no scene objects\n");
-    if (inter_count > scene_object_count) fail("intersecions count overflow\n");
+    std::cin >> scene_object_count >> inter_count;
+    if (inter_count > scene_object_count) fail("impossible inter count\n");
 
     world world_;
-    int non_inter_count = scene_object_count - inter_count;
-    init_arg_pool(non_inter_count, inter_count, member_count);
+    std::vector<object_arg_union> non_inter_args;
+    std::vector<void *> inter_args;
     std::vector<void *> decoration_args;
+
+    non_inter_args.reserve(scene_object_count - inter_count);  // no realloc
 
     for (size_t i = 0; i < scene_object_count; i++) {
         assert(i == world_.scene_.size());
@@ -356,10 +346,12 @@ main(int argc, char *argv[])
             int n_members;
             std::cin >> n_members;
             a = make_inter(&fi, &fn, n_members, get_member);
+            if ( ! a) fail("object [%d] error\n", i);
+            inter_args.push_back(a);
         } else {
-            a = make_object(name, &fi, &fn);
+            non_inter_args.push_back(get_object(name, &fi, &fn));
+            a = &non_inter_args.back();
         }
-        if ( ! a) fail("object [%d] error\n", i);
 
         object_decoration df = nullptr;
         void * d = nullptr;
@@ -388,7 +380,7 @@ main(int argc, char *argv[])
     int n_workers = getenv("GUN_SINGLE") ? 1 : 0/* n.cores */;
     produce_trace(out_path, width, height, world_, obs, n_workers);
 
-    fini_arg_pool();
+    for (void * a : inter_args) free(a);
     for (void * d : decoration_args)
         delete_decoration(d);
 }
