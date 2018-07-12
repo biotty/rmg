@@ -14,8 +14,8 @@ init_inside(bitarray & inside, scene const & s, const ray * t)
     for (size_t i = 0; i < n; i++) {
         const void * arg = s[i].object_arg;
         object_intersection oi = s[i].intersection;
-        real_pair p = oi(t, arg, &dummy);
-        inside.assign(i, p.first <= 0 && p.second >= 0);
+        segment p = oi(t, arg, &dummy);
+        inside.assign(i, p.entry <= 0 && p.exit_ >= 0);
     }
 }
 
@@ -24,12 +24,12 @@ intersect(const ray * t, scene_object const * so, int * hit)
 {
         const void * intersection_arg = so->object_arg;
         const bool is_inside = *hit != 0;
-        const real_pair p = so->intersection(t, intersection_arg, hit);
-        //if (is_inside != (p.first <= 0 && p.second >= 0)) {
+        const segment p = so->intersection(t, intersection_arg, hit);
+        //if (is_inside != (p.entry <= 0 && p.exit_ >= 0)) {
         //    fprintf(stderr, "inside-tracking error.  correcting\n");
         //    is_inside = ! is_inside; // inside->flip(i);
         //}
-        return is_inside ? p.second : p.first;
+        return is_inside ? p.exit_ : p.entry;
 }
 
     scene_object const *
@@ -42,7 +42,6 @@ closest_surface(scene const & s, ray * const t, bitarray & inside, stack * flipp
     const size_t n = s.size();
     std::vector<int> hits(n);
     for (size_t i = 0; i < n; i++) {
-        hits[i] = inside.isset(i);
         const real r = intersect(t, &s[i], &hits[i]);
         if (r >= 0 && (closest_r < 0 || r < closest_r)) {
             closest_object = &s[i];

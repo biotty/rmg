@@ -18,7 +18,7 @@ typedef struct plane plane;
 extern "C" {
 #endif
 
-real_pair plane_intersection(const ray *, const void * plane_, int * hit);
+segment plane_intersection(const ray *, const void * plane_, int * hit);
 direction plane_normal(point, const void * plane_, int hit);
 
 #ifdef __cplusplus

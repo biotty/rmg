@@ -5,7 +5,7 @@
 #include <math.h>
 #include <assert.h>
 
-real_pair
+segment
 _sphere_intersection(
         const ray * ray_,
         const void * sphere__,
@@ -20,7 +20,7 @@ _sphere_intersection(
     return quadratic(1, b, c);
 }
 
-real_pair
+segment
 sphere_intersection(
         const ray * ray_,
         const void * sphere__,

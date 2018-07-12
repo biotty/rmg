@@ -19,10 +19,10 @@ typedef struct parabol parabol;
 extern "C" {
 #endif
 
-real_pair parabol_intersection(const ray *, const void * parabol_, int * hit);
+segment parabol_intersection(const ray *, const void * parabol_, int * hit);
 direction parabol_normal(point, const void * parabol_, int hit);
 
-real_pair _parabol_intersection(const ray *, const void * parabol_, int * hit);
+segment _parabol_intersection(const ray *, const void * parabol_, int * hit);
 direction _parabol_normal(point, const void * parabol_, int hit);
 
 #ifdef __cplusplus

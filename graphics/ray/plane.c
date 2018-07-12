@@ -3,7 +3,7 @@
 
 #include "plane.h"
 
-real_pair
+segment
 plane_intersection(
         const ray * ray_,
         const void * plane__,
@@ -15,15 +15,15 @@ plane_intersection(
     const direction v = distance_vector(ray_->endpoint, plane_->at);
     const real a = scalar_product(plane_->normal, v);
     if (b == 0) {
-        return (real_pair){-1, (a >= 0) ? HUGE_REAL : -1};
+        return (segment){-1, (a >= 0) ? HUGE_REAL : -1};
     }
-    if (b < 0 && a >= 0) return (real_pair){-1, HUGE_REAL};
-    if (b > 0 && a <= 0) return (real_pair){-1, -1};
+    if (b < 0 && a >= 0) return (segment){-1, HUGE_REAL};
+    if (b > 0 && a <= 0) return (segment){-1, -1};
     const real r = a / b;
     if (b < 0)
-        return (real_pair){r, HUGE_REAL};
+        return (segment){r, HUGE_REAL};
     else
-        return (real_pair){-1, r};
+        return (segment){-1, r};
 }
 
 direction

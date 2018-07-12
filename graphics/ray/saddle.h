@@ -20,7 +20,7 @@ typedef struct saddle saddle;
 extern "C" {
 #endif
 
-real_pair saddle_intersection(const ray *, const void * saddle_, int * hit);
+segment saddle_intersection(const ray *, const void * saddle_, int * hit);
 direction saddle_normal(point, const void * saddle_, int hit);
 
 #ifdef __cplusplus

@@ -20,7 +20,7 @@ transform_ray_(ray * ray_, const cone * cone_)
     inverse_rotation_ray(ray_, cone_->rota);
 }
 
-    real_pair
+    segment
 cone_intersection(
         const ray * ray_,
         const void * cone__,
@@ -39,10 +39,10 @@ cone_intersection(
         const real sqrt2 = 1.4142135623730950488016887242096981L;
         const real absxy = sqrt(sq_absxy);
         const real z = t.endpoint.z;
-        if (z < -absxy) return (real_pair){-1, sqrt2 * (-z)};
-        if (z == absxy) return (real_pair){-1, -1};
-        if (z <= absxy) return (real_pair){(1/sqrt2) * (absxy - z), HUGE_REAL};
-                        return (real_pair){-1, HUGE_REAL};
+        if (z < -absxy) return (segment){-1, sqrt2 * (-z)};
+        if (z == absxy) return (segment){-1, -1};
+        if (z <= absxy) return (segment){(1/sqrt2) * (absxy - z), HUGE_REAL};
+                        return (segment){-1, HUGE_REAL};
     }
     const real b = 2 * (t.endpoint.z * t.head.z - t.endpoint.x * t.head.x - t.endpoint.y * t.head.y);
     const real c = square(t.endpoint.z) - sq_absxy;
@@ -52,7 +52,7 @@ cone_intersection(
     return quadratic(a, b, c);
 }
 
-    real_pair
+    segment
 _cone_intersection(
         const ray * ray_,
         const void * cone__,

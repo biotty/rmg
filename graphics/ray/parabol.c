@@ -20,7 +20,7 @@ transform_ray_(ray * ray_, const parabol * parabol_)
     inverse_rotation_ray(ray_, parabol_->rota);
 }
 
-    real_pair
+    segment
 parabol_intersection(
         const ray * ray_,
         const void * parabol__,
@@ -40,7 +40,7 @@ parabol_intersection(
     return quadratic(a, b, c);
 }
 
-    real_pair
+    segment
 _parabol_intersection(
         const ray * ray_,
         const void * parabol__,

@@ -20,10 +20,10 @@ typedef struct hyperbol hyperbol;
 extern "C" {
 #endif
 
-real_pair hyperbol_intersection(const ray *, const void * hyperbol_, int * hit);
+segment hyperbol_intersection(const ray *, const void * hyperbol_, int * hit);
 direction hyperbol_normal(point, const void * hyperbol_, int hit);
 
-real_pair _hyperbol_intersection(const ray *, const void * hyperbol_, int * hit);
+segment _hyperbol_intersection(const ray *, const void * hyperbol_, int * hit);
 direction _hyperbol_normal(point, const void * hyperbol_, int hit);
 
 #ifdef __cplusplus

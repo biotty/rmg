@@ -19,10 +19,10 @@ typedef struct cylinder cylinder;
 extern "C" {
 #endif
 
-real_pair cylinder_intersection(const ray *, const void * cylinder_, int * hit);
+segment cylinder_intersection(const ray *, const void * cylinder_, int * hit);
 direction cylinder_normal(point, const void * cylinder_, int hit);
 
-real_pair _cylinder_intersection(const ray *, const void * cylinder_, int * hit);
+segment _cylinder_intersection(const ray *, const void * cylinder_, int * hit);
 direction _cylinder_normal(point, const void * cylinder_, int hit);
 
 #ifdef __cplusplus

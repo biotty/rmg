@@ -18,10 +18,10 @@ typedef struct sphere sphere;
 extern "C" {
 #endif
 
-real_pair sphere_intersection(const ray *, const void * sphere_, int * hit);
+segment sphere_intersection(const ray *, const void * sphere_, int * hit);
 direction sphere_normal(point, const void * sphere_, int hit);
 
-real_pair _sphere_intersection(const ray *, const void * sphere_, int * hit);
+segment _sphere_intersection(const ray *, const void * sphere_, int * hit);
 direction _sphere_normal(point, const void * sphere_, int hit);
 
 #ifdef __cplusplus

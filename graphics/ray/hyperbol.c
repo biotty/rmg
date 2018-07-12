@@ -4,7 +4,7 @@
 #include "hyperbol.h"
 
 
-    real_pair
+    segment
 _hyperbol_intersection(
         const ray * ray_,
         const void * hyperbol__,
@@ -31,7 +31,7 @@ _hyperbol_intersection(
     return quadratic(a, b, c);
 }
 
-    real_pair
+    segment
 hyperbol_intersection(
         const ray * ray_,
         const void * hyperbol__,

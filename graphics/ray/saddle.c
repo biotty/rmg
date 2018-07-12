@@ -33,7 +33,7 @@ xy_ray(ray * ray_, const real R[4])
     ray_->head.y = r_head[1];
 }
 
-    real_pair
+    segment
 saddle_intersection(
         const ray * ray_,
         const void * saddle__,

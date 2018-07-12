@@ -46,8 +46,8 @@ arg_alloc(size_t s)
 }
 
 typedef struct {
-    real_pair p;
-    int i, /*j is index of intersection-member hit at p.second*/
+    segment p;
+    int i, /*j is index of intersection-member hit at p.exit_*/
         j; /*invariant: when i >= 0 then j >= 0 as well*/
 } partition;
 
@@ -56,42 +56,42 @@ typedef struct {
     static partition
 partition_substract(partition part, const partition * subs, int n_subs)
 {
-    assert(part.p.first < part.p.second);
+    assert(part.p.entry < part.p.exit_);
     for (int x = 0; x < n_subs; x++) {
         const int i = subs[x].i;
-        const real_pair p = subs[x].p;
-        assert(p.second < p.first);
-        if ((p.second < TINY_REAL && part.p.first < 0)
-                || (p.second < part.p.first && p.first > part.p.first)) {
-            if (p.first > part.p.second) return EMPTY_PARTITION;
+        const segment p = subs[x].p;
+        assert(p.exit_ < p.entry);
+        if ((p.exit_ < TINY_REAL && part.p.entry < 0)
+                || (p.exit_ < part.p.entry && p.entry > part.p.entry)) {
+            if (p.entry > part.p.exit_) return EMPTY_PARTITION;
             else {
-                part.p.first = p.first;
+                part.p.entry = p.entry;
                 part.i = i;
             }
-        } else if (p.second < part.p.second && p.first > part.p.second) {
-            if ((p.second < TINY_REAL && part.p.first < 0)
-                    || p.second < part.p.first)
+        } else if (p.exit_ < part.p.exit_ && p.entry > part.p.exit_) {
+            if ((p.exit_ < TINY_REAL && part.p.entry < 0)
+                    || p.exit_ < part.p.entry)
                 return EMPTY_PARTITION;
             else {
-                part.p.second = p.second;
+                part.p.exit_ = p.exit_;
                 part.j = i;
             }
-        } else if (p.second > part.p.first && p.first < part.p.second) {
+        } else if (p.exit_ > part.p.entry && p.entry < part.p.exit_) {
             // "fork", as we must keep looking both at first and last part
             partition first_part = part;
-            first_part.p.second = p.second;
+            first_part.p.exit_ = p.exit_;
             first_part.j = i;
             partition i_ = partition_substract(first_part, subs + x, n_subs - x);
             if (i_.j >= 0) return i_;
             // first part got void then keep on, with last part
-            part.p.first = p.first;
+            part.p.entry = p.entry;
             part.i = i;
         }
     }
     return part;
 }
 
-    real_pair
+    segment
 inter_intersection(const ray * ray_, const void * inter__, int * hit)
 {
     const inter * inter_ = inter__;
@@ -99,28 +99,28 @@ inter_intersection(const ray * ray_, const void * inter__, int * hit)
     int n_subs = 0;
     for (int i = 0; i < inter_->count; i++) {
         const void * a = &inter_->objects[i].arg;
-        const real_pair p = inter_->objects[i].intersection(ray_, a, NULL);
-        if (p.first < 0 && p.second < 0)
-            return (real_pair){-1, -1};
-        if (p.second < p.first) {
+        const segment p = inter_->objects[i].intersection(ray_, a, NULL);
+        if (p.entry < 0 && p.exit_ < 0)
+            return (segment){-1, -1};
+        if (p.exit_ < p.entry) {
             subs[n_subs++] = (partition){p, i, 12345/*unused*/};
             continue;
         }
-        if (p.first >= 0 && p.first > part.p.first) {
-            part.p.first = p.first;
+        if (p.entry >= 0 && p.entry > part.p.entry) {
+            part.p.entry = p.entry;
             part.i = i;
         }
-        if (p.second >= 0 && (part.p.second < 0 || p.second < part.p.second)) {
-            part.p.second = p.second;
+        if (p.exit_ >= 0 && (part.p.exit_ < 0 || p.exit_ < part.p.exit_)) {
+            part.p.exit_ = p.exit_;
             part.j = i;
         }
-        if (       part.p.first >= 0
-                && part.p.second >= 0
-                && part.p.second <= part.p.first)
-            return (real_pair){-1, -1};
+        if (       part.p.entry >= 0
+                && part.p.exit_ >= 0
+                && part.p.exit_ <= part.p.entry)
+            return (segment){-1, -1};
     }
     const partition _ = partition_substract(part, subs, n_subs);
-    *hit = (*hit) ? _.j : _.i;  // shall be un-needed: could use (_.p.first < 0)
+    *hit = (_.p.entry < 0) ? _.j : _.i;
     return _.p;
 }
 

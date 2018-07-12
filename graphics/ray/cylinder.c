@@ -19,7 +19,7 @@ transform_ray_(ray * ray_, const cylinder * cylinder_)
     inverse_rotation_ray(ray_, cylinder_->rota);
 }
 
-    real_pair
+    segment
 _cylinder_intersection(
         const ray * ray_,
         const void * cylinder__,
@@ -38,7 +38,7 @@ _cylinder_intersection(
     const real sq_e = square(e_x) + square(e_y);
     const real sq_h = square(h_x) + square(h_y);
     if (sq_h == 0) {
-        return (real_pair){-1, sq_e > sq_r ? HUGE_REAL : -1};
+        return (segment){-1, sq_e > sq_r ? HUGE_REAL : -1};
     }
     const real a = sq_h;
     const real b = 2 * (e_x * h_x + e_y * h_y);
@@ -46,7 +46,7 @@ _cylinder_intersection(
     return quadratic(a, b, c);
 }
 
-real_pair
+segment
 cylinder_intersection(
         const ray * ray_,
         const void * cylinder__,

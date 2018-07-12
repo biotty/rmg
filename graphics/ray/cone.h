@@ -19,10 +19,10 @@ typedef struct cone cone;
 extern "C" {
 #endif
 
-real_pair cone_intersection(const ray *, const void * cone_, int * hit);
+segment cone_intersection(const ray *, const void * cone_, int * hit);
 direction cone_normal(point, const void * cone_, int hit);
 
-real_pair _cone_intersection(const ray *, const void * cone_, int * hit);
+segment _cone_intersection(const ray *, const void * cone_, int * hit);
 direction _cone_normal(point, const void * cone_, int hit);
 
 #ifdef __cplusplus
