@@ -10,21 +10,20 @@
 typedef struct {
     object_intersection intersection;
     object_normal normal;
-    object_arg_union arg;
+    void * arg;
 } object;
 
-typedef struct { alignas(object_arg_union)
+typedef struct {
     int count;
     object objects[];
 } inter;
 
 typedef struct {
     segment p;
-    int i, /*j is index of intersection-member hit at p.exit_*/
-        j; /*invariant: when i >= 0 then j >= 0 as well*/
+    int i, j;
 } partition;
 
-#define EMPTY_PARTITION (partition){{-1, -1}, -1, -1}
+#define empty (partition){{-1, -1}, -1, -1}
 
     static partition
 partition_substract(partition part, const partition * subs, int n_subs)
@@ -36,7 +35,7 @@ partition_substract(partition part, const partition * subs, int n_subs)
         assert(p.exit_ < p.entry);
         if ((p.exit_ < TINY_REAL && part.p.entry < 0)
                 || (p.exit_ < part.p.entry && p.entry > part.p.entry)) {
-            if (p.entry > part.p.exit_) return EMPTY_PARTITION;
+            if (p.entry > part.p.exit_) return empty;
             else {
                 part.p.entry = p.entry;
                 part.i = i;
@@ -44,7 +43,7 @@ partition_substract(partition part, const partition * subs, int n_subs)
         } else if (p.exit_ < part.p.exit_ && p.entry > part.p.exit_) {
             if ((p.exit_ < TINY_REAL && part.p.entry < 0)
                     || p.exit_ < part.p.entry)
-                return EMPTY_PARTITION;
+                return empty;
             else {
                 part.p.exit_ = p.exit_;
                 part.j = i;
@@ -68,11 +67,11 @@ partition_substract(partition part, const partition * subs, int n_subs)
 inter_intersection(const ray * ray_, const void * inter__, int * hit)
 {
     const inter * inter_ = inter__;
-    partition subs[inter_->count], part = EMPTY_PARTITION;
+    partition subs[inter_->count], part = empty;
     int n_subs = 0;
     for (int i = 0; i < inter_->count; i++) {
-        const void * a = &inter_->objects[i].arg;
-        const segment p = inter_->objects[i].intersection(ray_, a, NULL);
+        const segment p = inter_->objects[i].intersection(
+                ray_, inter_->objects[i].arg, 0);
         if (p.entry < 0 && p.exit_ < 0)
             return (segment){-1, -1};
         if (p.exit_ < p.entry) {
@@ -102,7 +101,7 @@ inter_normal(point p, const void * inter__, int hit)
 {
     const inter * inter_ = inter__;
     assert(hit >= 0 && hit < inter_->count);
-    return inter_->objects[hit].normal(p, &inter_->objects[hit].arg, -1);
+    return inter_->objects[hit].normal(p, inter_->objects[hit].arg, -1);
 }
 
     void *
@@ -119,4 +118,14 @@ make_inter(object_intersection * fi, object_normal * fn,
     *fi = inter_intersection;
     *fn = inter_normal;
     return inter_;
+}
+
+    void
+delete_inter(void * inter__)
+{
+    inter * inter_ = inter__;
+    for (int i = 0; i < inter_->count; i++) {
+        free(inter_->objects[i].arg);
+    }
+    free(inter_);
 }

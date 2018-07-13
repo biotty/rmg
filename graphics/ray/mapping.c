@@ -384,7 +384,7 @@ checkers_mapping(object_decoration * df, direction n, real w, point o, int u,
         compact_color absorption_filter,
         compact_color refraction_filter)
 {
-    if (u > NONPTR_MAX) return NULL;
+    if (u > NONPTR_MAX) return 0;
     const int q = u * 4;
 
     // consider: provision local rnd-seed

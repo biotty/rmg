@@ -1,13 +1,19 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 
+#include "plane.h"
+#include "sphere.h"
+#include "cylinder.h"
+#include "cone.h"
+#include "parabol.h"
+#include "hyperbol.h"
+#include "saddle.h"
 #include "inter.h"
 #include "mapping.h"
 #include "observer.hpp"
+
 #include <cstdio>
-#include <cctype>
 #include <cstdarg>
-#include <climits>
 #include <iostream>
 
 
@@ -55,29 +61,29 @@ get_observer()
     return ret;
 }
 
-    object_arg_union
+    void *
 get_object(std::string name,
         object_intersection * fi, object_normal * fn)
 {
-    object_arg_union ret;
-
     if (name == "plane" || name == "-plane") {
-        std::cin >> ret.plane_.at;
-        std::cin >> ret.plane_.normal;
-        normalize(&ret.plane_.normal);
+        auto plane_ = static_cast<plane *>(malloc(sizeof(plane)));
+        std::cin >> plane_->at;
+        std::cin >> plane_->normal;
+        normalize(&plane_->normal);
         *fi = plane_intersection;
         *fn = plane_normal;
         if (name[0] == '-') {
-            scale(&ret.plane_.normal, -1);
+            scale(&plane_->normal, -1);
         }
-        return ret;
+        return plane_;
     }
 
     if (name == "sphere" || name == "-sphere") {
         real radius;
-        std::cin >> ret.sphere_.center;
+        auto sphere_ = static_cast<sphere *>(malloc(sizeof(sphere)));
+        std::cin >> sphere_->center;
         std::cin >> radius;
-        ret.sphere_.sq_radius = square(radius);
+        sphere_->sq_radius = square(radius);
         if (name[0] == '-') {
             *fi = _sphere_intersection;
             *fn = _sphere_normal;
@@ -85,7 +91,7 @@ get_object(std::string name,
             *fi = sphere_intersection;
             *fn = sphere_normal;
         }
-        return ret;
+        return sphere_;
     }
 
     if (name == "cylinder" || name == "-cylinder") {
@@ -96,7 +102,9 @@ get_object(std::string name,
         std::cin >> p;
         std::cin >> axis;
         spherical_arg(axis, &r, &rota);
-        cylinder cylinder_ = {{-p.x, -p.y, -p.z},
+        auto cylinder_ = static_cast<cylinder *>(malloc(sizeof(cylinder)));
+        *cylinder_ = cylinder{
+            direction{-p.x, -p.y, -p.z},
             (float)square(r), rota};
         if (name[0] == '-') {
             *fi = _cylinder_intersection;
@@ -105,8 +113,7 @@ get_object(std::string name,
             *fi = cylinder_intersection;
             *fn = cylinder_normal;
         }
-        ret.cylinder_ = cylinder_;
-        return ret;
+        return cylinder_;
     }
 
     if (name == "cone" || name == "-cone") {
@@ -117,7 +124,9 @@ get_object(std::string name,
         std::cin >> apex;
         std::cin >> axis;
         spherical_arg(axis, &r, &rota);
-        cone cone_ = {{-apex.x, -apex.y, -apex.z},
+        auto cone_ = static_cast<cone *>(malloc(sizeof(cone)));
+        *cone_ = cone{
+            direction{-apex.x, -apex.y, -apex.z},
             1/(float)r, rota};
         if (name[0] == '-') {
             *fi = _cone_intersection;
@@ -126,8 +135,7 @@ get_object(std::string name,
             *fi = cone_intersection;
             *fn = cone_normal;
         }
-        ret.cone_ = cone_;
-        return ret;
+        return cone_;
     }
 
     if (name == "parabol" || name == "-parabol") {
@@ -138,7 +146,8 @@ get_object(std::string name,
         std::cin >> vertex;
         std::cin >> focus;
         spherical_arg(focus, &r_half, &rota);
-        parabol parabol_ = {
+        auto parabol_ = static_cast<parabol *>(malloc(sizeof(parabol)));
+        *parabol_ = parabol{
             distance_vector(vertex, point_from_origo(focus)),
             2 *(float) r_half, rota};
         if (name[0] == '-') {
@@ -148,8 +157,7 @@ get_object(std::string name,
             *fi = parabol_intersection;
             *fn = parabol_normal;
         }
-        ret.parabol_ = parabol_;
-        return ret;
+        return parabol_;
     }
 
     if (name == "hyperbol" || name == "-hyperbol") {
@@ -162,7 +170,9 @@ get_object(std::string name,
         std::cin >> axis;
         std::cin >> vertex;
         spherical_arg(axis, &r, &rota);
-        hyperbol hyperbol_ = {{-center.x, -center.y, -center.z},
+        auto hyperbol_ = static_cast<hyperbol *>(malloc(sizeof(hyperbol)));
+        *hyperbol_ = hyperbol{
+            direction{-center.x, -center.y, -center.z},
             rota, 1/(float)r, 1/(float)vertex};
         if (name[0] == '-') {
             *fi = _hyperbol_intersection;
@@ -171,8 +181,7 @@ get_object(std::string name,
             *fi = hyperbol_intersection;
             *fn = hyperbol_normal;
         }
-        ret.hyperbol_ = hyperbol_;
-        return ret;
+        return hyperbol_;
     }
 
     if (name == "saddle" || name == "-saddle") {
@@ -187,25 +196,27 @@ get_object(std::string name,
         std::cin >> x;
         std::cin >> y;
         spherical_arg(axis, &r, &rota);
-        saddle saddle_ = {{-center.x, -center.y, -center.z},
-            rota, (float)v, {1/(float)x, 1/(float)y, 1/(float)r }};
+        auto saddle_ = static_cast<saddle *>(malloc(sizeof(saddle)));
+        *saddle_ = saddle{
+            direction{-center.x, -center.y, -center.z},
+            rota, (float)v,
+            point{1/(float)x, 1/(float)y, 1/(float)r}};
         *fi = saddle_intersection;
         *fn = saddle_normal;
         if (name[0] == '-') {
-            saddle_.scale.z *= -1;
-            saddle_.v += (float)REAL_PI / 2;
-            const float x = saddle_.scale.x;
-            saddle_.scale.x = saddle_.scale.y;
-            saddle_.scale.y = x;
+            saddle_->scale.z *= -1;
+            saddle_->v += (float)REAL_PI / 2;
+            const float x = saddle_->scale.x;
+            saddle_->scale.x = saddle_->scale.y;
+            saddle_->scale.y = x;
         }
-        ret.saddle_ = saddle_;
-        return ret;
+        return saddle_;
     }
 
     fail("scene object type \"%s\"?\n", name.c_str());
 }
 
-    object_arg_union
+    void *
 get_member(object_intersection * fi, object_normal * fn)
 {
     std::string name;
@@ -299,16 +310,15 @@ get_scene_sky()
 }
 
     void
-get_spots(world * w)
+get_spots(spots & _)
 {
     unsigned light_spot_count;
     std::cin >> light_spot_count;
     for (size_t i = 0; i < light_spot_count; i++) {
-        assert(i == w->spots_.size());
         light_spot s;
         std::cin >> s.spot;
         std::cin >> s.light;
-        w->spots_.push_back(s);
+        _.push_back(s);
     }
 }
 
@@ -324,16 +334,12 @@ main(int argc, char *argv[])
 
     observer obs = get_observer();
     unsigned scene_object_count;
-    unsigned inter_count;
-    std::cin >> scene_object_count >> inter_count;
-    if (inter_count > scene_object_count) fail("impossible inter count\n");
+    std::cin >> scene_object_count;
 
     world world_;
-    std::vector<object_arg_union> non_inter_args;
-    std::vector<void *> inter_args;
     std::vector<void *> decoration_args;
-
-    non_inter_args.reserve(scene_object_count - inter_count);  // no realloc
+    std::vector<void *> object_args;
+    std::vector<void *> inter_args;
 
     for (size_t i = 0; i < scene_object_count; i++) {
         assert(i == world_.scene_.size());
@@ -341,16 +347,13 @@ main(int argc, char *argv[])
         object_normal fn;
         std::string name;
         std::cin >> name;
-        void * a = nullptr;
+        void * a;
         if (name == "x") {
             int n_members;
             std::cin >> n_members;
-            a = make_inter(&fi, &fn, n_members, get_member);
-            if ( ! a) fail("object [%d] error\n", i);
-            inter_args.push_back(a);
+            inter_args.push_back(a = make_inter(&fi, &fn, n_members, get_member));
         } else {
-            non_inter_args.push_back(get_object(name, &fi, &fn));
-            a = &non_inter_args.back();
+            object_args.push_back(a = get_object(name, &fi, &fn));
         }
 
         object_decoration df = nullptr;
@@ -369,18 +372,17 @@ main(int argc, char *argv[])
     }
 
     world_.sky = get_scene_sky();
-    
-    get_spots(&world_);
+    get_spots(world_.spots_);
 
     char c;
     while (std::cin >> c) {
         if ( ! std::isspace(c)) fail("non-space trailer. got '%c'\n", c);
     } // wait till we get end-of-file (polite to not break the pipe)
     
-    int n_workers = getenv("GUN_SINGLE") ? 1 : 0/* n.cores */;
+    int n_workers = getenv("GUN1") ? 1 : 0/* n.cores */;
     produce_trace(out_path, width, height, world_, obs, n_workers);
 
-    for (void * a : inter_args) free(a);
-    for (void * d : decoration_args)
-        delete_decoration(d);
+    for (void * d : decoration_args) delete_decoration(d);
+    for (void * a : inter_args) delete_inter(a);
+    for (void * o : object_args) free(o);
 }
