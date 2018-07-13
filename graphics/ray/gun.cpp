@@ -61,12 +61,20 @@ get_observer()
     return ret;
 }
 
+
+template <typename T>
+T * alloc()
+{
+    return static_cast<T *>(malloc(sizeof (T)));
+}
+
+
     void *
 get_object(std::string name,
         object_intersection * fi, object_normal * fn)
 {
     if (name == "plane" || name == "-plane") {
-        auto plane_ = static_cast<plane *>(malloc(sizeof(plane)));
+        auto plane_ = alloc<plane>();
         std::cin >> plane_->at;
         std::cin >> plane_->normal;
         normalize(&plane_->normal);
@@ -80,7 +88,7 @@ get_object(std::string name,
 
     if (name == "sphere" || name == "-sphere") {
         real radius;
-        auto sphere_ = static_cast<sphere *>(malloc(sizeof(sphere)));
+        auto sphere_ = alloc<sphere>();
         std::cin >> sphere_->center;
         std::cin >> radius;
         sphere_->sq_radius = square(radius);
@@ -102,7 +110,7 @@ get_object(std::string name,
         std::cin >> p;
         std::cin >> axis;
         spherical_arg(axis, &r, &rota);
-        auto cylinder_ = static_cast<cylinder *>(malloc(sizeof(cylinder)));
+        auto cylinder_ = alloc<cylinder>();
         *cylinder_ = cylinder{
             direction{-p.x, -p.y, -p.z},
             (float)square(r), rota};
@@ -124,7 +132,7 @@ get_object(std::string name,
         std::cin >> apex;
         std::cin >> axis;
         spherical_arg(axis, &r, &rota);
-        auto cone_ = static_cast<cone *>(malloc(sizeof(cone)));
+        auto cone_ = alloc<cone>();
         *cone_ = cone{
             direction{-apex.x, -apex.y, -apex.z},
             1/(float)r, rota};
@@ -146,7 +154,7 @@ get_object(std::string name,
         std::cin >> vertex;
         std::cin >> focus;
         spherical_arg(focus, &r_half, &rota);
-        auto parabol_ = static_cast<parabol *>(malloc(sizeof(parabol)));
+        auto parabol_ = alloc<parabol>();
         *parabol_ = parabol{
             distance_vector(vertex, point_from_origo(focus)),
             2 *(float) r_half, rota};
@@ -170,7 +178,7 @@ get_object(std::string name,
         std::cin >> axis;
         std::cin >> vertex;
         spherical_arg(axis, &r, &rota);
-        auto hyperbol_ = static_cast<hyperbol *>(malloc(sizeof(hyperbol)));
+        auto hyperbol_ = alloc<hyperbol>();
         *hyperbol_ = hyperbol{
             direction{-center.x, -center.y, -center.z},
             rota, 1/(float)r, 1/(float)vertex};
@@ -196,7 +204,7 @@ get_object(std::string name,
         std::cin >> x;
         std::cin >> y;
         spherical_arg(axis, &r, &rota);
-        auto saddle_ = static_cast<saddle *>(malloc(sizeof(saddle)));
+        auto saddle_ = alloc<saddle>();
         *saddle_ = saddle{
             direction{-center.x, -center.y, -center.z},
             rota, (float)v,
@@ -227,12 +235,8 @@ get_member(object_intersection * fi, object_normal * fn)
     object_optics
 get_object_optics()
 {
-    color c;
-    std::cin >> c.r;
-    std::cin >> c.g;
-    std::cin >> c.b;
     object_optics ret;
-    ret.reflection_filter = z_filter(c);
+    std::cin >> ret.reflection_filter;
     std::cin >> ret.absorption_filter;
     std::cin >> ret.refraction_index;
     std::cin >> ret.refraction_filter;

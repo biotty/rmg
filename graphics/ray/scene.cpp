@@ -32,7 +32,7 @@ intersect(const ray * t, scene_object const * so, int * hit, bool is_inside)
 }
 
     scene_object const *
-closest_surface(scene const & s, ray * const t, bitarray & inside, stack * flipped)
+closest_surface(scene const & s, ray * const t, bitarray & inside)
 {
     advance(t, TINY_REAL);
     scene_object const * closest_object = nullptr;
@@ -53,11 +53,10 @@ closest_surface(scene const & s, ray * const t, bitarray & inside, stack * flipp
         if (precedent_i >= 0 && closest_i > precedent_i) {
             advance(t, closest_r);
             inside.flip(closest_i);
-            closest_object = closest_surface(s, t, inside, flipped);
-            if (closest_object && flipped != nullptr)
-                flipped->push(closest_i);
-            else
+            closest_object = closest_surface(s, t, inside);
+            if (nullptr == closest_object) {
                 inside.flip(closest_i);
+            }
         } else {
             advance(t, closest_r);
             const void * normal_arg = closest_object->object_arg;

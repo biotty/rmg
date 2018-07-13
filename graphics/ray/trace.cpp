@@ -80,7 +80,7 @@ spot_absorption(const ray & surface, const object_optics * so,
         const real a = scalar_product(surface.head, to_spot);
         if (a <= 0) continue;
         ray s = { surface.endpoint, to_spot };
-        if (nullptr == closest_surface(w.scene_, &s, inside, nullptr)) {
+        if ( ! closest_surface(w.scene_, &s, inside)) {
             const real ua = acos(1 - a) * (2/REAL_PI);
             sum_.r += color_.r * ua;
             sum_.g += color_.g * ua;
@@ -180,10 +180,9 @@ ray_trace(detector & detector_, ray t, const world & w)
     }
     ray surface = t;
     assert(is_near(length(surface.head), 1));
-    stack flips;
     const int det_inside_i = detector_.inside.firstset();
     const scene_object * closest_object
-        = closest_surface(w.scene_, &surface, detector_.inside, &flips);
+        = closest_surface(w.scene_, &surface, detector_.inside);
     if ( ! closest_object) {
         const int adinf_i = det_inside_i;
         if (adinf_i >= 0) {
@@ -241,9 +240,6 @@ ray_trace(detector & detector_, ray t, const world & w)
         passthrough_apply(&detected, &io->optics,
                 distance(t.endpoint, surface.endpoint));
     }
-    int flipped_i;
-    while ((flipped_i = flips.pop()) >= 0)
-        detector_.inside.flip(flipped_i);
 
     return detected;
 }
