@@ -1,6 +1,7 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 
+#include "model.hpp"
 #include "plane.h"
 #include "sphere.h"
 #include "cylinder.h"

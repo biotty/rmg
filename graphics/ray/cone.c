@@ -42,7 +42,7 @@ cone_intersection(
         if (z < -absxy) return (segment){-1, sqrt2 * (-z)};
         if (z == absxy) return (segment){-1, -1};
         if (z <= absxy) return (segment){(1/sqrt2) * (absxy - z), HUGE_REAL};
-                        return (segment){-1, HUGE_REAL};
+        return                 (segment){-1, HUGE_REAL};
     }
     const real b = 2 * (t.endpoint.z * t.head.z - t.endpoint.x * t.head.x - t.endpoint.y * t.head.y);
     const real c = square(t.endpoint.z) - sq_absxy;
