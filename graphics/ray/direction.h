@@ -54,6 +54,7 @@ scalar_product(direction a, direction b)
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
+
     static inline void
 move(point * p, direction displacement)
 {
@@ -80,6 +81,7 @@ void spherical_arg(direction d, real * r, rotation_arg * arg);
 void direction_to_unitsquare(const direction * d, real * x, real * y);
 direction rotation(direction d, rotation_arg arg);
 direction inverse_rotation(direction d, rotation_arg arg);
+direction norm_cross(direction a, direction b);
 
 #ifdef __cplusplus
 }

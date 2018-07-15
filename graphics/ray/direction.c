@@ -125,6 +125,44 @@ rotate_xy_xz(direction * d, const rotation_arg arg)
     transform(d, RyRz);
 }
 
+//
+// rotation, inverse_rotation
+//
+// "tilt" would now be a better name as opposed to general axis-angle
+// rotation but merely polar-tilts, and cannot represent i.e rotation
+// on the z-axis.  this is why the the shapes by themselves define
+// rotational disposition in adition to a (tilt) direction.
+//
+// a general rotation would use a full 3x3 rotation_arg
+// (as opposed to current total of 4 values) but would
+// not require two m.multiplications as of now, in addition
+// to the expanding of the two matrices (xz and xy).
+// the objects explicit rotation on its axis would go away.
+//
+// given these observations it seems that it would be beneficial
+// for general time-performance to use the alternate approach
+// of having a full axis-angle rotation-matrix, and profiling has
+// been done identifying the rotation as an overall bottle-neck.
+//
+// note that with a general rotation matrix the
+// inverse_rotation would trivially be to negate the angle.
+//
+// the presence of this comment means that converting the
+// scene-objects (and decorations) to use the better approach
+// has not yet been of priority, and the lack of renaming to
+// tilt_ reflects continued desire to change this some day.
+//
+// however, it must be investigated whether a polar-tilt
+// rotation-matrix has less than 9 different coefficients,
+// as only the saddle would benefit from general rotation,
+// all other shapes having symetry on z-axis.  then those
+// coefficients replaces the ones currently in rotation_arg
+// and rename to tilt.
+//
+// restricting to z-symetric shapes (except saddle) by choice
+// for aesthetics and model simplicity -- to be considered
+// -- and this may then impact the discussion in this comment
+//
     direction
 rotation(direction d, rotation_arg arg)
 {
@@ -144,4 +182,16 @@ inverse_rotation(direction d, rotation_arg arg)
 
     rotate_xy_xz(&d, inv);
     return d;
+}
+
+    direction
+norm_cross(direction a, direction b)
+{
+    direction ret = {
+        a.y * b.z - a.z * b.y,
+        a.z * b.x - a.x * b.z,
+        a.x * b.y - a.y * b.x
+    };
+    normalize(&ret);
+    return ret;
 }

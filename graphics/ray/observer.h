@@ -15,6 +15,15 @@ struct observer {
 
 #ifndef __cplusplus
 typedef struct observer observer;
+#else
+
+extern "C" {
+#endif
+
+void direct_row(observer * o);
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

@@ -125,3 +125,13 @@ produce_trace(const char * path, int width, int height,
     for (auto & t : workers) t.join();
     image_close(out);
 }
+
+
+    void // linkage: "C"
+direct_row(observer * o)
+{
+    direction d = norm_cross(o->column_direction,
+        distance_vector(o->eye, o->view));
+    scale(&d, length(o->column_direction));
+    o->row_direction = d;
+}

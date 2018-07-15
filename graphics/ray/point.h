@@ -7,6 +7,8 @@
 
 typedef xyz point;
 
+static const point origo = {0, 0, 0};
+
 #ifdef __cplusplus
 extern "C" {
 #endif

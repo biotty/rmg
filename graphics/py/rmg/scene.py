@@ -8,7 +8,7 @@ from rmg.plane import XY, XYCircle
 from rmg.color import Color
 
 class Observer:
-    def __init__(self, eye, view, column_dir = 0, row_dir = None, **kwargs):
+    def __init__(self, eye, view, column_dir = 0, **kwargs):
         """Camera in the scene and its string representation for ray/gun
         Args:
             eye (Point): position of eye as behind the lense (screen).
@@ -26,11 +26,6 @@ class Observer:
                 when a float, or otherwise Direction of column directly.
                 See args view_opening and opening below.
 
-            row_dir (Direction): Directly sets direction of screen row, and
-                must be perpendicular to direction_dir for non-sheared render
-                and have SAME LENGTH as column_dir, because output aspect
-                ratio will take care of scaling X (and not done prior to this)
-
             view_opening (float): Used only when float column_dir, this
                 directly sets the height of the screen on the lense.
 
@@ -44,7 +39,6 @@ class Observer:
             self.view = view
         d = Direction(*(self.view - self.eye).xyz())
         if not isinstance(column_dir, Direction):
-            assert not row_dir
             assert type(column_dir) in (float, int), "be unit angle"
             r, theta, phi = d.spherical()
             if "view_opening" in kwargs:
@@ -55,14 +49,9 @@ class Observer:
             column_dir = Direction(s.x, s.y, 0).rotation(theta, phi)
         else:
             assert len(kwargs) == 0
-        if row_dir is None:
-            row_dir = d.cross(column_dir)
-            row_dir *= abs(column_dir) / abs(row_dir)
         self.column_direction = column_dir
-        self.row_direction = row_dir
     def __str__(self):
-        return "%s %s %s %s" % (self.eye, self.view,
-            self.column_direction, self.row_direction)
+        return "%s %s %s" % (self.eye, self.view, self.column_direction)
 
 class SceneObject:
     def __init__(self, optics, object_arg, precedence = 1):

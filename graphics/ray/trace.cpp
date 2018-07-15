@@ -41,12 +41,14 @@ ignorable_color(const color lens)
 
     static color
 trace_hop(ray t, compact_color filter_,
-        detector /*&*/ detector_, const world & w)
+        detector /*copy*/ detector_, const world & w)
 {
     detector_.hop--;
     filter(&detector_.lens, filter_);
     color detected = ray_trace(detector_, t, w);
     filter(&detected, filter_);
+    // improve: non-compact filter for detector and passthrough
+    //          only when filtering from surface data directly.
     return detected;
 }
 
@@ -67,7 +69,7 @@ passthrough_apply(color * color_, const object_optics * so,
 spot_absorption(const ray & surface, const object_optics * so,
         const world & w, bitarray & inside)
 {
-    color sum_ = {0, 0, 0};
+    color sum_ = black;
     const size_t n = w.spots_.size();
     for (size_t i = 0; i < n; i++) {
         const light_spot & ls = w.spots_[i];
@@ -172,7 +174,7 @@ refraction_trace(ray ray_, const scene_object * so,
     static color
 ray_trace(detector & detector_, ray t, const world & w)
 {
-    color detected = {0, 0, 0};
+    color detected = black;
     if (ignorable_color(detector_.lens)) return detected;
     if (0 == detector_.hop) {
         if (debug) std::cerr << "no more hops\n";

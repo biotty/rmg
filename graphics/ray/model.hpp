@@ -10,6 +10,7 @@
 
 
 // todo: impl to cpp file
+#include <cmath>
 
 
 namespace model {
@@ -50,21 +51,64 @@ namespace model {
     }
 
 
-    void rot_(point & p, point at, direction axis, double angle)
-    { // todo
-        (void)p; (void)at; (void)axis; (void)angle;
+    void mul_(direction & d, const double m[9])
+    {
+        double a[3] = { d.x, d.y, d.z };
+        double r[3];
+        for (int row=0; row<3; row++) {
+            const double * m_row = & m[row * 3];
+            double s = 0;
+            for (int column=0; column<3; column++)
+                s += m_row[column] * a[column];
+            r[row] = s;
+        }
+        d.x = r[0];
+        d.y = r[1];
+        d.z = r[2];
     }
 
 
     void rot_(direction & d, direction axis, double angle)
     {
-        point p = point_cast(d);
-        rot_(p, origo, axis, angle);
-        d = direction_cast(p);
+        const direction & u = axis;
+        const double c = std::cos(angle);
+        const double l_c = 1 - c;
+        const double s = std::sin(angle);
+        const double m[9] = {
+            u.x*u.x + (1 - u.x*u.x)*c, u.x*u.y*l_c + u.z*s, u.x*u.z*l_c - u.y*s,
+            u.x*u.y*l_c - u.z*s, u.y*u.y+(1 - u.y*u.y)*c, u.y*u.z*l_c + u.x*s,
+            u.x*u.z*l_c + u.y*s, u.y*u.z*l_c - u.x*s,  u.z*u.z + (1 - u.z*u.z)*c
+        };
+        mul_(d, m);
+    }
+
+    void neg_(direction & d)
+    {
+        d.x = -d.x;
+        d.y = -d.y;
+        d.z = -d.z;
     }
 
 
-    struct plane {
+    void rot_(point & p, point at, direction axis, double angle)
+    {
+        direction d = direction_cast(at);
+        direction e = d;
+        neg_(e);
+        mov_(p, e);
+        direction q = direction_cast(p);
+        rot_(q, axis, angle);
+        p = point_cast(q);
+        mov_(p, d);
+    }
+
+
+    struct invertible {
+        bool inv;
+    };
+
+
+    struct plane : invertible {
         point p;
         direction d;
 
@@ -78,7 +122,7 @@ namespace model {
     };
 
 
-    struct sphere {
+    struct sphere : invertible {
         point p;
         double r;
 
@@ -88,8 +132,7 @@ namespace model {
     };
 
 
-    template<typename T>
-    struct common_geometric__ {
+    struct common_geometric : invertible {
         point p;
         direction d;
         double r;
@@ -104,45 +147,34 @@ namespace model {
     };
 
 
-    struct cylinder : common_geometric__<cylinder> {};
-    struct cone : common_geometric__<cone> {};
-    struct hyperbol : common_geometric__<hyperbol> {};
+    struct cylinder : common_geometric {};
+    struct cone : common_geometric {};
+    struct parabol : common_geometric {};
+    
+    
+    struct hyperbol : common_geometric {
+        double h;
 
-
-    struct parabol {
-        point f;
-        point v;
-
-        void _mul(double /*factor*/)
-        { // todo: take v to a new distance of f (focus is fixed)
-          //       by doing mov both by -f then scale v then both +f
-        }
-
-        void _mov(direction offset)
-        {
-            mov_(f, offset);
-            mov_(v, offset);
-        }
-
-        void _rot(point at, direction axis, double angle)
-        {
-            rot_(f, at, axis, angle);
-            rot_(v, at, axis, angle);
+        void _mul(double factor) {
+            r *= factor;
+            h *= factor;
         }
     };
 
 
-    struct saddle {
+    struct saddle : invertible {
         point p;
         direction z;
         direction d;
         double x, y;
 
-        void _mul(double) {}
+        void _mul(double factor) { x /= factor; y /= factor; }
         void _mov(direction offset) { mov_(p, offset); }
-        void _rot(point, direction, double)
+        void _rot(point at, direction axis, double angle)
         {
-            // todo
+            rot_(p, at, axis, angle);
+            rot_(z, axis, angle);
+            rot_(d, axis, angle);
         }
     };
 
@@ -189,8 +221,11 @@ namespace model {
     };
 
 
+    using str = const char *;
+
+
     struct angular {
-        char * n;
+        str n;
         surface s;
         direction d;
         double r;
@@ -201,19 +236,18 @@ namespace model {
     };
 
 
-    template<typename T>
-    struct common_texture__ : common_geometric__<T> {
-        char * n;
+    struct common_texture : common_geometric {
+        str n;
         surface s;
     };
-    struct planar : common_texture__<planar> {};
-    struct planar1 : common_texture__<planar1> {};
-    struct relative : common_texture__<relative> {};
-    struct axial : common_texture__<axial> {};
-    struct axial1 : common_texture__<axial1> {};
+    struct planar : common_texture {};
+    struct planar1 : common_texture {};
+    struct relative : common_texture {};
+    struct axial : common_texture {};
+    struct axial1 : common_texture {};
 
 
-    struct checkers : common_geometric__<checkers> {
+    struct checkers : common_geometric {
         int q;
         surface s;
     };
@@ -311,9 +345,16 @@ namespace model {
     };
 
 
+    using sky_function = void (*)(double * xyz_rgb);
+    using sky = std::variant<str, sky_function>;
+
+
     struct light_spot {
         point p;
         color c;
     };
+
+
+    using spots = std::vector<light_spot>;
 }
 #endif
