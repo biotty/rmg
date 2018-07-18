@@ -10,9 +10,9 @@ extern "C" {
 #endif
 
 typedef void * (*object_generator)
-    (object_intersection * fi, object_normal * fn);
+    (object_intersection * fi, object_normal * fn, void * get_state);
 void * make_inter(object_intersection * fi, object_normal * fn,
-        int m, object_generator get);
+        int m, object_generator get, void * get_state);
 void delete_inter(void * a);
 
 #ifdef __cplusplus

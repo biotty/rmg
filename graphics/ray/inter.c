@@ -106,13 +106,13 @@ inter_normal(point p, const void * inter__, int hit)
 
     void *
 make_inter(object_intersection * fi, object_normal * fn,
-        int m, object_generator get)
+        int m, object_generator get, void * get_state)
 {
     inter * inter_ = malloc(sizeof (inter) + m * sizeof (object));
     inter_->count = m;
     for (int i=0; i<m; i++) {
         object o;
-        o.arg = get(&o.intersection, &o.normal);
+        o.arg = get(&o.intersection, &o.normal, get_state);
         inter_->objects[i] = o;
     }
     *fi = inter_intersection;

@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include <iostream>
+#include <functional>
 
 
     std::istream &
@@ -213,18 +214,36 @@ make(model::saddle sa, object_intersection * fi, object_normal * fn)
 }
 
     void *
-make(model::shape sh, object_intersection * fi, object_normal * fn)
+make_(model::shape sh, object_intersection * fi, object_normal * fn)
 {
+    // name: trailing underscore to prevent that if function for variant-
+    //       alternative is omitted by mistake then we get compile error
+    //       instead of silent setup for infinite recursion by overload-
+    //       match via implicit conversion by variant constructor
     void * ret;
     std::visit([&ret, fi, fn](auto arg) { ret = make(arg, fi, fn); }, sh);
     return ret;
+}
+
+    void *
+member_get(object_intersection * fi, object_normal * fn, void * state)
+{
+    auto pp = static_cast<model::shape **>(state);
+    return make_(*(*pp)++, fi, fn);
+}
+
+    void *
+make(model::inter in, object_intersection * fi, object_normal * fn)
+{
+    model::shape * ptr = &in[0];
+    return make_inter(fi, fn, in.size(), member_get, &ptr);
 }
 
 //
 // todo:
 //
 // X void * make(model::shape, fi, fn) // std::visitor
-//   void * make(model::inter, fi, fn)
+// X void * make(model::inter, fi, fn)
 //   void * make(model::texture, df)
 //   object_optics make(model::optics)
 //   scene_object make(model::object)
@@ -419,7 +438,7 @@ get_object(std::string name,
 }
 
     void *
-get_member(object_intersection * fi, object_normal * fn)
+get_member(object_intersection * fi, object_normal * fn, void *)
 {
     std::string name;
     std::cin >> name;
@@ -498,7 +517,7 @@ get_scene_object(std::string name, int i)
     if (name == "x") {
         int n_members;
         std::cin >> n_members;
-        a = make_inter(&fi, &fn, n_members, get_member);
+        a = make_inter(&fi, &fn, n_members, get_member, nullptr);
     } else {
         a = get_object(name, &fi, &fn);
     }
