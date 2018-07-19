@@ -166,9 +166,9 @@ namespace model {
         point p;
         direction z;
         direction d;
-        double x, y;
+        double h;
 
-        void _mul(double factor) { x /= factor; y /= factor; }
+        void _mul(double factor) { h *= factor; }
         void _mov(direction offset) { mov_(p, offset); }
         void _rot(point at, direction axis, double angle)
         {
@@ -284,7 +284,7 @@ namespace model {
     struct optics {
         color reflection_filter;
         color absorption_filter;
-        color refraction_index;
+        double refraction_index;
         color refraction_filter;
         color passthrough_filter;
     };
@@ -346,7 +346,6 @@ namespace model {
 
 
     using sky_function = void (*)(double * xyz_rgb);
-    using sky = std::variant<str, sky_function>;
 
 
     struct light_spot {
@@ -356,5 +355,12 @@ namespace model {
 
 
     using spots = std::vector<light_spot>;
+
+
+    struct world {
+        std::vector<object> os;
+        sky_function sky;
+        spots ls;
+    };
 }
 #endif

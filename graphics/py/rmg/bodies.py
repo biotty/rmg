@@ -113,21 +113,16 @@ class Hyperbol_(Hyperbol):
         return "-hyperbol %s %s %LG" % (self.center, self.axis, self.vertex)
 
 class Saddle:
-    def __init__(self, center, axis, v, x, y):
+    def __init__(self, center, axis, v):
         self.center = center
         self.axis = axis
         self.v = v
-        self.x = x
-        self.y = y
     def __str__(self):
-        return "saddle %s %s %LG %LG %LG" % (self.center, self.axis,
-                self.v, self.x, self.y)
+        return "saddle %s %s %LG" % (self.center, self.axis, self.v)
     def place(self, m):
         self.center = self.center.rotation(m.theta, m.phi) * m.r + m.delta
         self.axis = self.axis.rotation(m.theta, m.phi) * m.r
         #todo: self.v
-        self.x *= m.r
-        self.y *= m.r
     def rotate(self, axis, angle):
         self.center = self.center.rotation_on_axis(axis, angle)
         self.axis = self.axis.rotation_on_axis(axis, angle)
@@ -135,8 +130,7 @@ class Saddle:
 
 class Saddle_(Saddle):
     def __str__(self):
-        return "-saddle %s %s %LG %LG %LG" % (self.center, self.axis,
-                self.v, self.x, self.y)
+        return "-saddle %s %s %LG" % (self.center, self.axis, self.v)
 
 class Intersection:
     def __init__(self, objects):

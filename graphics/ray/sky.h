@@ -7,16 +7,16 @@
 #include "direction.h"
 #include "photo.h"
 
-typedef color (*scene_sky)(direction d);
+typedef void (*scene_sky)(double *xyz_rgb);
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-color color_sky(direction);
-color photo_sky(direction);
-color rgb_sky(direction);
-color hsv_sky(direction);
+void color_sky(double *);
+void photo_sky(double *);
+void rgb_sky(double *);
+void hsv_sky(double *);
 extern photo * sky_photo;
 extern color sky_color;
 

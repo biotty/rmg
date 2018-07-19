@@ -6,14 +6,10 @@
 
 
     static void
-scale_ray(ray * ray_, const point * scale_)
+scale_ray(ray * ray_, real h)
 {
-    ray_->endpoint.x *= scale_->x;
-    ray_->endpoint.y *= scale_->y;
-    ray_->endpoint.z *= scale_->z;
-    ray_->head.x *= scale_->x;
-    ray_->head.y *= scale_->y;
-    ray_->head.z *= scale_->z;
+    ray_->endpoint.z *= h;
+    ray_->head.z *= h;
 }
 
     static void
@@ -47,7 +43,7 @@ saddle_intersection(
     const real v = - saddle_->v;
     const real R[4] = { cos(v), -sin(v), sin(v), cos(v) };
     xy_ray(&t, R);
-    scale_ray(&t, &saddle_->scale);
+    scale_ray(&t, saddle_->h);
 
     const real a = square(t.head.x) - square(t.head.y);
     const real b = 2 * (t.endpoint.x * t.head.x - t.endpoint.y * t.head.y) - t.head.z;
@@ -67,13 +63,13 @@ saddle_normal(point p, const void * saddle__, int hit)
     real R[4] = { cos(v), -sin(v), sin(v), cos(v) };
     real r_xy[2];
     multiply(R, 2, 2, m_xy, r_xy);
-    r_xy[0] *= -2 * saddle_->scale.x;
-    r_xy[1] *= 2 * saddle_->scale.y;
+    r_xy[0] *= -2;
+    r_xy[1] *= 2;
     R[1] *= -1;
     R[2] *= -1;
     real n_xy[2];
     multiply(R, 2, 2, r_xy, n_xy);
-    direction n = { n_xy[0], n_xy[1], saddle_->scale.z };
+    direction n = { n_xy[0], n_xy[1], saddle_->h };
     normalize(&n);
 
     return rotation(n, saddle_->rota);

@@ -8,13 +8,21 @@
 #include <cassert>
 #include <iostream>
 
+world::world(del_f inter_f, del_f decoration_f)
+    : sky(), del_inter(inter_f), del_decoration(decoration_f)
+{}
+
+world::~world() {
+    for (void * d : decoration_args) del_decoration(d);
+    for (void * a : inter_args) del_inter(a);
+    for (void * o : object_args) free(o);
+}
 
 struct detector {
     int hop;
     color lens;
     bitarray inside;
 };
-
 
 static color ray_trace(detector &, ray, const world &);
 
@@ -172,6 +180,17 @@ refraction_trace(ray ray_, const scene_object * so,
 }
 
     static color
+sky(detector & detector_, direction d, scene_sky f)
+{
+    if (eliminate_direct_sky && detector_.hop == max_hops)
+        return DIRECT_SKY;
+
+    double a[3] = {d.x, d.y, d.z};
+    f(a);
+    return {a[0], a[1], a[2]};
+}
+
+    static color
 ray_trace(detector & detector_, ray t, const world & w)
 {
     color detected = black;
@@ -194,8 +213,7 @@ ray_trace(detector & detector_, ray t, const world & w)
                 return detected;
             }
         }
-        return eliminate_direct_sky && detector_.hop == max_hops
-            ? DIRECT_SKY : w.sky(t.head);
+        return sky(detector_, t.head, w.sky);
     }
 
     const ptrdiff_t i = closest_object - &w.scene_[0];

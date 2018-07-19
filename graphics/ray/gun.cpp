@@ -1,7 +1,6 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 
-#include "model.hpp"
 #include "plane.h"
 #include "sphere.h"
 #include "cylinder.h"
@@ -16,7 +15,6 @@
 #include <cstdio>
 #include <cstdarg>
 #include <iostream>
-#include <functional>
 
 
     std::istream &
@@ -43,222 +41,6 @@ operator>>(std::istream & ist, compact_color & cc)
 }
 
 
-    direction
-make(model::direction d)
-{
-    direction n = { d.x, d.y, d.z };
-    normalize(&n);
-    return n;
-}
-
-
-    point
-make(model::point p)
-{
-    return { p.x, p.y, p.z };
-}
-
-
-    observer
-make(model::observer o)
-{
-    observer ret;
-    ret.eye = make(o.e);
-    ret.view = make(o.c);
-    ret.column_direction = make(o.x);
-    direct_row(&ret);
-    return ret;
-}
-
-
-template <typename T>
-T * alloc()
-{
-    return static_cast<T *>(malloc(sizeof (T)));
-}
-
-
-    void *
-make(model::plane pl, object_intersection * fi, object_normal * fn)
-{
-        auto plane_ = alloc<plane>();
-        plane_->at = make(pl.p);
-        plane_->normal = make(pl.d);
-        normalize(&plane_->normal);
-        *fi = plane_intersection;
-        *fn = plane_normal;
-        if (pl.inv) {
-            scale(&plane_->normal, -1);
-        }
-        return plane_;
-}
-
-    void *
-make(model::sphere sp, object_intersection * fi, object_normal * fn)
-{
-    auto sphere_ = alloc<sphere>();
-    sphere_->center = make(sp.p);
-    sphere_->sq_radius = square(sp.r);
-    if (sp.inv) {
-        *fi = _sphere_intersection;
-        *fn = _sphere_normal;
-    } else {
-        *fi = sphere_intersection;
-        *fn = sphere_normal;
-    }
-    return sphere_;
-}
-
-    void *
-make(model::cylinder cy, object_intersection * fi, object_normal * fn)
-{
-    real ignore;
-    rotation_arg rota;
-    spherical_arg(make(cy.d), &ignore, &rota);
-    auto cylinder_ = alloc<cylinder>();
-    *cylinder_ = cylinder{
-        distance_vector(make(cy.p), origo),
-            (float)square(cy.r), rota};
-    if (cy.inv) {
-        *fi = _cylinder_intersection;
-        *fn = _cylinder_normal;
-    } else {
-        *fi = cylinder_intersection;
-        *fn = cylinder_normal;
-    }
-    return cylinder_;
-}
-
-    void *
-make(model::cone co, object_intersection * fi, object_normal * fn)
-{
-    real ignore;
-    rotation_arg rota;
-    spherical_arg(make(co.d), &ignore, &rota);
-    auto cone_ = alloc<cone>();
-    *cone_ = cone{
-        distance_vector(make(co.p), origo),
-            1/(float)co.r, rota};
-    if (co.inv) {
-        *fi = _cone_intersection;
-        *fn = _cone_normal;
-    } else {
-        *fi = cone_intersection;
-        *fn = cone_normal;
-    }
-    return cone_;
-}
-
-    void *
-make(model::parabol pa, object_intersection * fi, object_normal * fn)
-{
-    real ignore;
-    rotation_arg rota;
-    spherical_arg(make(pa.d), &ignore, &rota);
-    auto parabol_ = alloc<parabol>();
-    *parabol_ = parabol{
-        distance_vector(make(pa.p), point_from_origo(make(pa.d))),
-            2 *(float) pa.r, rota};
-    if (pa.inv) {
-        *fi = _parabol_intersection;
-        *fn = _parabol_normal;
-    } else {
-        *fi = parabol_intersection;
-        *fn = parabol_normal;
-    }
-    return parabol_;
-}
-
-    void *
-make(model::hyperbol hy, object_intersection * fi, object_normal * fn)
-{
-    real ignore;
-    rotation_arg rota;
-    spherical_arg(make(hy.d), &ignore, &rota);
-    auto hyperbol_ = alloc<hyperbol>();
-    *hyperbol_ = hyperbol{
-        distance_vector(make(hy.p), origo),
-            rota, 1/(float)hy.h, 1/(float)hy.r};
-    if (hy.inv) {
-        *fi = _hyperbol_intersection;
-        *fn = _hyperbol_normal;
-    } else {
-        *fi = hyperbol_intersection;
-        *fn = hyperbol_normal;
-    }
-    return hyperbol_;
-}
-
-    void *
-make(model::saddle sa, object_intersection * fi, object_normal * fn)
-{
-    real ignore;
-    rotation_arg rota;
-    spherical_arg(make(sa.d), &ignore, &rota);
-    direction n = inverse_rotation(make(sa.z), rota);
-    auto saddle_ = alloc<saddle>();
-    *saddle_ = saddle{
-        distance_vector(make(sa.p), origo),
-            rota, (float)ratan(n.y, n.x),
-            point{1/(float)sa.x, 1/(float)sa.y, 1}};
-    *fi = saddle_intersection;
-    *fn = saddle_normal;
-    if (sa.inv) {
-        saddle_->scale.z *= -1;
-        saddle_->v += (float)REAL_PI / 2;
-        const float x = saddle_->scale.x;
-        saddle_->scale.x = saddle_->scale.y;
-        saddle_->scale.y = x;
-    }
-    return saddle_;
-}
-
-    void *
-make_(model::shape sh, object_intersection * fi, object_normal * fn)
-{
-    // name: trailing underscore to prevent that if function for variant-
-    //       alternative is omitted by mistake then we get compile error
-    //       instead of silent setup for infinite recursion by overload-
-    //       match via implicit conversion by variant constructor
-    void * ret;
-    std::visit([&ret, fi, fn](auto arg) { ret = make(arg, fi, fn); }, sh);
-    return ret;
-}
-
-    void *
-member_get(object_intersection * fi, object_normal * fn, void * state)
-{
-    auto pp = static_cast<model::shape **>(state);
-    return make_(*(*pp)++, fi, fn);
-}
-
-    void *
-make(model::inter in, object_intersection * fi, object_normal * fn)
-{
-    model::shape * ptr = &in[0];
-    return make_inter(fi, fn, in.size(), member_get, &ptr);
-}
-
-//
-// todo:
-//
-// X void * make(model::shape, fi, fn) // std::visitor
-// X void * make(model::inter, fi, fn)
-//   void * make(model::texture, df)
-//   object_optics make(model::optics)
-//   scene_object make(model::object)
-//   make(model::spots)
-//   make(model::sky) // slight modification of typedef scene_sky
-//                    // to match exactly with sky_function
-//
-//   current main and get_ functions shall be replaced by a
-//   std::cin >> world; produce_trace(...) // to contain observer
-//   having the pointer-management taken care of by ~world()
-//
-//   make from model functions shall be in model.cpp that
-//   contains a model::trace(model::world, width, height, path)
-// 
-
     [[ noreturn ]] void
 fail(const char * fmt, ...)
 {
@@ -268,7 +50,6 @@ fail(const char * fmt, ...)
     va_end(ap);
     std::exit(EXIT_FAILURE);
 }
-
 
     observer
 get_observer()
@@ -280,7 +61,6 @@ get_observer()
     direct_row(&ret);
     return ret;
 }
-
 
     void *
 get_object(std::string name,
@@ -410,26 +190,20 @@ get_object(std::string name,
         rotation_arg rota;
         point center;
         direction axis;
-        real v, x, y;
+        real v;
         std::cin >> center;
         std::cin >> axis;
         std::cin >> v;
-        std::cin >> x;
-        std::cin >> y;
         spherical_arg(axis, &r, &rota);
         auto saddle_ = alloc<saddle>();
         *saddle_ = saddle{
             direction{-center.x, -center.y, -center.z},
-            rota, (float)v,
-            point{1/(float)x, 1/(float)y, 1/(float)r}};
+            rota, (float)v, 1/(float)r};
         *fi = saddle_intersection;
         *fn = saddle_normal;
         if (name[0] == '-') {
-            saddle_->scale.z *= -1;
+            saddle_->h *= -1;
             saddle_->v += (float)REAL_PI / 2;
-            const float x = saddle_->scale.x;
-            saddle_->scale.x = saddle_->scale.y;
-            saddle_->scale.y = x;
         }
         return saddle_;
     }
@@ -506,14 +280,15 @@ get_decoration(std::string name, object_decoration * df)
     fail("decoration \"%s\"?", name.c_str());
 }
 
-
-    scene_object
-get_scene_object(std::string name, int i)
+    void
+get_scene_object(int i, world & world_)
 {
     object_intersection fi;
     object_normal fn;
     void * a;
 
+    std::string name;
+    std::cin >> name;
     if (name == "x") {
         int n_members;
         std::cin >> n_members;
@@ -532,7 +307,11 @@ get_scene_object(std::string name, int i)
         std::cin >> alt;
         if (alt != "optics") fail("optics [%d] error\n", i);
     }
-    return { fi, fn, a, get_object_optics(), df, d };
+    auto o = scene_object{ fi, fn, a, get_object_optics(), df, d };
+    if (name == "x") world_.inter_args.push_back(const_cast<void *>(o.object_arg));
+    else world_.object_args.push_back(const_cast<void *>(o.object_arg));
+    if (o.decoration_arg) world_.decoration_args.push_back(const_cast<void *>(o.decoration_arg));
+    world_.scene_.push_back(o);
 }
 
 
@@ -583,22 +362,11 @@ main(int argc, char *argv[])
     unsigned scene_object_count;
     std::cin >> scene_object_count;
 
-    world world_;
-    std::vector<void *> decoration_args;
-    std::vector<void *> object_args;
-    std::vector<void *> inter_args;
+    world world_{delete_inter, delete_decoration};
 
     for (size_t i = 0; i < scene_object_count; i++) {
         assert(i == world_.scene_.size());
-
-        std::string name;
-        std::cin >> name;
-        scene_object o = get_scene_object(name, i);
-        if (name == "x") inter_args.push_back(const_cast<void *>(o.object_arg));
-        else object_args.push_back(const_cast<void *>(o.object_arg));
-        if (o.decoration_arg) decoration_args.push_back(const_cast<void *>(o.decoration_arg));
-
-        world_.scene_.push_back(o);
+        get_scene_object(i, world_);
     }
 
     world_.sky = get_scene_sky();
@@ -611,8 +379,4 @@ main(int argc, char *argv[])
     
     int n_workers = getenv("GUN1") ? 1 : 0/* n.cores */;
     produce_trace(out_path, width, height, world_, obs, n_workers);
-
-    for (void * d : decoration_args) delete_decoration(d);
-    for (void * a : inter_args) delete_inter(a);
-    for (void * o : object_args) free(o);
 }

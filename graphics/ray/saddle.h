@@ -9,7 +9,7 @@ struct saddle {
     direction translate;
     rotation_arg rota;
     float v;
-    point scale;
+    float h;
 };
 
 #ifndef __cplusplus

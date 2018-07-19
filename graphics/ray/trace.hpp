@@ -21,11 +21,24 @@ struct light_spot {
 using spots = std::vector<light_spot>;
 
 struct world {
+    typedef void (* del_f)(void *);
     scene_sky sky;
     spots spots_;
     scene scene_;
-    world() : sky() {}
+    world(del_f inter_f, del_f decoration_f);
+    ~world();
+    del_f del_inter;
+    del_f del_decoration;
+    std::vector<void *> decoration_args;
+    std::vector<void *> object_args;
+    std::vector<void *> inter_args;
 };
+
+template <typename T>
+T * alloc()
+{
+    return static_cast<T *>(malloc(sizeof (T)));
+}
 
 color trace(ray t, const world &);
 

@@ -9,42 +9,58 @@ photo * sky_photo;
 color sky_color;
 
 
-    color
-color_sky(direction d)
+    static direction
+get(double * xyz)
 {
-    (void)d;
-    return sky_color;
+    return (direction){
+        xyz[0],
+        xyz[1],
+        xyz[2]};
 }
 
-    color
-photo_sky(direction d)
+    static void
+set(color c, double * rgb)
 {
+    rgb[0] = (double)c.r;
+    rgb[1] = (double)c.g;
+    rgb[2] = (double)c.b;
+}
+
+    void
+color_sky(double * xyz_rgb)
+{
+    set(sky_color, xyz_rgb);
+}
+
+    void
+photo_sky(double * xyz_rgb)
+{
+    direction d = get(xyz_rgb);
     real x, y;
     direction_to_unitsquare(&d, &x, &y);
     const photo_attr * a = (photo_attr *) sky_photo;
     const real col = (x == 0) ? a->width - 1 : (1 - x) * a->width;
     // ^ horizontally flip as we see the "sphere" from the "inside"
     compact_color cc = photo_color(sky_photo, col, y * a->height);
-    return x_color(cc);
+    set(x_color(cc), xyz_rgb);
 }
 
-    color
-rgb_sky(direction d)
+    void
+rgb_sky(double * xyz_rgb)
 {
-    return (color){
-        (d.x + 1) * 0.5,
-        (d.y + 1) * 0.5,
-    1 - (d.z + 1) * 0.5  // most natural orientation for blue is down
-    };
+    xyz_rgb[0] = (xyz_rgb[0] + 1) * 0.5;
+    xyz_rgb[1] = (xyz_rgb[1] + 1) * 0.5;
+    xyz_rgb[2] = 1 - (xyz_rgb[2] + 1) * 0.5; // <-- natural orient for blue down
 }
 
-    color
-hsv_sky(direction d)
+    void
+hsv_sky(double * xyz_rgb)
 {
+    direction d = get(xyz_rgb);
     real x, y;
     direction_to_unitsquare(&d, &x, &y);
     const real h = x * REAL_PI * 2;
     const real s = y > 0.5 ? 1 : 2 * y;
     const real v = y < 0.5 ? 1 : 2 * (1 - y);
-    return from_hsv(h, s, v);
+    set(from_hsv(h, s, v), xyz_rgb);
 }

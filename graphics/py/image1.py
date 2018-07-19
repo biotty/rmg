@@ -281,7 +281,7 @@ def scene_alpha(glide):
     ob = optics_b()
     dv = rnd(3.141592)
     da = rnd_uphalf(3.141592 * 2)
-    dz, dx, dy = rnd_uphalf(1), rnd_uphalf(1), rnd_uphalf(1)
+    dh = rnd_uphalf(1)
     _, theta, phi = Direction.random().spherical()
     ps, cr = RegularSolid(4, .85, theta, phi).inscribed_at_origo()
     def o(t):
@@ -289,7 +289,7 @@ def scene_alpha(glide):
         for i, pl in enumerate(ps):
             sp = Sphere(pl.point, cr * 0.2721655269759087)
             sl = (Saddle if i&1 else Saddle_
-                    )(pl.point, pl.point * dz, dv + t * da, dx, dy)
+                    )(pl.point, pl.point * dh, dv + t * da)
             si = Intersection([sp, sl])
             glide(si, t)
             aa.append(SceneObject(
