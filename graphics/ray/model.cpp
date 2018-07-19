@@ -37,7 +37,6 @@ make(model::observer o)
     return ret;
 }
 
-
     void *
 make(model::plane pl, object_intersection * fi, object_normal * fn)
 {
@@ -312,6 +311,3 @@ make(model::world w)
     }
     return ret;
 }
-//      All rights reserved
-
-#include "model.hpp"
