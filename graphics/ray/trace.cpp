@@ -8,8 +8,8 @@
 #include <cassert>
 #include <iostream>
 
-world::world(del_f inter_f, del_f decoration_f)
-    : sky(), del_inter(inter_f), del_decoration(decoration_f)
+world::world(scene_sky sky, del_f inter_f, del_f decoration_f)
+    : sky(sky), del_inter(inter_f), del_decoration(decoration_f)
 {}
 
 world::~world() {

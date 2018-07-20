@@ -25,7 +25,7 @@ struct world {
     scene_sky sky;
     spots spots_;
     scene scene_;
-    world(del_f inter_f, del_f decoration_f);
+    world(scene_sky sky, del_f inter_f, del_f decoration_f);
     world(const world&) = delete;
     world(world&&) = default;
     world& operator=(const world&) = delete;

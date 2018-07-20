@@ -10,7 +10,8 @@
 #include "saddle.h"
 #include "inter.h"
 #include "mapping.h"
-#include "observer.hpp"
+#include "photo.h"
+#include "render.hpp"
 
 #include <cstdio>
 #include <cstdarg>
@@ -318,7 +319,6 @@ get_scene_object(int i, world & world_)
     scene_sky
 get_scene_sky()
 {
-    sky_color = {1, 1, 1};
     std::string name;
     std::cin >> name;
     if (name == "rgb") {
@@ -326,7 +326,9 @@ get_scene_sky()
     } else if (name == "hsv") {
         return hsv_sky;
     } else if (name == "color") {
-        std::cin >> sky_color;
+        std::cin >> sky_color[0];
+        std::cin >> sky_color[1];
+        std::cin >> sky_color[2];
         return color_sky;
     }
 
@@ -358,12 +360,11 @@ main(int argc, char *argv[])
     if (2 != sscanf(argv[1], "%dx%d", &width, &height))
         fail("dimention argument '%s' not on 'WxH' format\n", argv[1]);
 
+    world world_{nullptr, delete_inter, delete_decoration};
     observer obs = get_observer();
+
     unsigned scene_object_count;
     std::cin >> scene_object_count;
-
-    world world_{delete_inter, delete_decoration};
-
     for (size_t i = 0; i < scene_object_count; i++) {
         assert(i == world_.scene_.size());
         get_scene_object(i, world_);
@@ -378,5 +379,5 @@ main(int argc, char *argv[])
     } // wait till we get end-of-file (polite to not break the pipe)
     
     int n_workers = getenv("GUN1") ? 1 : 0/* n.cores */;
-    produce_trace(out_path, width, height, world_, obs, n_workers);
+    render(out_path, width, height, obs, world_, n_workers);
 }

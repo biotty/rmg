@@ -3,10 +3,13 @@
 
 #include "sky.h"
 #include "photo.h"
+#include "direction.h"
+
+#include <string.h>
 
 
 photo * sky_photo;
-color sky_color;
+double sky_color[3];
 
 
     static direction
@@ -29,7 +32,7 @@ set(color c, double * rgb)
     void
 color_sky(double * xyz_rgb)
 {
-    set(sky_color, xyz_rgb);
+    memcpy(xyz_rgb, sky_color, sizeof sky_color);
 }
 
     void

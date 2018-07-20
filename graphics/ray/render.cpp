@@ -1,7 +1,7 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 
-#include "observer.hpp"
+#include "render.hpp"
 #include "image.h"
 
 #include <iostream>
@@ -105,14 +105,14 @@ observer_ray(const observer & o, real aspect_ratio,
 
 
     void
-produce_trace(const char * path, int width, int height,
-        const world & w, const observer & obs, unsigned n_threads)
+render(const char * path, int width, int height,
+        const observer & obs, const world & w, unsigned n_threads)
 {
     if ( ! n_threads) n_threads = std::thread::hardware_concurrency();
     image out = image_create(path, width, height);
 
     RasterJob job{width, height,
-        [obs, width, height, &w](typename RasterJob::type p){
+        [&obs, width, height, &w](typename RasterJob::type p){
             return trace(observer_ray(obs, width /(real) height,
                         (p.first + (real).5) / width,
                         (p.second + (real).5) / height), w);
