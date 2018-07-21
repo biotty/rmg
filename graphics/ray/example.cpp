@@ -3,52 +3,33 @@
 
 using namespace model;
 
-point operator*(point p, double factor)
-{
-    mul_(p, factor);
-    return p;
-}
-
-direction operator-(point to, point from)
-{
-    return {
-        to.x - from.x,
-        to.y - from.y,
-        to.z - from.z};
-}
-
 int main()
 {
-point x1{1, 0, 0};
-point y1{0, 1, 0};
-point z1{0, 0, 1};
-direction dx = {1, 0, 0};
-
     object sph{
-        inter{
-            sphere{origo, .9},
-            inv_sphere{point{.6, .2, .4}, .7}
+        {
+            sphere{o, .9},
+            saddle{o, zd, xd, 3},
+            inv_hyperbol{o, zd, .07, .25},
+            inv_parabol{onx(-.6), xd, .7}
         },
-        optics{
-            {.7, .7, .7},
+        {
+            {.5, .5, .5},
             {0, 0, 0},
             1.2,
-            {.5, .6, .7},
-            {.6, .9, .9}
+            {.5, .5, .6},
+            {.8, .9, .9}
         },
     };
+    rot_(sph.si, o, {direction_cast(xy(1, 2)), -.3});
 
     observer obs{
-        z1 * 9,
-        origo,
-        dx
+        onz(9), o, xd
     };
 
     world w{
         obs,
         hsv_sky,
         { sph },
-        {}
     };
 
     render("out.jpeg", 1920, 1080, w);

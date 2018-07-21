@@ -33,23 +33,23 @@ direction_cast(point p)
 }
 
     void
-mul_(point & p, double factor)
+mov_(point & p, direction d)
 {
-    p.x *= factor;
-    p.y *= factor;
-    p.z *= factor;
+    p.x += d.x;
+    p.y += d.y;
+    p.z += d.z;
 }
 
     void
-mov_(point & p, direction offset)
+mul_(direction & d, double factor)
 {
-    p.x += offset.x;
-    p.y += offset.y;
-    p.z += offset.z;
+    d.x *= factor;
+    d.y *= factor;
+    d.z *= factor;
 }
 
     void
-mul_(direction & d, const double m[9])
+mul_(direction & d, m3 m)
 {
     double a[3] = { d.x, d.y, d.z };
     double r[3];
@@ -66,59 +66,96 @@ mul_(direction & d, const double m[9])
 }
 
     void
-rot_(direction & d, direction axis, double angle)
+rot_(direction & d, rotation ro)
 {
-    const direction & u = axis;
-    const double c = std::cos(angle);
-    const double l_c = 1 - c;
-    const double s = std::sin(angle);
-    const double m[9] = {
-        u.x*u.x + (1 - u.x*u.x)*c, u.x*u.y*l_c + u.z*s, u.x*u.z*l_c - u.y*s,
-        u.x*u.y*l_c - u.z*s, u.y*u.y+(1 - u.y*u.y)*c, u.y*u.z*l_c + u.x*s,
-        u.x*u.z*l_c + u.y*s, u.y*u.z*l_c - u.x*s,  u.z*u.z + (1 - u.z*u.z)*c
+    const direction u = norm(ro.axis);
+    const double c = std::cos(ro.angle);
+    const double s = std::sin(ro.angle);
+    const double i = 1 - c;
+    const m3 m{
+        u.x*u.x + (1 - u.x*u.x)*c, u.x*u.y*i + u.z*s, u.x*u.z*i - u.y*s,
+        u.x*u.y*i - u.z*s, u.y*u.y+(1 - u.y*u.y)*c, u.y*u.z*i + u.x*s,
+        u.x*u.z*i + u.y*s, u.y*u.z*i - u.x*s,  u.z*u.z + (1 - u.z*u.z)*c
     };
     mul_(d, m);
 }
 
     void
-neg_(direction & d)
-{
-    d.x = -d.x;
-    d.y = -d.y;
-    d.z = -d.z;
-}
-
-    void
-rot_(point & p, point at, direction axis, double angle)
+rot_(point & p, point at, rotation ro)
 {
     direction d = direction_cast(at);
-    direction e = d;
-    neg_(e);
-    mov_(p, e);
+    mov_(p, -d);
     direction q = direction_cast(p);
-    rot_(q, axis, angle);
+    rot_(q, ro);
     p = point_cast(q);
     mov_(p, d);
 }
 
+direction operator*(direction d, double factor)
+{
+    mul_(d, factor);
+    return d;
+}
+
+direction operator-(direction d)
+{
+    return d * -1.0;
+}
+
+direction operator+(direction a, direction b)
+{
+    point ap = point_cast(a);
+    mov_(ap, b);
+    return direction_cast(ap);
+}
+
+double operator*(direction a, direction b)
+{
+    return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+
+double abs(direction d)
+{
+    return std::sqrt(d * d);
+}
+
+direction norm(direction d)
+{
+    return d * (1 / abs(d));
+}
+
+direction operator-(point to, point from)
+{
+    mov_(to, -direction_cast(from));
+    return direction_cast(to);
+}
+
+point operator+(point p, direction d)
+{
+    return point_cast(direction_cast(p) + d);
+}
+
 void plane::_mul(double) {}
 void plane::_mov(direction offset) { mov_(p, offset); }
-void plane::_rot(point at, direction axis, double angle)
+void plane::_rot(point at, rotation ro)
 {
-    rot_(p, at, axis, angle);
-    rot_(d, axis, angle);
+    rot_(p, at, ro);
+    rot_(d, ro);
 }
 
 void sphere::_mul(double factor) { r *= factor; }
 void sphere::_mov(direction offset) { mov_(p, offset); }
-void sphere::_rot(point, direction, double) {}
+void sphere::_rot(point at, rotation ro)
+{
+    rot_(p, at, ro);
+}
 
 void common_geometric::_mul(double factor) { r *= factor; }
 void common_geometric::_mov(direction offset) { mov_(p, offset); }
-void common_geometric::_rot(point at, direction axis, double angle)
+void common_geometric::_rot(point at, rotation ro)
 {
-    rot_(p, at, axis, angle);
-    rot_(d, axis, angle);
+    rot_(p, at, ro);
+    rot_(d, ro);
 }
 
 void hyperbol::_mul(double factor) {
@@ -128,11 +165,11 @@ void hyperbol::_mul(double factor) {
 
 void saddle::_mul(double factor) { h *= factor; }
 void saddle::_mov(direction offset) { mov_(p, offset); }
-void saddle::_rot(point at, direction axis, double angle)
+void saddle::_rot(point at, rotation ro)
 {
-    rot_(p, at, axis, angle);
-    rot_(d, axis, angle);
-    rot_(x, axis, angle);
+    rot_(p, at, ro);
+    rot_(d, ro);
+    rot_(x, ro);
 }
 
 void mul_(shape & s, double factor)
@@ -145,19 +182,25 @@ void mov_(shape & s, direction offset)
     std::visit([offset](auto & arg) { arg._mov(offset); }, s);
 }
 
-void rot_(shape & s, point at, direction axis, double angle)
+void rot_(shape & s, point at, rotation ro)
 {
-    std::visit([at, axis, angle](auto & arg) { arg._rot(at, axis, angle); }, s);
+    std::visit([at, ro](auto & arg) { arg._rot(at, ro); }, s);
 }
 
 void angular::_mul(double factor) { r *= factor; }
 void angular::_mov(direction) {}
-void angular::_rot(point, direction axis, double angle) { rot_(d, axis, angle); }
+void angular::_rot(point, rotation ro) { rot_(d, ro); }
 
     void
-mul_(texture & s, double factor)
+mul_(texture & s, point at, double factor)
 {
-    std::visit([factor](auto & arg) { arg._mul(factor); }, s);
+    std::visit([at, factor](auto & arg) {
+            arg._mul(factor);
+            /* seems non-working if constexpr
+            if constexpr ( ! std::is_base_of<common_geometric, decltype(arg)>::value)
+                arg.p = at + (arg.p - at) * factor;
+            */ (void) at;
+            }, s);
 }
 
     void
@@ -167,15 +210,17 @@ mov_(texture & s, direction offset)
 }
 
     void
-rot_(texture & s, point at, direction axis, double angle)
+rot_(texture & s, point at, rotation ro)
 {
-    std::visit([at, axis, angle](auto & arg) { arg._rot(at, axis, angle); }, s);
+    std::visit([at, ro](auto & arg) { arg._rot(at, ro); }, s);
 }
 
     void
-mul_(inter & s, double factor) {
+mul_(inter & s, point at, double factor) {
     for (auto & o : s)
-        std::visit([factor](auto & arg) { arg._mul(factor); }, o);
+        std::visit([at, factor](auto & arg) {
+                arg._mul(factor);
+                arg.p = at + (arg.p - at) * factor; }, o);
 }
 
     void
@@ -185,18 +230,17 @@ mov_(inter & s, direction offset) {
 }
 
     void
-rot_(inter & s, point at, direction axis, double angle) {
+rot_(inter & s, point at, rotation ro) {
     for (auto & o : s)
-        std::visit([at, axis, angle](auto & arg) { arg._rot(at, axis, angle); }, o);
+        std::visit([at, ro](auto & arg) { arg._rot(at, ro); }, o);
 }
 
     object
-object::mul(double factor)
+object::mul(point at, double factor)
 {
     object ret = *this;
-    std::visit([factor](auto & arg) { mul_(arg, factor); }, ret.s);
-    if (ret.u)
-        mul_(*ret.u, factor);
+    mul_(ret.si, at, factor);
+    if (ret.u) mul_(*ret.u, at, factor);
     return ret;
 }
 
@@ -204,19 +248,17 @@ object::mul(double factor)
 object::mov(direction offset)
 {
     object ret = *this;
-    std::visit([offset](auto & arg) { mov_(arg, offset); }, ret.s);
-    if (ret.u)
-        mov_(*ret.u, offset);
+    mov_(ret.si, offset);
+    if (ret.u) mov_(*ret.u, offset);
     return ret;
 }
 
     object
-object::rot(point at, direction axis, double angle)
+object::rot(point at, rotation ro)
 {
     object ret = *this;
-    std::visit([at, axis, angle](auto & arg) { rot_(arg, at, axis, angle); }, ret.s);
-    if (ret.u)
-        rot_(*ret.u, at, axis, angle);
+    rot_(ret.si, at, ro);
+    if (ret.u) rot_(*ret.u, at, ro);
     return ret;
 }
 
@@ -317,9 +359,11 @@ make(model::cone co, object_intersection * fi, object_normal * fn, bool inv)
 make(model::parabol pa, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto parabol_ = alloc<parabol>();
+    point f = make_norm(pa.d);
+    scale(&f, pa.r * .5);
     *parabol_ = parabol{
-        distance_vector(make(pa.p), point_from_origo(make(pa.d))),
-            2 *(float) pa.r, make_tilt(pa.d)};
+        distance_vector(make(pa.p), f),
+        (float) pa.r, make_tilt(pa.d)};
     if (inv) {
         *fi = _parabol_intersection;
         *fn = _parabol_normal;
@@ -366,17 +410,16 @@ make(model::saddle sa, object_intersection * fi, object_normal * fn, bool inv)
 }
 
     void *
-make(model::shape sh, object_intersection * fi, object_normal * fn, world * world_)
+make(model::shape sh, object_intersection * fi, object_normal * fn)
 {
     // note: different overload(/name) prevents that if function for variant-
     //       alternative is omitted by mistake then we get compile error
     //       instead of silent setup for infinite recursion by overload-
     //       match via implicit conversion by variant constructor
     void * ret;
-    std::visit([&ret, fi, fn, world_](auto arg) {
-            bool inv = std::is_base_of<model::inv_shape, decltype(arg)>::value;
+    std::visit([&ret, fi, fn](auto arg) {
+            constexpr bool inv = std::is_base_of<model::inv_shape, decltype(arg)>::value;
             ret = make(arg, fi, fn, inv);
-            if (world_) world_->object_args.push_back(ret);
             }, sh);
     return ret;
 }
@@ -385,16 +428,24 @@ make(model::shape sh, object_intersection * fi, object_normal * fn, world * worl
 member_get(object_intersection * fi, object_normal * fn, void * state)
 {
     auto pp = static_cast<model::shape **>(state);
-    return make(*(*pp)++, fi, fn, nullptr);
+    return make(*(*pp)++, fi, fn);
 }
 
     void *
-make(model::inter in, object_intersection * fi, object_normal * fn, world * world_)
+make(model::inter in, object_intersection * fi, object_normal * fn, world & owner_)
 {
-    assert(world_);
+    const size_t n = in.size();
     model::shape * ptr = &in[0];
-    void * ret = make_inter(fi, fn, in.size(), member_get, &ptr);
-    world_->inter_args.push_back(ret);
+    if (n == 0) return nullptr;
+
+    void * ret;
+    if (n == 1) {
+        ret = make(*ptr, fi, fn);
+        owner_.object_args.push_back(ret);
+    } else {
+        ret = make_inter(fi, fn, n, member_get, &ptr);
+        owner_.inter_args.push_back(ret);
+    }
     return ret;
 }
 
@@ -478,11 +529,8 @@ make(model::object obj, world & world_)
 {
     object_intersection fi;
     object_normal fn;
-    void * a;
-
-    std::visit([&](auto arg){ a = make(arg, &fi, &fn, &world_); }, obj.s);
-
     object_decoration fd = nullptr;
+    auto a = make(obj.si, &fi, &fn, world_);
     auto d = obj.u ? make(*obj.u, &fd, world_) : nullptr;
     auto o = scene_object{ fi, fn, a, make(obj.o), fd, d };
     world_.scene_.push_back(o);

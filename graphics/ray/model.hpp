@@ -4,6 +4,7 @@
 #define MODEL_HPP
 
 #include "sky.h"
+#include <array>
 #include <vector>
 #include <variant>
 #include <optional>
@@ -13,54 +14,67 @@ namespace model {
 struct color { double r, g, b; };
 struct point { double x, y, z; };
 struct direction { double x, y, z; };
+struct rotation { direction axis; double angle; };
+using m3 = std::array<double, 9>;
 
-constexpr point origo = {0, 0, 0};
-constexpr point x1 = {1, 0, 0};
-constexpr point y1 = {0, 1, 0};
-constexpr point z1 = {0, 0, 1};
+constexpr point o = {0, 0, 0};
+constexpr point xy(double x, double y) { return {x, y, 0}; }
+constexpr point xz(double x, double z) { return {x, 0, z}; }
+constexpr point yz(double y, double z) { return {0, y, z}; }
+constexpr point onx(double k) { return {k, 0, 0}; }
+constexpr point ony(double k) { return {0, k, 0}; }
+constexpr point onz(double k) { return {0, 0, k}; }
 constexpr direction xd = {1, 0, 0};
 constexpr direction yd = {0, 1, 0};
 constexpr direction zd = {0, 0, 1};
 
-point point_cast(direction d);
-direction direction_cast(point p);
-void mul_(point & p, double factor);
-void mov_(point & p, direction offset);
-void mul_(direction & d, const double m[9]);
-void rot_(direction & d, direction axis, double angle);
-void neg_(direction & d);
-void rot_(point & p, point at, direction axis, double angle);
+point point_cast(direction);
+direction direction_cast(point);
+void mov_(point & p, direction);
+void mul_(direction & d, double);
+void mul_(direction & d, m3);
+void rot_(direction & d, rotation);
+void rot_(point & p, point at, rotation);
+
+direction operator*(direction d, double);
+direction operator-(direction d);
+direction operator+(direction a, direction b);
+double operator*(direction a, direction b);
+double abs(direction);
+direction norm(direction d);
+direction operator-(point to, point from);
+point operator+(point, direction);
 
 struct plane {
     point p;
     direction d;
     void _mul(double);
     void _mov(direction offset);
-    void _rot(point at, direction axis, double angle);
+    void _rot(point at, rotation);
 };
 
 struct sphere {
     point p;
     double r;
-    void _mul(double factor);
+    void _mul(double);
     void _mov(direction offset);
-    void _rot(point, direction, double);
+    void _rot(point at, rotation);
 };
 
 struct common_geometric {
     point p;
     direction d;
     double r;
-    void _mul(double factor);
+    void _mul(double);
     void _mov(direction offset);
-    void _rot(point at, direction axis, double angle);
+    void _rot(point at, rotation);
 };
 struct cylinder : common_geometric {};
 struct cone : common_geometric {};
 struct parabol : common_geometric {};
 struct hyperbol : common_geometric {
     double h;
-    void _mul(double factor);
+    void _mul(double);
 };
 
 struct saddle {
@@ -68,9 +82,9 @@ struct saddle {
     direction d;
     direction x;
     double h;
-    void _mul(double factor);
+    void _mul(double);
     void _mov(direction offset);
-    void _rot(point at, direction axis, double angle);
+    void _rot(point at, rotation);
 };
 
 struct inv_shape {};
@@ -90,9 +104,9 @@ using shape = std::variant<
     parabol, inv_parabol,
     saddle, inv_saddle>;
 
-void mul_(shape & s, double factor);
+void mul_(shape & s, double);
 void mov_(shape & s, direction offset);
-void rot_(shape & s, point at, direction axis, double angle);
+void rot_(shape & s, point at, rotation);
 
 struct observer {
     point e;
@@ -112,9 +126,9 @@ struct angular {
     surface s;
     direction d;
     double r;
-    void _mul(double factor);
+    void _mul(double);
     void _mov(direction);
-    void _rot(point, direction axis, double angle);
+    void _rot(point, rotation);
 };
 
 struct common_texture : common_geometric {
@@ -137,9 +151,9 @@ using texture = std::variant<
     axial, axial1,
     checkers>;
 
-void mul_(texture & s, double factor);
+void mul_(texture & s, double);
 void mov_(texture & s, direction offset);
-void rot_(texture & s, point at, direction axis, double angle);
+void rot_(texture & s, point at, rotation);
 
 struct optics {
     color reflection_filter;
@@ -150,17 +164,17 @@ struct optics {
 };
 
 using inter = std::vector<shape>;
-void mul_(inter & s, double factor);
+void mul_(inter & s, point at, double);
 void mov_(inter & s, direction offset);
-void rot_(inter & s, point at, direction axis, double angle);
+void rot_(inter & s, point at, rotation);
 
 struct object {
-    std::variant<shape, inter> s;
+    inter si;
     optics o;
     std::optional<texture> u;
-    object mul(double factor);
+    object mul(point at, double);
     object mov(direction offset);
-    object rot(point at, direction axis, double angle);
+    object rot(point at, rotation);
 };
 
 struct light_spot {
