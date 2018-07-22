@@ -4,7 +4,6 @@
 #include "trace.hpp"
 #include "scene.hpp"
 #include "bitarray.hpp"
-#include "stack.hpp"
 #include <cassert>
 #include <iostream>
 

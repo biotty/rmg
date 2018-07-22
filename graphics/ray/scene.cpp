@@ -4,7 +4,6 @@
 #include "scene.h"
 #include "trace.hpp"
 #include "bitarray.hpp"
-#include "stack.hpp"
 
     void
 init_inside(bitarray & inside, scene const & s, const ray * t)

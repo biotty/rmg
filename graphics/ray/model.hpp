@@ -16,7 +16,10 @@ struct point { double x, y, z; };
 struct direction { double x, y, z; };
 struct rotation { direction axis; double angle; };
 using m3 = std::array<double, 9>;
-
+struct resolution { int width; int height; };
+constexpr resolution hdtv{1920, 1080};
+constexpr double pi{3.1415926535897};
+constexpr double pi2{pi * 2};
 constexpr point o = {0, 0, 0};
 constexpr point xy(double x, double y) { return {x, y, 0}; }
 constexpr point xz(double x, double z) { return {x, 0, z}; }
@@ -76,7 +79,6 @@ struct hyperbol : common_geometric {
     double h;
     void _mul(double);
 };
-
 struct saddle {
     point p;
     direction d;
@@ -88,13 +90,19 @@ struct saddle {
 };
 
 struct inv_shape {};
-struct inv_plane : plane, inv_shape {};
-struct inv_sphere : sphere, inv_shape {};
-struct inv_cylinder : cylinder, inv_shape {};
-struct inv_cone : cone, inv_shape {};
-struct inv_hyperbol : hyperbol, inv_shape {};
-struct inv_parabol : parabol, inv_shape {};
-struct inv_saddle : saddle, inv_shape {};
+struct inv_plane : plane, inv_shape { inv_plane(point _p, direction _d); };
+struct inv_sphere : sphere, inv_shape { inv_sphere(point _p, double _r); };
+struct inv_cylinder : cylinder, inv_shape
+{ inv_cylinder(point _p, direction _d, double _r); };
+struct inv_cone : cone, inv_shape
+{ inv_cone(point _p, direction _d, double _r); };
+struct inv_parabol : parabol, inv_shape
+{ inv_parabol(point _p, direction _d, double _r); };
+struct inv_hyperbol : hyperbol, inv_shape
+{ inv_hyperbol(point _p, direction _d, double _r, double _h); };
+struct inv_saddle : saddle, inv_shape
+{ inv_saddle(point _p, direction _d, direction _x, double _h); };
+
 using shape = std::variant<
     plane, inv_plane,
     sphere, inv_sphere,
@@ -120,7 +128,8 @@ struct surface {
     color refraction;
 };
 
-using str = const char *;
+using str = std::string;
+
 struct angular {
     str n;
     surface s;
@@ -129,7 +138,7 @@ struct angular {
     void _mul(double);
     void _mov(direction);
     void _rot(point, rotation);
-};
+}; 
 
 struct common_texture : common_geometric {
     str n;
@@ -188,9 +197,7 @@ struct world {
     std::vector<object> s;
     std::vector<light_spot> ls;
 };
-void render(
-    const char * path, int width, int height,
-    model::world w, unsigned n_threads = 0);
+void render(std::string path, resolution, world w, unsigned n_threads = 0);
 
 }
 #endif

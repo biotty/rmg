@@ -172,6 +172,14 @@ void saddle::_rot(point at, rotation ro)
     rot_(x, ro);
 }
 
+inv_plane::inv_plane(point _p, direction _d) : plane{_p, _d} {}
+inv_sphere::inv_sphere(point _p, double _r) : sphere{_p, _r} {}
+inv_cylinder::inv_cylinder(point _p, direction _d, double _r) : cylinder{_p, _d, _r} {}
+inv_cone::inv_cone(point _p, direction _d, double _r) : cone{_p, _d, _r} {}
+inv_parabol::inv_parabol(point _p, direction _d, double _r) : parabol{_p, _d, _r} {}
+inv_hyperbol::inv_hyperbol(point _p, direction _d, double _r, double _h) : hyperbol{_p, _d, _r, _h} {}
+inv_saddle::inv_saddle(point _p, direction _d, direction _x, double _h) : saddle{_p, _d, _x, _h} {}
+
 void mul_(shape & s, double factor)
 {
     std::visit([factor](auto & arg) { arg._mul(factor); }, s);
@@ -191,15 +199,16 @@ void angular::_mul(double factor) { r *= factor; }
 void angular::_mov(direction) {}
 void angular::_rot(point, rotation ro) { rot_(d, ro); }
 
+void mov_(angular &, point, double) {}
+void mov_(common_geometric & arg, point at, double factor)
+{ arg.p = at + (arg.p - at) * factor; }
+
     void
 mul_(texture & s, point at, double factor)
 {
     std::visit([at, factor](auto & arg) {
             arg._mul(factor);
-            /* seems non-working if constexpr
-            if constexpr ( ! std::is_base_of<common_geometric, decltype(arg)>::value)
-                arg.p = at + (arg.p - at) * factor;
-            */ (void) at;
+            mov_(arg, at, factor);
             }, s);
 }
 
@@ -289,6 +298,11 @@ make_tilt(model::direction d)
     real ignore_r;
     spherical_arg(make(d), &ignore_r, &rota);
     return rota;
+}
+
+    const char * // lifetime: implication is must process world having model::world
+make(const model::str & s) {
+    return s.c_str();
 }
 
     void *
@@ -465,27 +479,27 @@ make(model::surface s)
 
     void *
 make(model::angular tx, object_decoration * df)
-{ return normal_texture_mapping(df, make(tx.d), tx.r, tx.n, make(tx.s)); }
+{ return normal_texture_mapping(df, make(tx.d), tx.r, make(tx.n), make(tx.s)); }
 
     void *
 make(model::planar tx, object_decoration * df)
-{ return planar_texture_mapping(df, make(tx.d), tx.r, make(tx.p), tx.n, make(tx.s)); }
+{ return planar_texture_mapping(df, make(tx.d), tx.r, make(tx.p), make(tx.n), make(tx.s)); }
 
     void *
 make(model::planar1 tx, object_decoration * df)
-{ return planar1_texture_mapping(df, make(tx.d), tx.r, make(tx.p), tx.n, make(tx.s)); }
+{ return planar1_texture_mapping(df, make(tx.d), tx.r, make(tx.p), make(tx.n), make(tx.s)); }
 
     void *
 make(model::relative tx, object_decoration * df)
-{ return relative_texture_mapping(df, make(tx.d), tx.r, make(tx.p), tx.n, make(tx.s)); }
+{ return relative_texture_mapping(df, make(tx.d), tx.r, make(tx.p), make(tx.n), make(tx.s)); }
 
     void *
 make(model::axial tx, object_decoration * df)
-{ return axial_texture_mapping(df, make(tx.d), tx.r, make(tx.p), tx.n, make(tx.s)); }
+{ return axial_texture_mapping(df, make(tx.d), tx.r, make(tx.p), make(tx.n), make(tx.s)); }
 
     void *
 make(model::axial1 tx, object_decoration * df)
-{ return axial1_texture_mapping(df, make(tx.d), tx.r, make(tx.p), tx.n, make(tx.s)); }
+{ return axial1_texture_mapping(df, make(tx.d), tx.r, make(tx.p), make(tx.n), make(tx.s)); }
 
     compact_color
 make_c(model::color c)
@@ -564,12 +578,10 @@ make(model::world w)
 namespace model {
 
     void
-render(
-    const char * path, int width, int height,
-    model::world w, unsigned n_threads)
+render(std::string path, resolution res, model::world w, unsigned n_threads)
 {
     auto [obs, world_] = make(w);
-    ::render(path, width, height, obs, world_, n_threads);
+    render(path.c_str(), res.width, res.height, obs, world_, n_threads);
 }
 
 }

@@ -1,36 +1,51 @@
 
 #include "model.hpp"
 
+#include <iostream>
+#include <sstream>
+
 using namespace model;
 
-int main()
+void movie_frame(int i, int n)
 {
+    double t = i /(double) n;
+
     object sph{
         {
             sphere{o, .9},
+            cylinder{o, xd, .5},
             saddle{o, zd, xd, 3},
-            inv_hyperbol{o, zd, .07, .25},
-            inv_parabol{onx(-.6), xd, .7}
+            inv_hyperbol{o, zd, .07, .17},
+            inv_parabol{onx(-.7), xd, .4}
         },
         {
-            {.5, .5, .5},
+            {.4, .4, .4},
             {0, 0, 0},
             1.2,
             {.5, .5, .6},
-            {.8, .9, .9}
+            {.95, .97, .99}
         },
+        {}
     };
-    rot_(sph.si, o, {direction_cast(xy(1, 2)), -.3});
 
-    observer obs{
-        onz(9), o, xd
-    };
+    rot_(sph.si, o, {direction_cast(xy(1, 2)), t * pi2});
 
     world w{
-        obs,
-        hsv_sky,
+        { onz(9), o, xd * .6 },
+        rgb_sky,
         { sph },
+        {}
     };
 
-    render("out.jpeg", 1920, 1080, w);
+    std::ostringstream path("out");
+    path << i << ".jpeg";
+    render(path.str(), hdtv, w);
+    std::cout << "\r" << i << std::flush;
+}
+
+int main()
+{
+    int n = 300;
+
+    for (int i=0; i<n; i++) movie_frame(i, n);
 }

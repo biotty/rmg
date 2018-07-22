@@ -6,12 +6,12 @@ CFLAGS=-Wall -Wextra -Werror -std=c11 -pedantic -O3 -I$(GRAPHICS)/rgb
 gun: gun.o tracer.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-example: example.cpp tracer.a
-	$(CXX) -o $@ $^ $(LDFLAGS) -std=c++17
+example: example.o tracer.a
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 tracer.a: model.o mapping.o inter.o sphere.o plane.o cylinder.o \
 	  cone.o parabol.o hyperbol.o saddle.o direction.o point.o ray.o \
-	 render.o matrix.o bitarray.o stack.o scene.o sky.o trace.o
+	 render.o matrix.o bitarray.o scene.o sky.o trace.o
 	ar rc $@ $^
 
 model.o:    model.hpp

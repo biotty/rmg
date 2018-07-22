@@ -2,6 +2,7 @@
 //      All rights reserved
 
 #include "bitarray.hpp"
+#include <algorithm>
 
 
 bitarray::bitarray(int q) : bits(q) {}
@@ -18,9 +19,8 @@ bitarray::isset(int i) const { return bits[i]; }
     int
 bitarray::firstset() const
 {
-    const unsigned n = bits.size();
-    for (unsigned i=0; i < n; i++) {
-        if (bits[i]) return i;
-    }
-    return -1;
+    auto it = std::find(bits.begin(), bits.end(), true);
+    if (bits.end() == it) return -1;
+
+    return std::distance(bits.begin(), it);
 }

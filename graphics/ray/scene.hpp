@@ -5,7 +5,6 @@
 
 #include "scene.h"
 #include "bitarray.hpp"
-#include "stack.hpp"
 #include <vector>
 
 using scene = std::vector<scene_object>;
