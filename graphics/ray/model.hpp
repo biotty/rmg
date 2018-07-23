@@ -8,6 +8,7 @@
 #include <vector>
 #include <variant>
 #include <optional>
+#include <functional>
 
 namespace model {
 
@@ -18,35 +19,58 @@ struct rotation { direction axis; double angle; };
 using m3 = std::array<double, 9>;
 struct resolution { int width; int height; };
 constexpr resolution hdtv{1920, 1080};
-constexpr double pi{3.1415926535897};
+constexpr double pi{3.14159265358979};
 constexpr double pi2{pi * 2};
 constexpr point o = {0, 0, 0};
+constexpr point point_cast(direction d) { return {d.x, d.y, d.z}; }
+constexpr direction direction_cast(point p) { return {p.x, p.y, p.z}; }
 constexpr point xy(double x, double y) { return {x, y, 0}; }
 constexpr point xz(double x, double z) { return {x, 0, z}; }
 constexpr point yz(double y, double z) { return {0, y, z}; }
 constexpr point onx(double k) { return {k, 0, 0}; }
 constexpr point ony(double k) { return {0, k, 0}; }
 constexpr point onz(double k) { return {0, 0, k}; }
-constexpr direction xd = {1, 0, 0};
-constexpr direction yd = {0, 1, 0};
-constexpr direction zd = {0, 0, 1};
+constexpr direction xd{1, 0, 0};
+constexpr direction yd{0, 1, 0};
+constexpr direction zd{0, 0, 1};
+constexpr color r{1, 0, 0};
+constexpr color g{0, 1, 0};
+constexpr color b{0, 0, 1};
+constexpr color white{1, 1, 1};
+constexpr color black{0, 0, 0};
+constexpr double water_ri{1.3};
+constexpr double glass_ri{1.6};
+constexpr double diamond_ri{2.4};
+constexpr double r_hue{0};
+constexpr double g_hue{pi2 / 3};
+constexpr double b_hue{2 * pi2 / 3};
+constexpr color gray(double v) { return {v, v, v}; }
+color from_hsv(double h, double s, double v);
+color operator+(color p, color q);
+color operator*(color p, color filter);
+inline color operator*(color p, double u) { return p * gray(u); }
+inline color from_hue(double h) { return from_hsv(h, 1, 1); }
 
-point point_cast(direction);
-direction direction_cast(point);
+direction operator*(direction, double);
+direction operator-(direction);
+direction operator+(direction a, direction b);
+double operator*(direction a, direction b);
+direction operator-(point to, point from);
+point operator+(point, direction);
+double abs(direction);
+inline direction norm(direction d) { return d * (1 / abs(d)); }
+direction circle(double t);
+
+inline double mix(double a, double b, double k) { return a * (1 - k) + b * k; }
+inline color mix(color a, color b, double k) { return a * (1 - k) + b * k; }
+inline point mix(point a, point b, double k)
+{ return o + direction_cast(a) * (1 - k) + direction_cast(b) * k; }
+
 void mov_(point & p, direction);
 void mul_(direction & d, double);
 void mul_(direction & d, m3);
 void rot_(direction & d, rotation);
 void rot_(point & p, point at, rotation);
-
-direction operator*(direction d, double);
-direction operator-(direction d);
-direction operator+(direction a, direction b);
-double operator*(direction a, direction b);
-double abs(direction);
-direction norm(direction d);
-direction operator-(point to, point from);
-point operator+(point, direction);
 
 struct plane {
     point p;
@@ -197,7 +221,11 @@ struct world {
     std::vector<object> s;
     std::vector<light_spot> ls;
 };
-void render(std::string path, resolution, world w, unsigned n_threads = 0);
+using world_gen_f = std::function<world(int i, int n)>;
+void render(world w, std::string path, resolution = hdtv, unsigned n_threads = 0);
+void sequence(world_gen_f wg, std::string path, int n_frames, resolution = hdtv, unsigned n_threads = 0);
+void load_sky(std::string path);
+void solid_sky(color);
 
 }
 #endif

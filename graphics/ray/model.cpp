@@ -13,23 +13,95 @@
 #include "saddle.h"
 #include "inter.h"
 #include "mapping.h"
+#include "photo.h"
 #include "observer.h"
 
 #include <cmath>
+#include <sstream>
+#include <iostream>
 #include <type_traits>
 
 namespace model {
 
-    point
-point_cast(direction d)
+color operator+(color p, color q)
 {
-    return { d.x, d.y, d.z };
+    return {
+        p.r + q.r,
+        p.g + q.g,
+        p.b + q.b};
 }
 
-    direction
-direction_cast(point p)
+color operator*(color p, color filter)
 {
-    return { p.x, p.y, p.z };
+    return {
+        p.r * filter.r,
+        p.g * filter.g,
+        p.b * filter.b};
+}
+
+color from_hsv(double h, double s, double v)
+{
+    if (s == 0) return gray(v);
+
+    h = fmod(h, pi2) * 3 / pi;
+    int i = floor(h);
+    double f = h - i;
+    double p = v * (1 - s);
+    double q = v * (1 - s * f);
+    double t = v * (1 - s * (1 - f));
+    switch (i) {
+    case 0: return {v, t, p};
+    case 1: return {q, v, p};
+    case 2: return {p, v, t};
+    case 3: return {p, q, v};
+    case 4: return {t, p, v};
+    case 5: return {v, p, q};
+    default: abort();
+    }
+}
+
+direction operator*(direction d, double factor)
+{
+    mul_(d, factor);
+    return d;
+}
+
+direction operator-(direction d)
+{
+    return d * -1.0;
+}
+
+direction operator+(direction a, direction b)
+{
+    point ap = point_cast(a);
+    mov_(ap, b);
+    return direction_cast(ap);
+}
+
+double operator*(direction a, direction b)
+{
+    return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+
+direction operator-(point to, point from)
+{
+    mov_(to, -direction_cast(from));
+    return direction_cast(to);
+}
+
+point operator+(point p, direction d)
+{
+    return point_cast(direction_cast(p) + d);
+}
+
+double abs(direction d)
+{
+    return std::sqrt(d * d);
+}
+
+direction circle(double t)
+{
+    return {cos(t), sin(t), 0};
 }
 
     void
@@ -89,50 +161,6 @@ rot_(point & p, point at, rotation ro)
     rot_(q, ro);
     p = point_cast(q);
     mov_(p, d);
-}
-
-direction operator*(direction d, double factor)
-{
-    mul_(d, factor);
-    return d;
-}
-
-direction operator-(direction d)
-{
-    return d * -1.0;
-}
-
-direction operator+(direction a, direction b)
-{
-    point ap = point_cast(a);
-    mov_(ap, b);
-    return direction_cast(ap);
-}
-
-double operator*(direction a, direction b)
-{
-    return a.x*b.x + a.y*b.y + a.z*b.z;
-}
-
-double abs(direction d)
-{
-    return std::sqrt(d * d);
-}
-
-direction norm(direction d)
-{
-    return d * (1 / abs(d));
-}
-
-direction operator-(point to, point from)
-{
-    mov_(to, -direction_cast(from));
-    return direction_cast(to);
-}
-
-point operator+(point p, direction d)
-{
-    return point_cast(direction_cast(p) + d);
 }
 
 void plane::_mul(double) {}
@@ -577,11 +605,34 @@ make(model::world w)
 
 namespace model {
 
-    void
-render(std::string path, resolution res, model::world w, unsigned n_threads)
-{
+void render(model::world w, std::string path, resolution res, unsigned n_threads) {
     auto [obs, world_] = make(w);
     render(path.c_str(), res.width, res.height, obs, world_, n_threads);
+    photo_delete_all();
+    sky_photo = nullptr;
+}
+
+void sequence(world_gen_f wg, std::string path, int n_frames, resolution res, unsigned n_threads)
+{
+    for (int i = 0; i < n_frames; i++) {
+        std::ostringstream buf{path};
+        buf << i << ".jpeg";
+        render(wg(i, n_frames), buf.str(), res, n_threads);
+        std::cout << "\r" << i << std::flush;
+    }
+    std::cout << std::endl;
+}
+
+void load_sky(std::string path)
+{
+    sky_photo = photo_create(path.c_str());
+}
+
+void solid_sky(color c)
+{
+    sky_color[0] = c.r;
+    sky_color[1] = c.g;
+    sky_color[2] = c.b;
 }
 
 }

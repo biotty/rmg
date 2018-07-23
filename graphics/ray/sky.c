@@ -38,6 +38,8 @@ color_sky(double * xyz_rgb)
     void
 photo_sky(double * xyz_rgb)
 {
+    assert(sky_photo);
+
     direction d = get(xyz_rgb);
     real x, y;
     direction_to_unitsquare(&d, &x, &y);

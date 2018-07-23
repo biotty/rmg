@@ -26,14 +26,14 @@ path_is_jpeg(const char * path)
 }
 
 #define hash_len 16
-#define n_entries 16
+#define n_entries 32
 
 typedef struct {
     char path_hash[hash_len];
     photo * photo;
 } cache_entry;
 
-static cache_entry cache_entries[16];
+static cache_entry cache_entries[n_entries];
 
     static char *
 path_hash(const char * path)
@@ -167,6 +167,17 @@ photo_delete(photo * ph)
         free(ph);
     } else if (count < 0)
         fprintf(stderr, "ref-count underflow\n");
+}
+
+    void
+photo_delete_all()
+{
+    for (int i = 0; i < n_entries; i++) {
+        if (cache_entries[i].path_hash[0]) {
+            cache_entries[i].path_hash[0] = '\0';
+            free(cache_entries[i].photo);
+        }
+    }
 }
 
     static unsigned char *

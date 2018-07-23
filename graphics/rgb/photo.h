@@ -27,6 +27,7 @@ photo * photo_create(const char * path);
 unsigned photo_rgb(const photo *, int x, int y);
 compact_color photo_color(const photo *, int x, int y);
 void photo_delete(photo *);
+void photo_delete_all(void);
 
 #ifdef __cplusplus
 }
