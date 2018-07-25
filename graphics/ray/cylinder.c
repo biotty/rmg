@@ -2,7 +2,6 @@
 //      All rights reserved
 
 #include "cylinder.h"
-#include <assert.h>
 
 
     static direction

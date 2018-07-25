@@ -1,8 +1,8 @@
-GRAPHICS=..
-CXXFLAGS=-Wall -Wextra -Werror -std=c++14 -pedantic -O3 -I$(GRAPHICS)/rgb
-LDFLAGS=-L$(GRAPHICS)/rgb -lrgb
+GRAPHICS := ..
+CXXFLAGS := -Wall -Wextra -Werror -std=c++14 -pedantic -O3 -I$(GRAPHICS)/ray
+LDFLAGS := -L$(GRAPHICS)/ray -lrayt -lm -pthread
 
-FLOW=flow.hpp cellular.hpp planar.hpp linear.hpp
+FLOW := flow.hpp cellular.hpp planar.hpp linear.hpp
 
 .PHONY:
 all: wave fluid
@@ -21,7 +21,7 @@ fluid.o: fluid.cpp fluid.hpp $(FLOW) tracer.hpp palette.hpp
 
 .PHONY:
 clean:
-	@rm -f *.o *.gch
+	@rm -f *.o
 
 .PHONY:
 sweep: clean

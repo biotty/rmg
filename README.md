@@ -14,7 +14,7 @@
 
 ### Graphics
 
-* **raygun** optics of overlapping and intersecting basic shapes
+* **rayt** optics of overlapping and intersecting basic shapes
 * **fluid** traces a heterogenous viscous fluid in a plane
 * **follow** border-hunting zoomer for Mandelbrot and its Julia-set
 * **lindo** context-sensitive parametric bracketed L-system

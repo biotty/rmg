@@ -4,6 +4,7 @@
 #include "direction.h"
 #include "matrix.h"
 
+
     direction
 reflection(direction normal, direction d)
 {
@@ -162,6 +163,10 @@ rotate_xy_xz(direction * d, const rotation_arg arg)
 // restricting to z-symetric shapes (except saddle) by choice
 // for aesthetics and model simplicity -- to be considered
 // -- and this may then impact the discussion in this comment
+//
+// note that this "tilt" operation ends with a rotation on z
+// which means it is not a clean tilt of the z-pole, which
+// would only be a rotation on a line in the xy plane.
 //
     direction
 rotation(direction d, rotation_arg arg)

@@ -378,6 +378,6 @@ main(int argc, char *argv[])
         if ( ! std::isspace(c)) fail("non-space trailer. got '%c'\n", c);
     } // wait till we get end-of-file (polite to not break the pipe)
     
-    int n_workers = getenv("GUN1") ? 1 : 0/* n.cores */;
+    int n_workers = getenv("RAYT1") ? 1 : 0/* n.cores */;
     render(out_path, width, height, obs, world_, n_workers);
 }

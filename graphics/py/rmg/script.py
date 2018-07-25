@@ -41,7 +41,7 @@ class ScriptInvocation:
         opts.add_option("-j", "--parallel", type="int", default=1)
         opts.add_option("-o", "--output-path", type="string", default="")
         opts.add_option("-r", "--resolution", type="string", default="1280x720")
-        opts.add_option("-C", "--trace-command", type="string", default="gun")
+        opts.add_option("-C", "--trace-command", type="string", default="rayt")
         opts.add_option("-t", "--time-offset", type="float", default="0")
         opts.add_option("-w", "--world-tee", action="store_true")
         o, a = opts.parse_args()

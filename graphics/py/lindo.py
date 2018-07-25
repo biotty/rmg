@@ -119,7 +119,7 @@ opts.add_option("-r", "--resolution", type="string", default="1280x720")
 opts.add_option("-s", "--random-seed", type="int")
 opts.add_option("-t", "--ray-trace-mode", action="store_true", default=False)
 opts.add_option("-u", "--unit-turn-degrees", type="float", default=360)
-opts.add_option("-C", "--trace-command", type="string", default="gun")
+opts.add_option("-C", "--trace-command", type="string", default="rayt")
 opts.add_option("-G", "--display-mode", action="store_true", default=False)
 opts.add_option("-H", "--expression-help", action="store_true", default=False)
 opts.add_option("-I", "--order-independent", action="store_true", default=False)
@@ -196,7 +196,7 @@ else:
     comm = "%s %s %s" % (options.trace_command,
             options.resolution, options.image_path)
     stderr.write("Piping world to '%s'\n" % (comm,))
-    environ["GUN_RS"] = "Yes"
+    environ["RAYT_RS"] = "Yes"
     p = Popen(comm, stdin=PIPE, shell=True, close_fds=True)
     p.stdin.write(bytes(str(world), 'ascii'))
     p.stdin.close()

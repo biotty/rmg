@@ -3,6 +3,7 @@
 
 #include "matrix.h"
 
+
 void multiply(const real * restrict matrix, int columns, int rows,
         const real * restrict m, real * restrict r)
 {

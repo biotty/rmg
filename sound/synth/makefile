@@ -1,9 +1,9 @@
-CXXFLAGS=-Wall -Wextra -Werror -std=c++14 -O2 -fPIC
+CXXFLAGS := -Wall -Wextra -Werror -std=c++14 -pedantic -O3 -fPIC
 
-GTEST_DIR=$(HOME)/gtest
-GTEST_LIB=$(GTEST_DIR)/src
-GTEST_CXXFLAGS=-I$(GTEST_DIR)/include
-GTEST_LDFLAGS=-lpthread
+GTEST_DIR := $(HOME)/gtest
+GTEST_LIB := $(GTEST_DIR)/src
+GTEST_CXXFLAGS := -I$(GTEST_DIR)/include
+GTEST_LDFLAGS := -pthread
 
 sizr.a: builders.o envelopes.o filters.o generators.o unit.o musicm.o
 	$(AR) cr $@ $^

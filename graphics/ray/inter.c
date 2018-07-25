@@ -7,6 +7,7 @@
 #include <stdalign.h>
 #include <assert.h>
 
+
 typedef struct {
     object_intersection intersection;
     object_normal normal;

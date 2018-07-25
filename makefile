@@ -1,5 +1,5 @@
-SCIENCES=sound graphics
-ACTIONS=all clean media sweep
+SCIENCES := sound graphics
+ACTIONS := all clean media sweep
 
 .PHONY:
 $(ACTIONS):

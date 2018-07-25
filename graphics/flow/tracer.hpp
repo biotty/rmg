@@ -6,6 +6,7 @@
 #include "cellular.hpp"
 #include "planar.hpp"
 #include "linear.hpp"
+#include <random>
 #include <cstdint>
 #include <algorithm>
 

@@ -137,12 +137,13 @@ struct FluidParameters
 };
 
 
+enum class aspect_t {friction, volume, advection};
 struct FluidAspectFunction : FluidFunction
 {
-    const int aspect;
+    const aspect_t aspect;
     FluidParameters & params;
 
-    FluidAspectFunction(int a, FluidParameters & p) : aspect(a), params(p) {}
+    FluidAspectFunction(aspect_t a, FluidParameters & p) : aspect(a), params(p) {}
     bool operator()(Grid<FluidCell> * field_swap, Grid<FluidCell> * field, double step_t)
     {
         for (PositionIterator it = field->positions(); it.more(); ++it) {
@@ -151,7 +152,7 @@ struct FluidAspectFunction : FluidFunction
             const double viscosity = params.viscosity(it.position);
             Neighborhood<FluidCell> q = field->neighborhood(it);
             switch (aspect) {
-            case 0:
+            case aspect_t::friction:
                 {   //advection (step 2) doesnt *correctly* handle |displacement| > 1
                     const double velocity_limit = /*some below 1*/0.7 / step_t;
                     double a = q.c.velocity.abs();
@@ -175,12 +176,12 @@ struct FluidAspectFunction : FluidFunction
                 }
                 b.pressure = q.c.pressure;  // no molecular diffusion
             break;
-            case 1:
+            case aspect_t::volume:
                 b.velocity = pushed_velocity(q, step_t, density);
                 b.rotation = 0;
                 b.pressure = q.c.pressure / inflated_volume(q, step_t);
             break;
-            case 2:
+            case aspect_t::advection:
                 b.velocity = advected_velocity(q, step_t);
                 b.rotation = advected_rotation(q, step_t);
                 b.pressure = advected_pressure(q, step_t);
@@ -209,8 +210,9 @@ struct FluidAnimation
     FluidAnimation(size_t h, size_t w, FluidParameters & p, FluidFunction & f)
             : flow(h, w), params(p)
     {
-        for (size_t aspect = 0; aspect < 3; ++aspect)
-            functions.push_back(new FluidAspectFunction(aspect, params));
+        for (int a = 0; a < 3; ++a)
+            functions.push_back(new FluidAspectFunction(
+                        static_cast<aspect_t>(a), params));
         functions.push_back(&f);
     }
     

@@ -92,7 +92,7 @@ ug_ptr harmonics::build()
         s.c(wave(P<constant>(f), P<sine>(0)).build(), a(f, i) * k);
     }
     return U<periodic>(U<record>(s, P<shaped>(freq, inverts())));
-};
+}
 
 chorus::chorus(en_ptr freq, en_ptr t, en_ptr w, unsigned n)
     : freq(freq), t(t), w(w), n(n)

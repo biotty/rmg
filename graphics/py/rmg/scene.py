@@ -9,7 +9,7 @@ from rmg.color import Color
 
 class Observer:
     def __init__(self, eye, view, column_dir = 0, **kwargs):
-        """Camera in the scene and its string representation for ray/gun
+        """Camera in the scene and its string representation for rayt
         Args:
             eye (Point): position of eye as behind the lense (screen).
                 As farther this point is from the lense (see view), the

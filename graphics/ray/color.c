@@ -4,6 +4,7 @@
 #include "color.h"
 #include <stdlib.h>
 
+
     void
 filter(color * light, compact_color surface)
 {

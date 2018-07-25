@@ -1,5 +1,5 @@
-CXXFLAGS=-Wall -Wextra -Werror -O2 -std=c++11 -Isynth
-LAME_S16=-mm -r -s 44.1 --signed --bitwidth 16 --little-endian
+CXXFLAGS := -Wall -Wextra -Werror -std=c++14 -pedantic -O3 -Isynth
+LAME_S16 := -mm -r -s 44.1 --signed --bitwidth 16 --little-endian
 
 .PHONY: all media clean sweep
 

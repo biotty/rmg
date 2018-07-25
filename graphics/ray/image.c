@@ -8,6 +8,7 @@
 #include <strings.h>
 #include <stdbool.h>
 
+
     static bool //note: exist in photo.c as well
 path_is_jpeg(const char * path)
 {

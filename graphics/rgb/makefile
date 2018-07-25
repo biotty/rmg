@@ -1,12 +1,9 @@
-CXXFLAGS=-Wall -Wextra -Werror -std=c++14 -pedantic -O3
-CFLAGS=-Wall -Wextra -Werror -std=c11 -pedantic -O3
-LDFLAGS=-lm
+RAY := ../ray
+CXXFLAGS := -Wall -Wextra -Werror -std=c++14 -pedantic -O3 -I$(RAY)
+LDFLAGS := -L$(RAY) -lrayt -lm
 
-bluf: bluf.o librgb.a
+bluf: bluf.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
-
-librgb.a: color.o photo.o image.o
-	$(AR) rc $@ $^
 
 .PHONY:
 clean:
@@ -14,4 +11,4 @@ clean:
 
 .PHONY:
 sweep: clean
-	@rm -f bluf librgb.a
+	@rm -f bluf

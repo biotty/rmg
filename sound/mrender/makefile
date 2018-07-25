@@ -1,5 +1,5 @@
-SOUND=..
-CXXFLAGS=-Wall -Wextra -Werror -O2 -std=c++11 -I$(SOUND)/synth
+SOUND := ..
+CXXFLAGS := -Wall -Wextra -Werror -std=c++14 -pedantic -O3 -I$(SOUND)/synth
 
 mrender: mrender.o midi.o biquad.o musicm.o
 	$(CXX) $(CXXFLAGS) -o $@ $^

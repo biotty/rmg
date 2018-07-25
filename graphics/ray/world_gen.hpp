@@ -12,16 +12,19 @@
 
 namespace model {
 
+using m3 = std::array<double, 9>;
 struct color { double r, g, b; };
 struct point { double x, y, z; };
 struct direction { double x, y, z; };
 struct rotation { direction axis; double angle; };
-using m3 = std::array<double, 9>;
 struct resolution { int width; int height; };
 constexpr resolution hdtv{1920, 1080};
 constexpr double pi{3.14159265358979};
 constexpr double pi2{pi * 2};
-constexpr point o = {0, 0, 0};
+constexpr direction xd{1, 0, 0};
+constexpr direction yd{0, 1, 0};
+constexpr direction zd{0, 0, 1};
+constexpr point o{0, 0, 0};
 constexpr point point_cast(direction d) { return {d.x, d.y, d.z}; }
 constexpr direction direction_cast(point p) { return {p.x, p.y, p.z}; }
 constexpr point xy(double x, double y) { return {x, y, 0}; }
@@ -30,21 +33,18 @@ constexpr point yz(double y, double z) { return {0, y, z}; }
 constexpr point onx(double k) { return {k, 0, 0}; }
 constexpr point ony(double k) { return {0, k, 0}; }
 constexpr point onz(double k) { return {0, 0, k}; }
-constexpr direction xd{1, 0, 0};
-constexpr direction yd{0, 1, 0};
-constexpr direction zd{0, 0, 1};
-constexpr color r{1, 0, 0};
-constexpr color g{0, 1, 0};
-constexpr color b{0, 0, 1};
+constexpr color gray(double v) { return {v, v, v}; }
+constexpr color red  {1, 0, 0};
+constexpr color green{0, 1, 0};
+constexpr color blue {0, 0, 1};
 constexpr color white{1, 1, 1};
 constexpr color black{0, 0, 0};
 constexpr double water_ri{1.3};
 constexpr double glass_ri{1.6};
 constexpr double diamond_ri{2.4};
-constexpr double r_hue{0};
-constexpr double g_hue{pi2 / 3};
-constexpr double b_hue{2 * pi2 / 3};
-constexpr color gray(double v) { return {v, v, v}; }
+constexpr double red_hue{0};
+constexpr double green_hue{pi2 / 3};
+constexpr double blue_hue{2 * pi2 / 3};
 color from_hsv(double h, double s, double v);
 color operator+(color p, color q);
 color operator*(color p, color filter);
@@ -223,7 +223,7 @@ struct world {
 };
 using world_gen_f = std::function<world(int i, int n)>;
 void render(world w, std::string path, resolution = hdtv, unsigned n_threads = 0);
-void sequence(world_gen_f wg, std::string path, int n_frames, resolution = hdtv, unsigned n_threads = 0);
+void sequence(world_gen_f wg, int nw, std::string path = "", resolution = hdtv);
 void load_sky(std::string path);
 void solid_sky(color);
 

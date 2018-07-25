@@ -2,7 +2,6 @@
 //      All rights reserved
 
 #include "cone.h"
-#include <assert.h>
 
 
     static direction

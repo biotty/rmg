@@ -12,7 +12,7 @@ from rmg.scene import Observer
 
 
 opts = OptionParser()
-opts.add_option("-C", "--trace-command", type="string", default="gun")
+opts.add_option("-C", "--trace-command", type="string", default="rayt")
 opts.add_option("-a", "--advance", type="float", default=0)
 opts.add_option("-c", "--center", type="string")
 opts.add_option("-n", "--frame-count", type="int")

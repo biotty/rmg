@@ -1,7 +1,7 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 
-#include "model.hpp"
+#include "world_gen.hpp"
 #include "trace.hpp"
 #include "render.hpp"
 #include "plane.h"
@@ -612,12 +612,12 @@ void render(model::world w, std::string path, resolution res, unsigned n_threads
     sky_photo = nullptr;
 }
 
-void sequence(world_gen_f wg, std::string path, int n_frames, resolution res, unsigned n_threads)
+void sequence(world_gen_f wg, int n_frames, std::string path, resolution res)
 {
     for (int i = 0; i < n_frames; i++) {
         std::ostringstream buf{path};
         buf << i << ".jpeg";
-        render(wg(i, n_frames), buf.str(), res, n_threads);
+        render(wg(i, n_frames), buf.str(), res);
         std::cout << "\r" << i << std::flush;
     }
     std::cout << std::endl;
