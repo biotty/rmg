@@ -99,10 +99,9 @@ double abs(direction d)
     return std::sqrt(d * d);
 }
 
-direction circle(double t)
-{
-    return {cos(t), sin(t), 0};
-}
+direction xyc(double t) { return {cos(t), sin(t), 0}; }
+direction xzc(double t) { return {cos(t), 0, sin(t)}; }
+direction yzc(double t) { return {0, cos(t), sin(t)}; }
 
     void
 mov_(point & p, direction d)
@@ -202,10 +201,10 @@ void saddle::_rot(point at, rotation ro)
 
 inv_plane::inv_plane(point _p, direction _d) : plane{_p, _d} {}
 inv_sphere::inv_sphere(point _p, double _r) : sphere{_p, _r} {}
-inv_cylinder::inv_cylinder(point _p, direction _d, double _r) : cylinder{_p, _d, _r} {}
-inv_cone::inv_cone(point _p, direction _d, double _r) : cone{_p, _d, _r} {}
-inv_parabol::inv_parabol(point _p, direction _d, double _r) : parabol{_p, _d, _r} {}
-inv_hyperbol::inv_hyperbol(point _p, direction _d, double _r, double _h) : hyperbol{_p, _d, _r, _h} {}
+inv_cylinder::inv_cylinder(point _p, double _r, direction _d) : cylinder{_p, _r, _d} {}
+inv_cone::inv_cone(point _p, double _r, direction _d) : cone{_p, _r, _d} {}
+inv_parabol::inv_parabol(point _p, double _r, direction _d) : parabol{_p, _r, _d} {}
+inv_hyperbol::inv_hyperbol(point _p, double _r, direction _d, double _h) : hyperbol{_p, _r, _d, _h} {}
 inv_saddle::inv_saddle(point _p, direction _d, direction _x, double _h) : saddle{_p, _d, _x, _h} {}
 
 void mul_(shape & s, double factor)
@@ -507,27 +506,57 @@ make(model::surface s)
 
     void *
 make(model::angular tx, object_decoration * df)
-{ return normal_texture_mapping(df, make(tx.d), tx.r, make(tx.n), make(tx.s)); }
+{
+    rotation_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_rotation(make(tx.x), rota);
+    return normal_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
+            make(tx.n), make(tx.s));
+}
 
     void *
 make(model::planar tx, object_decoration * df)
-{ return planar_texture_mapping(df, make(tx.d), tx.r, make(tx.p), make(tx.n), make(tx.s)); }
+{
+    rotation_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_rotation(make(tx.x), rota);
+    return planar_texture_mapping(df,  rota, tx.r, ratan(a1.y, a1.x),
+            make(tx.p), make(tx.n), make(tx.s));
+}
 
     void *
 make(model::planar1 tx, object_decoration * df)
-{ return planar1_texture_mapping(df, make(tx.d), tx.r, make(tx.p), make(tx.n), make(tx.s)); }
+{
+    rotation_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_rotation(make(tx.x), rota);
+    return planar1_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
+            make(tx.p), make(tx.n), make(tx.s));
+}
 
     void *
 make(model::relative tx, object_decoration * df)
-{ return relative_texture_mapping(df, make(tx.d), tx.r, make(tx.p), make(tx.n), make(tx.s)); }
+{
+    rotation_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_rotation(make(tx.x), rota);
+    return relative_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
+            make(tx.p), make(tx.n), make(tx.s));
+}
 
     void *
 make(model::axial tx, object_decoration * df)
-{ return axial_texture_mapping(df, make(tx.d), tx.r, make(tx.p), make(tx.n), make(tx.s)); }
+{
+    rotation_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_rotation(make(tx.x), rota);
+    return axial_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
+            make(tx.p), make(tx.n), make(tx.s));
+}
 
     void *
 make(model::axial1 tx, object_decoration * df)
-{ return axial1_texture_mapping(df, make(tx.d), tx.r, make(tx.p), make(tx.n), make(tx.s)); }
+{
+    rotation_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_rotation(make(tx.x), rota);
+    return axial1_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
+            make(tx.p), make(tx.n), make(tx.s));
+}
 
     compact_color
 make_c(model::color c)
@@ -539,8 +568,11 @@ make(model::checkers tx, object_decoration * df)
     compact_color reflection = make_c(tx.s.reflection);
     compact_color absorption = make_c(tx.s.absorption);
     compact_color refraction = make_c(tx.s.refraction);
-    return checkers_mapping(df, make(tx.d), tx.r, make(tx.p), tx.q,
-        reflection, absorption, refraction);
+    rotation_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_rotation(make(tx.x), rota);
+    return checkers_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
+            make(tx.p), tx.q,
+            reflection, absorption, refraction);
 }
 
     void *
@@ -612,12 +644,12 @@ void render(model::world w, std::string path, resolution res, unsigned n_threads
     sky_photo = nullptr;
 }
 
-void sequence(world_gen_f wg, int n_frames, std::string path, resolution res)
+void sequence(world_gen_f wg, int n_frames, std::string path, resolution res, unsigned n_threads)
 {
     for (int i = 0; i < n_frames; i++) {
         std::ostringstream buf{path};
         buf << i << ".jpeg";
-        render(wg(i, n_frames), buf.str(), res);
+        render(wg(i, n_frames), buf.str(), res, n_threads);
         std::cout << "\r" << i << std::flush;
     }
     std::cout << std::endl;

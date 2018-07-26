@@ -252,12 +252,15 @@ get_decoration(std::string name, object_decoration * df)
 
     if (name == "normal") {
         std::cin >> n >> w >> path;
-        return normal_texture_mapping(df, n, w, path.c_str(),
+        real r;
+        rotation_arg rota;
+        spherical_arg(n, &r, &rota);
+        return normal_texture_mapping(df, rota, r, w, path.c_str(),
                 get_texture_application());
     }
 
-    void * (* mapping)(object_decoration * df, direction n, real w,
-            point o, const char * path, texture_application a) = nullptr;
+    void * (* mapping)(object_decoration * df, rotation_arg rota, real r,
+            real w, point o, const char * path, texture_application a) = nullptr;
     if (name == "planar") mapping = planar_texture_mapping;
     if (name == "planar1") mapping = planar1_texture_mapping;
     if (name == "relative") mapping = relative_texture_mapping;
@@ -265,7 +268,10 @@ get_decoration(std::string name, object_decoration * df)
     if (name == "axial1") mapping = axial1_texture_mapping;
     if (mapping) {
         std::cin >> n >> w >> o >> path;
-        return mapping(df, n, w, o, path.c_str(),
+        real r;
+        rotation_arg rota;
+        spherical_arg(n, &r, &rota);
+        return mapping(df, rota, r, w, o, path.c_str(),
                 get_texture_application());
     }
 
@@ -274,7 +280,10 @@ get_decoration(std::string name, object_decoration * df)
         compact_color reflection, absorption, refraction;
         std::cin >> n >> w >> o >> q >> reflection
             >> absorption >> refraction;
-        return checkers_mapping(df, n, w, o, q, reflection,
+        real r;
+        rotation_arg rota;
+        spherical_arg(n, &r, &rota);
+        return checkers_mapping(df, rota, r, w, o, q, reflection,
                 absorption, refraction);
     }
 

@@ -108,9 +108,13 @@ observer_ray(const observer & o, real aspect_ratio,
 render(const char * path, int width, int height,
         const observer & obs, const world & w, unsigned n_threads)
 {
-    if ( ! n_threads) n_threads = std::thread::hardware_concurrency();
-    image out = image_create(path, width, height);
+    if (0 == n_threads) {
+        if (n_threads = std::thread::hardware_concurrency();
+                0 == n_threads)
+            n_threads = 1;
+    }
 
+    image out = image_create(path, width, height);
     RasterJob job{width, height,
         [&obs, width, height, &w](typename RasterJob::type p){
             return trace(observer_ray(obs, width /(real) height,

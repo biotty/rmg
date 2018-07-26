@@ -59,7 +59,9 @@ direction operator-(point to, point from);
 point operator+(point, direction);
 double abs(direction);
 inline direction norm(direction d) { return d * (1 / abs(d)); }
-direction circle(double t);
+direction xyc(double t);
+direction xzc(double t);
+direction yzc(double t);
 
 inline double mix(double a, double b, double k) { return a * (1 - k) + b * k; }
 inline color mix(color a, color b, double k) { return a * (1 - k) + b * k; }
@@ -90,8 +92,8 @@ struct sphere {
 
 struct common_geometric {
     point p;
-    direction d;
     double r;
+    direction d;
     void _mul(double);
     void _mov(direction offset);
     void _rot(point at, rotation);
@@ -117,13 +119,13 @@ struct inv_shape {};
 struct inv_plane : plane, inv_shape { inv_plane(point _p, direction _d); };
 struct inv_sphere : sphere, inv_shape { inv_sphere(point _p, double _r); };
 struct inv_cylinder : cylinder, inv_shape
-{ inv_cylinder(point _p, direction _d, double _r); };
+{ inv_cylinder(point _p, double _r, direction _d); };
 struct inv_cone : cone, inv_shape
-{ inv_cone(point _p, direction _d, double _r); };
+{ inv_cone(point _p, double _r, direction _d); };
 struct inv_parabol : parabol, inv_shape
-{ inv_parabol(point _p, direction _d, double _r); };
+{ inv_parabol(point _p, double _r, direction _d); };
 struct inv_hyperbol : hyperbol, inv_shape
-{ inv_hyperbol(point _p, direction _d, double _r, double _h); };
+{ inv_hyperbol(point _p, double _r, direction _d, double _h); };
 struct inv_saddle : saddle, inv_shape
 { inv_saddle(point _p, direction _d, direction _x, double _h); };
 
@@ -155,16 +157,18 @@ struct surface {
 using str = std::string;
 
 struct angular {
+    direction d;
+    direction x;
+    double r;
     str n;
     surface s;
-    direction d;
-    double r;
     void _mul(double);
     void _mov(direction);
     void _rot(point, rotation);
 }; 
 
 struct common_texture : common_geometric {
+    direction x;
     str n;
     surface s;
 };
@@ -174,6 +178,7 @@ struct relative : common_texture {};
 struct axial : common_texture {};
 struct axial1 : common_texture {};
 struct checkers : common_geometric {
+    direction x;
     int q;
     surface s;
 };
@@ -222,8 +227,8 @@ struct world {
     std::vector<light_spot> ls;
 };
 using world_gen_f = std::function<world(int i, int n)>;
-void render(world w, std::string path, resolution = hdtv, unsigned n_threads = 0);
-void sequence(world_gen_f wg, int nw, std::string path = "", resolution = hdtv);
+void render(world w, std::string path, resolution, unsigned n_threads);
+void sequence(world_gen_f wg, int nw, std::string path, resolution, unsigned n_threads);
 void load_sky(std::string path);
 void solid_sky(color);
 

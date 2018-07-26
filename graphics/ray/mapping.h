@@ -18,31 +18,32 @@ extern "C" {
 #endif
 
 void * normal_texture_mapping(
-        object_decoration * df, direction n, real w,
-        const char * path, texture_application a);
+        object_decoration * df, rotation_arg rota, real r,
+        real w, const char * path, texture_application a);
 
 void * planar_texture_mapping(
-        object_decoration * df, direction n, real w, point o,
-        const char * path, texture_application a);
+        object_decoration * df, rotation_arg rota, real r,
+        real w, point o, const char * path, texture_application a);
 
 void * planar1_texture_mapping(
-        object_decoration * df, direction n, real w, point o,
-        const char * path, texture_application a);
+        object_decoration * df, rotation_arg rota, real r,
+        real w, point o, const char * path, texture_application a);
 
 void * relative_texture_mapping(
-        object_decoration * df, direction n, real w, point o,
-        const char * path, texture_application a);
+        object_decoration * df, rotation_arg rota, real r,
+        real w, point o, const char * path, texture_application a);
 
 void * axial_texture_mapping(
-        object_decoration * df, direction n, real w, point o,
-        const char * path, texture_application a);
+        object_decoration * df, rotation_arg rota, real r,
+        real w, point o, const char * path, texture_application a);
 
 void * axial1_texture_mapping(
-        object_decoration * df, direction n, real w, point o,
-        const char * path, texture_application a);
+        object_decoration * df, rotation_arg rota, real r,
+        real w, point o, const char * path, texture_application a);
 
 void * checkers_mapping(
-        object_decoration * df, direction n, real w, point o, int q,
+        object_decoration * df, rotation_arg rota, real r,
+        real w, point o, int q,
         compact_color reflection_filter,
         compact_color absorption_filter,
         compact_color refraction_filter);
