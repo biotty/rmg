@@ -9,7 +9,7 @@
 transform_(point p, const parabol * parabol_)
 {
     move(&p, parabol_->translate);
-    direction endpoint = inverse_rotation(direction_from_origo(p), parabol_->rota);
+    direction endpoint = inverse_tilt(direction_from_origo(p), parabol_->rota);
     return endpoint;
 }
 
@@ -17,7 +17,7 @@ transform_(point p, const parabol * parabol_)
 transform_ray_(ray * ray_, const parabol * parabol_)
 {
     move(&ray_->endpoint, parabol_->translate);
-    inverse_rotation_ray(ray_, parabol_->rota);
+    inverse_tilt_ray(ray_, parabol_->rota);
 }
 
     segment
@@ -63,7 +63,7 @@ parabol_normal(point p, const void * parabol__, int hit)
         normalize(&n);
     }
 
-    return rotation(n, parabol_->rota);
+    return tilt(n, parabol_->rota);
 }
 
     direction

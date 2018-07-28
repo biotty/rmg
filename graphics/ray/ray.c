@@ -14,9 +14,11 @@ advance(ray * ray_, real r)
 }
 
     void
-inverse_rotation_ray(ray * ray_, rotation_arg arg)
+inverse_tilt_ray(ray * ray_, tilt_arg arg)
 {
-    ray_->endpoint = inverse_rotation(direction_from_origo(ray_->endpoint), arg);
+    ray_->endpoint = point_from_origo(
+            inverse_tilt(direction_from_origo(ray_->endpoint),
+                arg));
     // improve: re-use transformation-matrices
-    ray_->head = inverse_rotation(ray_->head, arg);
+    ray_->head = inverse_tilt(ray_->head, arg);
 }

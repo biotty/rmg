@@ -7,7 +7,7 @@
 
 struct saddle {
     direction translate;
-    rotation_arg rota;
+    tilt_arg rota;
     float v;
     float h;
 };

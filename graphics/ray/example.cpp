@@ -5,15 +5,13 @@
 
 using namespace model;
 
-void sky(double p[3])
+color sky(direction d)
 {
-    double y = p[1];
-    hsv_sky(p);
-    if (y < 0 && fmod(-y, .08) < .01) {
-        double g = p[1];
-        p[1] = p[2];
-        p[2] = g;
-    }
+    return {
+        (abs(d.x) < .01) ? 0. : (d.x + 1) * 0.5,
+        (abs(d.y) < .01) ? 1. : 0.,
+        (abs(d.x) < .01) ? 1. : 0.,
+    };
 }
 
 world wgen(int i, int n)
@@ -71,7 +69,7 @@ world wgen(int i, int n)
     rotation rot{direction_cast(xy(1, 2)), seqt * pi2};
     return {
         { yz(.1, -2), o, xd * .65 },
-        sky,
+        sky,  // <-- alt: photo_f{"sky.jpeg"},
         {
             tube.rot(o, rot),
             ball.rot(o, rot),
@@ -82,5 +80,5 @@ world wgen(int i, int n)
 
 int main()
 {
-    sequence(wgen, 400, "", hdtv, 1);
+    sequence(wgen, 400, "", hdtv, 0);
 }

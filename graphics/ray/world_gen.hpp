@@ -4,6 +4,8 @@
 #define MODEL_HPP
 
 #include "sky.h"
+struct photo;
+
 #include <array>
 #include <vector>
 #include <variant>
@@ -13,9 +15,9 @@
 namespace model {
 
 using m3 = std::array<double, 9>;
-struct color { double r, g, b; };
-struct point { double x, y, z; };
-struct direction { double x, y, z; };
+using color = ::color;
+using point = ::point;
+using direction = ::direction;
 struct rotation { direction axis; double angle; };
 struct resolution { int width; int height; };
 constexpr resolution hdtv{1920, 1080};
@@ -45,7 +47,6 @@ constexpr double diamond_ri{2.4};
 constexpr double red_hue{0};
 constexpr double green_hue{pi2 / 3};
 constexpr double blue_hue{2 * pi2 / 3};
-color from_hsv(double h, double s, double v);
 color operator+(color p, color q);
 color operator*(color p, color filter);
 inline color operator*(color p, double u) { return p * gray(u); }
@@ -59,13 +60,12 @@ direction operator-(point to, point from);
 point operator+(point, direction);
 double abs(direction);
 inline direction norm(direction d) { return d * (1 / abs(d)); }
-direction xyc(double t);
-direction xzc(double t);
-direction yzc(double t);
-
-inline double mix(double a, double b, double k) { return a * (1 - k) + b * k; }
-inline color mix(color a, color b, double k) { return a * (1 - k) + b * k; }
-inline point mix(point a, point b, double k)
+direction xyc(double w);
+direction xzc(double w);
+direction yzc(double w);
+inline double lin(double a, double b, double k) { return a * (1 - k) + b * k; }
+inline color lin(color a, color b, double k) { return a * (1 - k) + b * k; }
+inline point lin(point a, point b, double k)
 { return o + direction_cast(a) * (1 - k) + direction_cast(b) * k; }
 
 void mov_(point & p, direction);
@@ -219,18 +219,25 @@ struct light_spot {
     point p;
     color c;
 };
-using sky_function = void (*)(double * xyz_rgb);
+using sky_f = std::function<color(direction)>;
 struct world {
     observer obs;
-    sky_function sky;
+    sky_f sky;
     std::vector<object> s;
     std::vector<light_spot> ls;
 };
 using world_gen_f = std::function<world(int i, int n)>;
-void render(world w, std::string path, resolution, unsigned n_threads);
+void render(const world & w, std::string path, resolution, unsigned n_threads);
 void sequence(world_gen_f wg, int nw, std::string path, resolution, unsigned n_threads);
-void load_sky(std::string path);
-void solid_sky(color);
+
+class photo_f {
+    photo * ph;
+public:
+    color operator()(direction d);
+    photo_f(std::string path);
+    photo_f(const photo_f & other);
+    ~photo_f();
+};
 
 }
 #endif

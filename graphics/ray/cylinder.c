@@ -8,14 +8,14 @@
 transform_(point p, const cylinder * cylinder_)
 {
     move(&p, cylinder_->translate);
-    return inverse_rotation(direction_from_origo(p), cylinder_->rota);
+    return inverse_tilt(direction_from_origo(p), cylinder_->rota);
 }
 
     static void
 transform_ray_(ray * ray_, const cylinder * cylinder_)
 {
     move(&ray_->endpoint, cylinder_->translate);
-    inverse_rotation_ray(ray_, cylinder_->rota);
+    inverse_tilt_ray(ray_, cylinder_->rota);
 }
 
     segment
@@ -64,7 +64,7 @@ cylinder_normal(point p, const void * cylinder__, int hit)
     n.z = 0;
     normalize(&n);
 
-    return rotation(n, cylinder_->rota);
+    return tilt(n, cylinder_->rota);
 }
 
     direction

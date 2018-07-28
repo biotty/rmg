@@ -8,7 +8,7 @@
 struct parabol {
     direction translate;
     float r;
-    rotation_arg rota;
+    tilt_arg rota;
 };
 
 #ifndef __cplusplus

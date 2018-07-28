@@ -10,7 +10,7 @@ typedef struct {
     photo * photo;
     texture_application a;
     real r;
-    rotation_arg rota;
+    tilt_arg rota;
     real cos_w;
     real sin_w;
 } texture_arg;
@@ -20,7 +20,7 @@ typedef struct {
     texture_application a;
     point o;
     real r;
-    rotation_arg rota;
+    tilt_arg rota;
     real cos_w;
     real sin_w;
 } texture_origin_arg;
@@ -30,7 +30,7 @@ typedef struct {
     texture_application a;
     point o;
     real r;
-    rotation_arg rota;
+    tilt_arg rota;
     real w;
 } texture_axial_arg;
 
@@ -42,7 +42,7 @@ typedef struct {
     compact_color refraction_filter;
     point o;
     real r;
-    rotation_arg rota;
+    tilt_arg rota;
     real cos_w;
     real sin_w;
     char data[];
@@ -133,7 +133,7 @@ normal_decoration(const ray * ray_, const void * decoration_arg,
 {
     const texture_arg * da = decoration_arg;
     real x, y;
-    direction d = inverse_rotation(ray_->head, da->rota);
+    direction d = inverse_tilt(ray_->head, da->rota);
     rotate_(da->cos_w, da->sin_w, &d.x, &d.y);
     direction_to_unitsquare(&d, &x, &y);
     zoom_(da->r, &x, &y, false);
@@ -145,7 +145,7 @@ planar_decoration_(const ray * ray_, const void * decoration_arg,
         object_optics * so, const object_optics * adjust, bool repeat)
 {
     const texture_origin_arg * da = decoration_arg;
-    direction d = inverse_rotation(
+    direction d = inverse_tilt(
             distance_vector(da->o, ray_->endpoint), da->rota);
     real x = d.x;
     real y = d.y;
@@ -174,7 +174,7 @@ relative_decoration(const ray * ray_, const void * decoration_arg,
 {
     const texture_origin_arg * da = decoration_arg;
     real x, y;
-    direction d = inverse_rotation(
+    direction d = inverse_tilt(
             distance_vector(da->o, ray_->endpoint), da->rota);
     rotate_(da->cos_w, da->sin_w, &d.x, &d.y);
     direction_to_unitsquare(&d, &x, &y);
@@ -189,7 +189,7 @@ axial_decoration_(const ray * ray_, const void * decoration_arg,
     static const real pi = REAL_PI;
     static const real two_pi = REAL_PI * 2;
     const texture_axial_arg * da = decoration_arg;
-    direction d = inverse_rotation(
+    direction d = inverse_tilt(
             distance_vector(da->o, ray_->endpoint), da->rota);
     real x = 1;
     real y = d.z * da->r;
@@ -230,7 +230,7 @@ checkers_decoration(const ray * ray_, const void * decoration_arg,
         object_optics * so, const object_optics * b)
 {
     const checkers_arg * da = decoration_arg;
-    direction d = inverse_rotation(
+    direction d = inverse_tilt(
             distance_vector(da->o, ray_->endpoint), da->rota);
     rotate_(da->cos_w, da->sin_w, &d.x, &d.y);
     scale(&d, da->r);
@@ -255,7 +255,7 @@ checkers_decoration(const ray * ray_, const void * decoration_arg,
 
     void *
 normal_texture_mapping(object_decoration * df,
-        rotation_arg rota, real r, real w,
+        tilt_arg rota, real r, real w,
         const char * path, texture_application a)
 {
     texture_arg * da = malloc(sizeof *da);
@@ -270,7 +270,7 @@ normal_texture_mapping(object_decoration * df,
 }
 
     static void *
-_planar_texture_mapping(rotation_arg rota, real r, real w, point o,
+_planar_texture_mapping(tilt_arg rota, real r, real w, point o,
         const char * path, texture_application a)
 
 {
@@ -287,7 +287,7 @@ _planar_texture_mapping(rotation_arg rota, real r, real w, point o,
 
     void *
 planar_texture_mapping(object_decoration * df,
-        rotation_arg rota, real r, real w, point o,
+        tilt_arg rota, real r, real w, point o,
         const char * path, texture_application a)
 
 {
@@ -297,7 +297,7 @@ planar_texture_mapping(object_decoration * df,
 
     void *
 planar1_texture_mapping(object_decoration * df,
-        rotation_arg rota, real r, real w, point o,
+        tilt_arg rota, real r, real w, point o,
         const char * path, texture_application a)
 
 {
@@ -307,7 +307,7 @@ planar1_texture_mapping(object_decoration * df,
 
     void *
 relative_texture_mapping(object_decoration * df,
-        rotation_arg rota, real r, real w, point o,
+        tilt_arg rota, real r, real w, point o,
         const char * path, texture_application a)
 {
     texture_origin_arg * da = malloc(sizeof *da);
@@ -323,7 +323,7 @@ relative_texture_mapping(object_decoration * df,
 }
 
     static void *
-_axial_texture_mapping(rotation_arg rota, real r, real w, point o,
+_axial_texture_mapping(tilt_arg rota, real r, real w, point o,
         const char * path, texture_application a)
 {
     texture_axial_arg * da = malloc(sizeof *da);
@@ -338,7 +338,7 @@ _axial_texture_mapping(rotation_arg rota, real r, real w, point o,
 
     void *
 axial_texture_mapping(object_decoration * df,
-        rotation_arg rota, real r, real w, point o,
+        tilt_arg rota, real r, real w, point o,
         const char * path, texture_application a)
 {
     *df = axial_decoration;
@@ -347,7 +347,7 @@ axial_texture_mapping(object_decoration * df,
 
     void *
 axial1_texture_mapping(object_decoration * df,
-        rotation_arg rota, real r, real w, point o,
+        tilt_arg rota, real r, real w, point o,
         const char * path, texture_application a)
 {
     *df = axial1_decoration;
@@ -388,7 +388,7 @@ beams(char * a, int a_size, int n, unsigned long *state)
 
     void *
 checkers_mapping(object_decoration * df,
-        rotation_arg rota, real r, real w, point o, int u,
+        tilt_arg rota, real r, real w, point o, int u,
         compact_color reflection_filter,
         compact_color absorption_filter,
         compact_color refraction_filter)

@@ -34,7 +34,7 @@ sphere_normal(point p, const void * sphere__, int hit)
 {
     (void)hit;
     const sphere * sphere_ = sphere__;
-    direction translate = sphere_->center;
+    direction translate = direction_from_origo(sphere_->center);
     scale(&translate, -1);
     move(&p, translate);
     direction d = direction_from_origo(p);

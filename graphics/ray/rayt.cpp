@@ -19,9 +19,16 @@
 
 
     std::istream &
-operator>>(std::istream & ist, xyz & p)
+operator>>(std::istream & ist, point & p)
 {
     ist >> p.x >> p.y >> p.z;
+    return ist;
+}
+
+    std::istream &
+operator>>(std::istream & ist, direction & d)
+{
+    ist >> d.x >> d.y >> d.z;
     return ist;
 }
 
@@ -98,7 +105,7 @@ get_object(std::string name,
 
     if (name == "cylinder" || name == "-cylinder") {
         real r;
-        rotation_arg rota;
+        tilt_arg rota;
         point p;
         direction axis;
         std::cin >> p;
@@ -120,7 +127,7 @@ get_object(std::string name,
 
     if (name == "cone" || name == "-cone") {
         real r;
-        rotation_arg rota;
+        tilt_arg rota;
         point apex;
         direction axis;
         std::cin >> apex;
@@ -142,7 +149,7 @@ get_object(std::string name,
 
     if (name == "parabol" || name == "-parabol") {
         real r_half;
-        rotation_arg rota;
+        tilt_arg rota;
         point vertex;
         direction focus;
         std::cin >> vertex;
@@ -164,7 +171,7 @@ get_object(std::string name,
 
     if (name == "hyperbol" || name == "-hyperbol") {
         real r;
-        rotation_arg rota;
+        tilt_arg rota;
         point center;
         direction axis;
         real vertex;
@@ -188,7 +195,7 @@ get_object(std::string name,
 
     if (name == "saddle" || name == "-saddle") {
         real r;
-        rotation_arg rota;
+        tilt_arg rota;
         point center;
         direction axis;
         real v;
@@ -253,13 +260,13 @@ get_decoration(std::string name, object_decoration * df)
     if (name == "normal") {
         std::cin >> n >> w >> path;
         real r;
-        rotation_arg rota;
+        tilt_arg rota;
         spherical_arg(n, &r, &rota);
         return normal_texture_mapping(df, rota, r, w, path.c_str(),
                 get_texture_application());
     }
 
-    void * (* mapping)(object_decoration * df, rotation_arg rota, real r,
+    void * (* mapping)(object_decoration * df, tilt_arg rota, real r,
             real w, point o, const char * path, texture_application a) = nullptr;
     if (name == "planar") mapping = planar_texture_mapping;
     if (name == "planar1") mapping = planar1_texture_mapping;
@@ -269,7 +276,7 @@ get_decoration(std::string name, object_decoration * df)
     if (mapping) {
         std::cin >> n >> w >> o >> path;
         real r;
-        rotation_arg rota;
+        tilt_arg rota;
         spherical_arg(n, &r, &rota);
         return mapping(df, rota, r, w, o, path.c_str(),
                 get_texture_application());
@@ -281,7 +288,7 @@ get_decoration(std::string name, object_decoration * df)
         std::cin >> n >> w >> o >> q >> reflection
             >> absorption >> refraction;
         real r;
-        rotation_arg rota;
+        tilt_arg rota;
         spherical_arg(n, &r, &rota);
         return checkers_mapping(df, rota, r, w, o, q, reflection,
                 absorption, refraction);
@@ -334,15 +341,10 @@ get_scene_sky()
         return rgb_sky;
     } else if (name == "hsv") {
         return hsv_sky;
-    } else if (name == "color") {
-        std::cin >> sky_color[0];
-        std::cin >> sky_color[1];
-        std::cin >> sky_color[2];
-        return color_sky;
     }
 
-    sky_photo = photo_create(name.c_str());
-    if ( ! sky_photo) fail("could not load sky '%s'\n", name.c_str());
+    sky_arg = photo_create(name.c_str());
+    if ( ! sky_arg) fail("could not load sky '%s'\n", name.c_str());
     return photo_sky;
 }
 

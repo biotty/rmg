@@ -15,6 +15,7 @@
 #include "mapping.h"
 #include "photo.h"
 #include "observer.h"
+#include "sky.h"
 
 #include <cmath>
 #include <sstream>
@@ -99,9 +100,9 @@ double abs(direction d)
     return std::sqrt(d * d);
 }
 
-direction xyc(double t) { return {cos(t), sin(t), 0}; }
-direction xzc(double t) { return {cos(t), 0, sin(t)}; }
-direction yzc(double t) { return {0, cos(t), sin(t)}; }
+direction xyc(double w) { return {cos(w), sin(w), 0}; }
+direction xzc(double w) { return {cos(w), 0, sin(w)}; }
+direction yzc(double w) { return {0, cos(w), sin(w)}; }
 
     void
 mov_(point & p, direction d)
@@ -318,16 +319,16 @@ make_norm(model::direction d)
     return n;
 }
 
-    rotation_arg
+    tilt_arg
 make_tilt(model::direction d)
 {
-    rotation_arg rota;
+    tilt_arg rota;
     real ignore_r;
     spherical_arg(make(d), &ignore_r, &rota);
     return rota;
 }
 
-    const char * // lifetime: implication is must process world having model::world
+    const char * // lifetime: str (in model::world object)
 make(const model::str & s) {
     return s.c_str();
 }
@@ -400,10 +401,10 @@ make(model::cone co, object_intersection * fi, object_normal * fn, bool inv)
 make(model::parabol pa, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto parabol_ = alloc<parabol>();
-    point f = make_norm(pa.d);
+    direction f = make_norm(pa.d);
     scale(&f, pa.r * .5);
     *parabol_ = parabol{
-        distance_vector(make(pa.p), f),
+        distance_vector(make(pa.p), point_from_origo(f)),
         (float) pa.r, make_tilt(pa.d)};
     if (inv) {
         *fi = _parabol_intersection;
@@ -435,8 +436,8 @@ make(model::hyperbol hy, object_intersection * fi, object_normal * fn, bool inv)
     void *
 make(model::saddle sa, object_intersection * fi, object_normal * fn, bool inv)
 {
-    rotation_arg rota = make_tilt(sa.d);
-    direction a1 = inverse_rotation(make(sa.x), rota);
+    tilt_arg rota = make_tilt(sa.d);
+    direction a1 = inverse_tilt(make(sa.x), rota);
     auto saddle_ = alloc<saddle>();
     *saddle_ = saddle{
         distance_vector(make(sa.p), origo), rota,
@@ -507,8 +508,8 @@ make(model::surface s)
     void *
 make(model::angular tx, object_decoration * df)
 {
-    rotation_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_rotation(make(tx.x), rota);
+    tilt_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_tilt(make(tx.x), rota);
     return normal_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
             make(tx.n), make(tx.s));
 }
@@ -516,8 +517,8 @@ make(model::angular tx, object_decoration * df)
     void *
 make(model::planar tx, object_decoration * df)
 {
-    rotation_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_rotation(make(tx.x), rota);
+    tilt_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_tilt(make(tx.x), rota);
     return planar_texture_mapping(df,  rota, tx.r, ratan(a1.y, a1.x),
             make(tx.p), make(tx.n), make(tx.s));
 }
@@ -525,8 +526,8 @@ make(model::planar tx, object_decoration * df)
     void *
 make(model::planar1 tx, object_decoration * df)
 {
-    rotation_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_rotation(make(tx.x), rota);
+    tilt_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_tilt(make(tx.x), rota);
     return planar1_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
             make(tx.p), make(tx.n), make(tx.s));
 }
@@ -534,8 +535,8 @@ make(model::planar1 tx, object_decoration * df)
     void *
 make(model::relative tx, object_decoration * df)
 {
-    rotation_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_rotation(make(tx.x), rota);
+    tilt_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_tilt(make(tx.x), rota);
     return relative_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
             make(tx.p), make(tx.n), make(tx.s));
 }
@@ -543,8 +544,8 @@ make(model::relative tx, object_decoration * df)
     void *
 make(model::axial tx, object_decoration * df)
 {
-    rotation_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_rotation(make(tx.x), rota);
+    tilt_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_tilt(make(tx.x), rota);
     return axial_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
             make(tx.p), make(tx.n), make(tx.s));
 }
@@ -552,8 +553,8 @@ make(model::axial tx, object_decoration * df)
     void *
 make(model::axial1 tx, object_decoration * df)
 {
-    rotation_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_rotation(make(tx.x), rota);
+    tilt_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_tilt(make(tx.x), rota);
     return axial1_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
             make(tx.p), make(tx.n), make(tx.s));
 }
@@ -568,8 +569,8 @@ make(model::checkers tx, object_decoration * df)
     compact_color reflection = make_c(tx.s.reflection);
     compact_color absorption = make_c(tx.s.absorption);
     compact_color refraction = make_c(tx.s.refraction);
-    rotation_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_rotation(make(tx.x), rota);
+    tilt_arg rota = make_tilt(tx.d);
+    direction a1 = inverse_tilt(make(tx.x), rota);
     return checkers_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
             make(tx.p), tx.q,
             reflection, absorption, refraction);
@@ -621,11 +622,18 @@ make(model::observer o)
     return ret;
 }
 
-    std::pair<observer, world>
-make(model::world w)
+    static color
+sky_(direction d)
 {
+    return (*static_cast<model::sky_f *>(sky_arg))(d);
+}
+
+    std::pair<observer, world>
+make(const model::world & w)
+{
+    sky_arg = const_cast<model::sky_f *>(&w.sky);
     std::pair<observer, world> ret{
-        make(w.obs), world{w.sky, delete_inter, delete_decoration}
+        make(w.obs), world{sky_, delete_inter, delete_decoration}
     };
     for (auto o : w.s) make(o, ret.second);
     for (auto s : w.ls)
@@ -637,11 +645,10 @@ make(model::world w)
 
 namespace model {
 
-void render(model::world w, std::string path, resolution res, unsigned n_threads) {
+void render(const model::world & w, std::string path, resolution res, unsigned n_threads) {
     auto [obs, world_] = make(w);
     render(path.c_str(), res.width, res.height, obs, world_, n_threads);
-    photo_delete_all();
-    sky_photo = nullptr;
+    sky_arg = nullptr;  // init: by make(w)
 }
 
 void sequence(world_gen_f wg, int n_frames, std::string path, resolution res, unsigned n_threads)
@@ -655,16 +662,18 @@ void sequence(world_gen_f wg, int n_frames, std::string path, resolution res, un
     std::cout << std::endl;
 }
 
-void load_sky(std::string path)
+photo_f::photo_f(std::string path) : ph(photo_create(path.c_str())) {}
+photo_f::photo_f(const photo_f & other) : ph(other.ph) { photo_incref(ph); }
+photo_f::~photo_f() { photo_delete(ph); }
+color photo_f::operator()(direction d)
 {
-    sky_photo = photo_create(path.c_str());
-}
-
-void solid_sky(color c)
-{
-    sky_color[0] = c.r;
-    sky_color[1] = c.g;
-    sky_color[2] = c.b;
+    real x, y;
+    direction_to_unitsquare(&d, &x, &y);
+    const auto a = reinterpret_cast<photo_attr *>(ph);
+    const real col = (x == 0) ? a->width - 1 : (1 - x) * a->width;
+    // ^ horizontally flip as we see the "sphere" from the "inside"
+    compact_color cc = photo_color(ph, col, y * a->height);
+    return x_color(cc);
 }
 
 }

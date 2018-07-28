@@ -4,8 +4,8 @@
 #define REAL_H
 
 #include <math.h>
-#include <float.h>
 #include <stdbool.h>
+#include <float.h>
 #include <assert.h>
 
 typedef double real;

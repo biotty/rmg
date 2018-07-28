@@ -170,14 +170,9 @@ photo_delete(photo * ph)
 }
 
     void
-photo_delete_all()
+photo_incref(photo * ph)
 {
-    for (int i = 0; i < n_entries; i++) {
-        if (cache_entries[i].path_hash[0]) {
-            cache_entries[i].path_hash[0] = '\0';
-            free(cache_entries[i].photo);
-        }
-    }
+    ++ ph->ref_count_;
 }
 
     static unsigned char *

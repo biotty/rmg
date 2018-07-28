@@ -3,9 +3,13 @@
 #ifndef POINT_H
 #define POINT_H
 
-#include "xyz.h"
+#include "real.h"
 
-typedef xyz point;
+struct point { real x, y, z; };
+
+#ifndef __cplusplus
+typedef struct point point;
+#endif
 
 static const point origo = {0, 0, 0};
 

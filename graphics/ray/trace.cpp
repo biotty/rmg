@@ -72,6 +72,8 @@ passthrough_apply(color * color_, const object_optics * so,
     filter(color_, filter_);
 }
 
+static const color black = {0, 0, 0};
+
     static color
 spot_absorption(const ray & surface, const object_optics * so,
         const world & w, bitarray & inside)
@@ -184,9 +186,7 @@ sky(detector & detector_, direction d, scene_sky f)
     if (eliminate_direct_sky && detector_.hop == max_hops)
         return DIRECT_SKY;
 
-    double a[3] = {d.x, d.y, d.z};
-    f(a);
-    return {a[0], a[1], a[2]};
+    return f(d);
 }
 
     static color

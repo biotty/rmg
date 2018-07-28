@@ -61,7 +61,7 @@ spherical(direction d, real * r, real * theta, real * phi)
 }
 
     void
-spherical_arg(direction d, real * r, rotation_arg * arg)
+spherical_arg(direction d, real * r, tilt_arg * arg)
 {
     real theta, phi;
     spherical(d, r, &theta, &phi);
@@ -95,7 +95,7 @@ transform(direction * d, const real trm[9])
 }
 
     static inline void
-rotate_xz_xy(direction  * d, const rotation_arg arg)
+rotate_xz_xy(direction  * d, const tilt_arg arg)
 {
     const real ca = arg.theta_cos;
     const real sa = arg.theta_sin;
@@ -111,7 +111,7 @@ rotate_xz_xy(direction  * d, const rotation_arg arg)
 }
 
     static inline void
-rotate_xy_xz(direction * d, const rotation_arg arg)
+rotate_xy_xz(direction * d, const tilt_arg arg)
 {
     const real ca = arg.theta_cos;
     const real sa = arg.theta_sin;
@@ -126,59 +126,18 @@ rotate_xy_xz(direction * d, const rotation_arg arg)
     transform(d, RyRz);
 }
 
-//
-// rotation, inverse_rotation
-//
-// "tilt" would now be a better name as opposed to general axis-angle
-// rotation but merely polar-tilts, and cannot represent i.e rotation
-// on the z-axis.  this is why the the shapes by themselves define
-// rotational disposition in adition to a (tilt) direction.
-//
-// a general rotation would use a full 3x3 rotation_arg
-// (as opposed to current total of 4 values) but would
-// not require two m.multiplications as of now, in addition
-// to the expanding of the two matrices (xz and xy).
-// the objects explicit rotation on its axis would go away.
-//
-// given these observations it seems that it would be beneficial
-// for general time-performance to use the alternate approach
-// of having a full axis-angle rotation-matrix, and profiling has
-// been done identifying the rotation as an overall bottle-neck.
-//
-// note that with a general rotation matrix the
-// inverse_rotation would trivially be to negate the angle.
-//
-// the presence of this comment means that converting the
-// scene-objects (and decorations) to use the better approach
-// has not yet been of priority, and the lack of renaming to
-// tilt_ reflects continued desire to change this some day.
-//
-// however, it must be investigated whether a polar-tilt
-// rotation-matrix has less than 9 different coefficients,
-// as only the saddle would benefit from general rotation,
-// all other shapes having symetry on z-axis.  then those
-// coefficients replaces the ones currently in rotation_arg
-// and rename to tilt.
-//
-// restricting to z-symetric shapes (except saddle) by choice
-// for aesthetics and model simplicity -- to be considered
-// -- and this may then impact the discussion in this comment
-//
-// note that this "tilt" operation ends with a rotation on z
-// which means it is not a clean tilt of the z-pole, which
-// would only be a rotation on a line in the xy plane.
-//
+// note: not a pure tilt of z-pole to xy
     direction
-rotation(direction d, rotation_arg arg)
+tilt(direction d, tilt_arg arg)
 {
     rotate_xz_xy(&d, arg);
     return d;
 }
 
     direction
-inverse_rotation(direction d, rotation_arg arg)
+inverse_tilt(direction d, tilt_arg arg)
 {
-    const rotation_arg inv = {
+    const tilt_arg inv = {
         arg.phi_cos,
         -arg.phi_sin,
         arg.theta_cos,

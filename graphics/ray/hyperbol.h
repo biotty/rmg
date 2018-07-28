@@ -7,7 +7,7 @@
 
 struct hyperbol {
     direction translate;
-    rotation_arg rota;
+    tilt_arg rota;
     float inv_h;
     float inv_v;
 };

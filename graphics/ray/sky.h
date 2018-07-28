@@ -3,18 +3,20 @@
 #ifndef SKY_H
 #define SKY_H
 
-typedef void (*scene_sky)(double *xyz_rgb);
+#include "direction.h"
+#include "color.h"
+
+typedef color (*scene_sky)(direction d);
+extern void * sky_arg;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void color_sky(double *);
-void photo_sky(double *);
-void rgb_sky(double *);
-void hsv_sky(double *);
-extern struct photo * sky_photo;
-extern double sky_color[3];
+color color_sky(direction d);
+color photo_sky(direction d);
+color rgb_sky(direction d);
+color hsv_sky(direction d);
 
 #ifdef __cplusplus
 }

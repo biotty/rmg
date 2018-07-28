@@ -6,15 +6,30 @@
 #include "point.h"
 #include <stdbool.h>
 
-typedef xyz direction;
+struct direction { real x, y, z; };
+
+#ifndef __cplusplus
+typedef struct direction direction;
+#endif
 
 #define DISORIENTED ((direction){ .x = HUGE_REAL })
 #define is_DISORIENTED(D) ((D)->x == HUGE_REAL)
 
-#define point_from_origo(xyz) (xyz)
-#define direction_from_origo(xyz) (xyz)
+    static inline point
+point_from_origo(direction d)
+{
+    point p = {d.x, d.y, d.z};
+    return p;
+}
 
-struct rotation_arg
+    static inline direction
+direction_from_origo(point p)
+{
+    direction d = {p.x, p.y, p.z};
+    return d;
+}
+
+struct tilt_arg
 {
     float theta_cos;
     float theta_sin;
@@ -23,7 +38,7 @@ struct rotation_arg
 };
 
 #ifndef __cplusplus
-typedef struct rotation_arg rotation_arg;
+typedef struct tilt_arg tilt_arg;
 #else
 extern "C" {
 #endif
@@ -77,10 +92,10 @@ distance_vector(point from, point to)
 direction reflection(direction normal, direction);
 direction refraction(direction normal, direction, real w);
 void spherical(direction, real * r, real * theta, real * phi);
-void spherical_arg(direction d, real * r, rotation_arg * arg);
+void spherical_arg(direction d, real * r, tilt_arg * arg);
 void direction_to_unitsquare(const direction * d, real * x, real * y);
-direction rotation(direction d, rotation_arg arg);
-direction inverse_rotation(direction d, rotation_arg arg);
+direction tilt(direction d, tilt_arg arg);
+direction inverse_tilt(direction d, tilt_arg arg);
 direction norm_cross(direction a, direction b);
 
 #ifdef __cplusplus
