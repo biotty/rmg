@@ -13,8 +13,7 @@ extern void * sky_arg;
 extern "C" {
 #endif
 
-color color_sky(direction d);
-color photo_sky(direction d);
+color ph_sky(direction d);
 color rgb_sky(direction d);
 color hsv_sky(direction d);
 

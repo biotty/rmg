@@ -5,15 +5,6 @@
 
 using namespace model;
 
-color sky(direction d)
-{
-    return {
-        (abs(d.x) < .01) ? 0. : (d.x + 1) * 0.5,
-        (abs(d.y) < .01) ? 1. : 0.,
-        (abs(d.x) < .01) ? 1. : 0.,
-    };
-}
-
 world wgen(int i, int n)
 {
     double seqt = i /(double) n;
@@ -47,15 +38,18 @@ world wgen(int i, int n)
 
     object ball{
         {
-            sphere{handle, .05},
+            sphere{handle, .1},
         },
         {
             gray(.04),
             black,
-            0,
+            glass_ri,
             black,
-            black,
+            white,
         },
+        mapping_f{o, 1, zd, xd, [](point,direction) -> surface {
+            return {black,black,white}; }},
+        /*
         checkers{
             handle, .16, zd, xyc(seqt * n_trips * pi2), 9,
             {
@@ -64,12 +58,17 @@ world wgen(int i, int n)
                 black
             }
         }
+        */
     };
 
     rotation rot{direction_cast(xy(1, 2)), seqt * pi2};
     return {
-        { yz(.1, -2), o, xd * .65 },
-        sky,  // <-- alt: photo_f{"sky.jpeg"},
+        { yz(.1, 2), o, xd * .65 },
+            //      photo_sky{"sky.jpeg"},
+            [](direction d) -> color { return {
+                (abs(d.x) < .01) ? 0. : (d.x + 1) * 0.5,
+                (abs(d.y) < .01) ? 1. : 0.,
+                (abs(d.x) < .01) ? 1. : 0.}; },
         {
             tube.rot(o, rot),
             ball.rot(o, rot),

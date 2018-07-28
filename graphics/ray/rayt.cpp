@@ -345,7 +345,7 @@ get_scene_sky()
 
     sky_arg = photo_create(name.c_str());
     if ( ! sky_arg) fail("could not load sky '%s'\n", name.c_str());
-    return photo_sky;
+    return ph_sky;
 }
 
     void

@@ -252,6 +252,24 @@ rot_(texture & s, point at, rotation ro)
     std::visit([at, ro](auto & arg) { arg._rot(at, ro); }, s);
 }
 
+void mul_(mapping_f & m, point at, double factor)
+{
+    m.r *= factor;
+    m.p = at + (m.p - at) * factor;
+}
+
+void mov_(mapping_f & m, direction offset)
+{
+    mov_(m.p, offset);
+}
+
+void rot_(mapping_f & m, point at, rotation ro)
+{
+    rot_(m.p, at, ro);
+    rot_(m.d, ro);
+    rot_(m.x, ro);
+}
+
     void
 mul_(inter & s, point at, double factor) {
     for (auto & o : s)
@@ -277,7 +295,7 @@ object::mul(point at, double factor)
 {
     object ret = *this;
     mul_(ret.si, at, factor);
-    if (ret.u) mul_(*ret.u, at, factor);
+    if (ret.u) std::visit([at, factor](auto & arg) { mul_(arg, at, factor); }, *ret.u);
     return ret;
 }
 
@@ -286,7 +304,7 @@ object::mov(direction offset)
 {
     object ret = *this;
     mov_(ret.si, offset);
-    if (ret.u) mov_(*ret.u, offset);
+    if (ret.u) std::visit([offset](auto & arg) { mov_(arg, offset); }, *ret.u);
     return ret;
 }
 
@@ -295,7 +313,7 @@ object::rot(point at, rotation ro)
 {
     object ret = *this;
     rot_(ret.si, at, ro);
-    if (ret.u) rot_(*ret.u, at, ro);
+    if (ret.u) std::visit([at, ro](auto & arg) { rot_(arg, at, ro); }, *ret.u);
     return ret;
 }
 
@@ -576,15 +594,35 @@ make(model::checkers tx, object_decoration * df)
             reflection, absorption, refraction);
 }
 
-    void *
-make(model::texture tx, object_decoration * df, world & world_)
+    static void
+mapping_(const ray * ray_, const void * arg,
+        object_optics * so, const object_optics * adjust)
 {
-    void * ret;
-    std::visit([&ret, df, &world_](auto arg){
-            ret = make(arg, df);
-            world_.decoration_args.push_back(ret);
-            }, tx);
-    return ret;
+    auto m = static_cast<const model::mapping_f *>(arg);
+    auto [p, d] = *ray_;
+    model::surface s = m->f(p, d);
+    so->refraction_index = adjust->refraction_index;
+    so->passthrough_filter = adjust->passthrough_filter;
+    so->reflection_filter = z_filter(s.reflection);
+    so->absorption_filter = z_filter(s.absorption);
+    so->refraction_filter = z_filter(s.refraction);
+}
+
+    void *
+make(model::textmap & tm, object_decoration * df, world & world_)
+{
+    if (std::holds_alternative<model::texture>(tm)) {
+        auto tx = std::get<model::texture>(tm);
+        void * ret;
+        std::visit([&ret, df, &world_](auto arg){
+                ret = make(arg, df);
+                world_.decoration_args.push_back(ret);
+                }, tx);
+        return ret;
+    }
+
+    *df = mapping_;
+    return &std::get<model::mapping_f>(tm);
 }
 
     object_optics
@@ -662,18 +700,23 @@ void sequence(world_gen_f wg, int n_frames, std::string path, resolution res, un
     std::cout << std::endl;
 }
 
-photo_f::photo_f(std::string path) : ph(photo_create(path.c_str())) {}
-photo_f::photo_f(const photo_f & other) : ph(other.ph) { photo_incref(ph); }
-photo_f::~photo_f() { photo_delete(ph); }
-color photo_f::operator()(direction d)
+color photo_base::_get(real x, real y)
 {
-    real x, y;
-    direction_to_unitsquare(&d, &x, &y);
     const auto a = reinterpret_cast<photo_attr *>(ph);
     const real col = (x == 0) ? a->width - 1 : (1 - x) * a->width;
     // ^ horizontally flip as we see the "sphere" from the "inside"
     compact_color cc = photo_color(ph, col, y * a->height);
     return x_color(cc);
+}
+photo_base::photo_base(std::string path) : ph(photo_create(path.c_str())) {}
+photo_base::photo_base(const photo_base & other) : ph(other.ph) { photo_incref(ph); }
+photo_base::~photo_base() { photo_delete(ph); }
+
+color photo_sky::operator()(direction d)
+{
+    real x, y;
+    direction_to_unitsquare(&d, &x, &y);
+    return _get(x, y);
 }
 
 }

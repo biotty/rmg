@@ -9,7 +9,7 @@ void * sky_arg;
 
 
     color
-photo_sky(direction d)
+ph_sky(direction d)
 {
     real x, y;
     direction_to_unitsquare(&d, &x, &y);
