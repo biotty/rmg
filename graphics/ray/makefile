@@ -43,4 +43,4 @@ clean:
 
 .PHONY:
 sweep: clean
-	@rm -f rayt librayt.a
+	@rm -f rayt example librayt.a

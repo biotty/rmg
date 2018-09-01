@@ -16,8 +16,7 @@ from rmg.bodies import (Plane, Sphere, Parabol, Sphere_, Cylinder, Cylinder_,
 from rmg.solids import (intersect_regulars, RegularSolid,
         sole_regular, cube_faces)
 from rmg.scene import SceneObject, World, LightSpot, Observer, RgbSky, HsvSky
-from rmg.mapping import (CheckersMap, SurfaceOptics,
-        Planar1Map, AxialMap, OpticsFactor)
+from rmg.mapping import SurfaceOptics, Planar1Map, AxialMap, OpticsFactor
 from rmg.script import ScriptInvocation, ParametricWorld
 
 
@@ -65,7 +64,7 @@ def optics_b():
 
 def mapping_angle(n, vx):
     _, theta, phi = n.spherical()
-    v = vx.inverse_rotation(theta, phi)
+    v = vx.inverse_tilt(theta, phi)
     return atan2(v.y, v.x) + .001
 
 def optics_c():
@@ -106,10 +105,10 @@ def scene_disc(glide):
     co = XYCircle(XY(0, 0), rnd(.4, .7))(rnd(0, 1))
     ci = XYCircle(XY(0, 0), rnd(.2, .5))(rnd(0, 1))
     _, theta, phi = Direction.random().spherical()
-    qo = Point(co.x, co.y, 0).rotation(theta, phi)
-    qi = Point(ci.x, ci.y, 0).rotation(theta, phi)
-    pp = Point(0, 0, rnd(.04, .25)).rotation(theta, phi)
-    pn = Direction(0, 0, 1).rotation(theta, phi)
+    qo = Point(co.x, co.y, 0).tilt(theta, phi)
+    qi = Point(ci.x, ci.y, 0).tilt(theta, phi)
+    pp = Point(0, 0, rnd(.04, .25)).tilt(theta, phi)
+    pn = Direction(0, 0, 1).tilt(theta, phi)
     rc = rnd(.9, 1)
     rk = rnd(.1, .5)
     ro = rnd(.1, .6)
@@ -141,9 +140,9 @@ def scene_fruit(glide):
     s1 = co(lt)
     s2 = co(lt + rnd(.2, .4))
     s3 = co(lt + rnd(.6, .8))
-    q1 = Point(s1.x, s1.y, 0).rotation(theta, phi)
-    q2 = Point(s2.x, s2.y, 0).rotation(theta, phi)
-    q3 = Point(s3.x, s3.y, 0).rotation(theta, phi)
+    q1 = Point(s1.x, s1.y, 0).tilt(theta, phi)
+    q2 = Point(s2.x, s2.y, 0).tilt(theta, phi)
+    q3 = Point(s3.x, s3.y, 0).tilt(theta, phi)
     r1 = rnd(.2, .4)
     r2 = rnd(.2, .4)
     r3 = rnd(.2, .4)
@@ -190,13 +189,11 @@ def scene_ring(glide):
 def scene_regular_pair(glide):
     is_m = glide.is_movie
     mc = (optics_e if is_m else optics_d)(AxialMap)
-    def rnd_tilted(n):
-        _, theta, phi = Direction.random().spherical()
-        mid_r = rnd(.9, 1)
-        return RegularSolid(n, mid_r, theta, phi)
+    def rnd_(n):
+        return RegularSolid(n, rnd(.9, 1))
     fr = lambda: choice([4, 6, 8, 12, 30])
-    ra = rnd_tilted(fr())
-    rb = rnd_tilted(fr())
+    ra = rnd_(fr())
+    rb = rnd_(fr())
     i = 0
     def o(t):
         nonlocal i
@@ -216,9 +213,8 @@ rnd_uphalf = lambda x: rnd(x * .5, x)
 def scene_die(glide):
     oa = optics_b()
     er = rnd_uphalf(.5)
-    _, theta, phi = Direction.random().spherical()
     def o(t):
-        sa = sole_regular(6, 1, theta, phi)
+        sa = sole_regular(6, 1)
         for pl in sa.objects[1:]:
             sa.objects.append(Parabol(pl.point * .5, pl.point * er))
         glide(sa, t)
@@ -229,9 +225,8 @@ def scene_tunels(glide):
     oc = optics_b()
     tr = rnd_uphalf(.03)
     # rem: ^ side-touch is .3819660112380617
-    _, theta, phi = Direction.random().spherical()
     def o(t):
-        sa = sole_regular(30, 1, theta, phi)
+        sa = sole_regular(30, 1)
         for pl in sa.objects[1:6]:
             axis = pl.point * tr
             sa.objects.append(Cylinder_(origo, axis))
@@ -244,10 +239,9 @@ def scene_submarine(glide):
     a = optics_a()
     m = optics_d(Planar1Map)
     l = 1 + rnd_uphalf(.1)
-    _, theta, phi = Direction.random().spherical()
     def o(t):
-        sa = sole_regular(12, l, theta, phi)
-        sd = sole_regular(12, 1, theta, phi)
+        sa = sole_regular(12, l)
+        sd = sole_regular(12, 1)
         for pl in sd.objects[1:]:
             axis = pl.point * r
             sa.objects.append(Cylinder_(origo, axis))
@@ -263,9 +257,8 @@ def scene_octacone(glide):
     ob = optics_b()
     br = rnd(.25, 4)
     mr = rnd(.3, .7)
-    _, theta, phi = Direction.random().spherical()
     def o(t):
-        sr = sole_regular(8, 1, theta, phi)
+        sr = sole_regular(8, 1)
         ps = Direction(0, 0, 0)
         for pl in sr.objects[1:5]:
             ps += pl.normal * .25
@@ -281,15 +274,16 @@ def scene_alpha(glide):
     ob = optics_b()
     dv = rnd(3.141592)
     da = rnd_uphalf(3.141592 * 2)
-    dh = rnd_uphalf(1)
-    _, theta, phi = Direction.random().spherical()
-    ps, cr = RegularSolid(4, .85, theta, phi).inscribed_at_origo()
+    dh = rnd_uphalf(3)
+    ps, cr = RegularSolid(4, .85).inscribed_at_origo()
     def o(t):
         aa = []
         for i, pl in enumerate(ps):
             sp = Sphere(pl.point, cr * 0.2721655269759087)
-            sl = (Saddle if i&1 else Saddle_
-                    )(pl.point, pl.point * dh, dv + t * da)
+            v = dv + t * da
+            _, th, ph = pl.point.spherical()
+            x = Direction(cos(v), sin(v), 0).tilt(th, ph)
+            sl = (Saddle if i&1 else Saddle_)(pl.point, pl.point * dh, x)
             si = Intersection([sp, sl])
             glide(si, t)
             aa.append(SceneObject(
@@ -309,7 +303,7 @@ class Glide:
     def __call__(self, oo, t):
         oo.rotate(self.d, self.s * t)
         pt = self.p + self.v * (t - .5)
-        rm = Placement(self.r, 0, 0, pt)
+        rm = Placement(self.r, pt)
         oo.place(rm)
         return oo
 
@@ -317,18 +311,6 @@ class Glide:
     def random(cls, d):
         return cls(Point(*(Direction.random(rnd(.2, 2)).xyz())),
                 1, Direction.random(d), Direction.random(), rnd(5))
-
-def make_overall():
-    north = Direction(0, 0, 1)
-    xv = Direction(5, 0, 0)
-    pl = Plane(origo, north)
-    oc = optics_c()(pl, xv)
-    return [
-        SceneObject(oc, Intersection([
-            Sphere_(origo, 9),
-            Sphere(origo, 17)]))]
-
-overall = [] if lightened_variant else make_overall()
 
 class scene_objects:
     def __init__(self, q, d):
@@ -347,7 +329,6 @@ class scene_objects:
         a = []
         for o in self.o:
             a.extend(o(t))
-        a.extend(overall)
         return a
 
 class rnd_circular_orbit:
@@ -358,7 +339,7 @@ class rnd_circular_orbit:
     def __call__(self, t):
         an = self.sa * t + self.a0
         cp = Point(cos(an), sin(an), 0)
-        return cp.rotation(self.theta, self.phi) * self.cr
+        return cp.tilt(self.theta, self.phi) * self.cr
 
 class light_spots:
     def __init__(self, n):

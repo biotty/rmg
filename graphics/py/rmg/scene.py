@@ -46,7 +46,7 @@ class Observer:
             elif "opening" in kwargs:
                 r *= kwargs["opening"]
             s = XYCircle(XY(0, 0), r)(column_dir)
-            column_dir = Direction(s.x, s.y, 0).rotation(theta, phi)
+            column_dir = Direction(s.x, s.y, 0).tilt(theta, phi)
         else:
             assert len(kwargs) == 0
         self.column_direction = column_dir

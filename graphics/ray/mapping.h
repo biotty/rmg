@@ -41,13 +41,6 @@ void * axial1_texture_mapping(
         object_decoration * df, tilt_arg rota, real r,
         real w, point o, const char * path, texture_application a);
 
-void * checkers_mapping(
-        object_decoration * df, tilt_arg rota, real r,
-        real w, point o, int q,
-        compact_color reflection_filter,
-        compact_color absorption_filter,
-        compact_color refraction_filter);
-
 void delete_decoration(void * decoration_arg);
 
 #ifdef __cplusplus

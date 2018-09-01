@@ -194,24 +194,24 @@ get_object(std::string name,
     }
 
     if (name == "saddle" || name == "-saddle") {
-        real r;
-        tilt_arg rota;
         point center;
         direction axis;
-        real v;
+        direction x;
         std::cin >> center;
         std::cin >> axis;
-        std::cin >> v;
-        spherical_arg(axis, &r, &rota);
+        std::cin >> x;
+        real r = length(axis);
+        normalize(&axis);
+        normalize(&x);
         auto saddle_ = alloc<saddle>();
         *saddle_ = saddle{
             direction{-center.x, -center.y, -center.z},
-            rota, (float)v, 1/(float)r};
+            base_arg{x, axis}, 1/(float)r};
         *fi = saddle_intersection;
         *fn = saddle_normal;
         if (name[0] == '-') {
             saddle_->h *= -1;
-            saddle_->v += (float)REAL_PI / 2;
+            saddle_->base.x = cross(saddle_->base.z, saddle_->base.x);
         }
         return saddle_;
     }
@@ -280,18 +280,6 @@ get_decoration(std::string name, object_decoration * df)
         spherical_arg(n, &r, &rota);
         return mapping(df, rota, r, w, o, path.c_str(),
                 get_texture_application());
-    }
-
-    if (name == "checkers") {
-        int q;
-        compact_color reflection, absorption, refraction;
-        std::cin >> n >> w >> o >> q >> reflection
-            >> absorption >> refraction;
-        real r;
-        tilt_arg rota;
-        spherical_arg(n, &r, &rota);
-        return checkers_mapping(df, rota, r, w, o, q, reflection,
-                absorption, refraction);
     }
 
     fail("decoration \"%s\"?", name.c_str());

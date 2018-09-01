@@ -321,20 +321,11 @@ object::rot(point at, rotation ro)
 
 namespace {
 
-    point
-make(model::point p)
-{ return { p.x, p.y, p.z }; }
-
-    direction
-make(model::direction d)
-{ return { d.x, d.y, d.z }; }
-
     direction
 make_norm(model::direction d)
 {
-    direction n = make(d);
-    normalize(&n);
-    return n;
+    normalize(&d);
+    return d;
 }
 
     tilt_arg
@@ -342,8 +333,14 @@ make_tilt(model::direction d)
 {
     tilt_arg rota;
     real ignore_r;
-    spherical_arg(make(d), &ignore_r, &rota);
+    spherical_arg(d, &ignore_r, &rota);
     return rota;
+}
+
+    base_arg
+make_base(model::direction d, model::direction x)
+{
+    return { make_norm(x), make_norm(d) };
 }
 
     const char * // lifetime: str (in model::world object)
@@ -355,7 +352,7 @@ make(const model::str & s) {
 make(model::plane pl, object_intersection * fi, object_normal * fn, bool inv)
 {
         auto plane_ = alloc<plane>();
-        plane_->at = make(pl.p);
+        plane_->at = pl.p;
         plane_->normal = make_norm(pl.d);
         *fi = plane_intersection;
         *fn = plane_normal;
@@ -369,7 +366,7 @@ make(model::plane pl, object_intersection * fi, object_normal * fn, bool inv)
 make(model::sphere sp, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto sphere_ = alloc<sphere>();
-    sphere_->center = make(sp.p);
+    sphere_->center = sp.p;
     sphere_->sq_radius = square(sp.r);
     if (inv) {
         *fi = _sphere_intersection;
@@ -386,7 +383,7 @@ make(model::cylinder cy, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto cylinder_ = alloc<cylinder>();
     *cylinder_ = cylinder{
-        distance_vector(make(cy.p), origo),
+        distance_vector(cy.p, origo),
             (float)square(cy.r), make_tilt(cy.d)};
     if (inv) {
         *fi = _cylinder_intersection;
@@ -403,7 +400,7 @@ make(model::cone co, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto cone_ = alloc<cone>();
     *cone_ = cone{
-        distance_vector(make(co.p), origo),
+        distance_vector(co.p, origo),
             1/(float)co.r, make_tilt(co.d)};
     if (inv) {
         *fi = _cone_intersection;
@@ -422,7 +419,7 @@ make(model::parabol pa, object_intersection * fi, object_normal * fn, bool inv)
     direction f = make_norm(pa.d);
     scale(&f, pa.r * .5);
     *parabol_ = parabol{
-        distance_vector(make(pa.p), point_from_origo(f)),
+        distance_vector(pa.p, point_from_origo(f)),
         (float) pa.r, make_tilt(pa.d)};
     if (inv) {
         *fi = _parabol_intersection;
@@ -439,7 +436,7 @@ make(model::hyperbol hy, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto hyperbol_ = alloc<hyperbol>();
     *hyperbol_ = hyperbol{
-        distance_vector(make(hy.p), origo),
+        distance_vector(hy.p, origo),
             make_tilt(hy.d), 1/(float)hy.h, 1/(float)hy.r};
     if (inv) {
         *fi = _hyperbol_intersection;
@@ -454,17 +451,16 @@ make(model::hyperbol hy, object_intersection * fi, object_normal * fn, bool inv)
     void *
 make(model::saddle sa, object_intersection * fi, object_normal * fn, bool inv)
 {
-    tilt_arg rota = make_tilt(sa.d);
-    direction a1 = inverse_tilt(make(sa.x), rota);
     auto saddle_ = alloc<saddle>();
     *saddle_ = saddle{
-        distance_vector(make(sa.p), origo), rota,
-            (float)ratan(a1.y, a1.x), 1 /(float) sa.h};
+        distance_vector(sa.p, origo),
+            make_base(sa.d, sa.x),
+            1 /(float) sa.h};
     *fi = saddle_intersection;
     *fn = saddle_normal;
     if (inv) {
         saddle_->h *= -1;
-        saddle_->v += (float)REAL_PI / 2;
+        saddle_->base.x = cross(saddle_->base.z, saddle_->base.x);
     }
     return saddle_;
 }
@@ -509,17 +505,13 @@ make(model::inter in, object_intersection * fi, object_normal * fn, world & owne
     return ret;
 }
 
-    color
-make(model::color c)
-{ return { c.r, c.g, c.b }; }
-
     texture_application
 make(model::surface s)
 {
     return {
-        make(s.reflection),
-        make(s.absorption),
-        make(s.refraction)
+        s.reflection,
+        s.absorption,
+        s.refraction
     };
 }
 
@@ -527,7 +519,7 @@ make(model::surface s)
 make(model::angular tx, object_decoration * df)
 {
     tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(make(tx.x), rota);
+    direction a1 = inverse_tilt(tx.x, rota);
     return normal_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
             make(tx.n), make(tx.s));
 }
@@ -536,63 +528,50 @@ make(model::angular tx, object_decoration * df)
 make(model::planar tx, object_decoration * df)
 {
     tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(make(tx.x), rota);
+    direction a1 = inverse_tilt(tx.x, rota);
     return planar_texture_mapping(df,  rota, tx.r, ratan(a1.y, a1.x),
-            make(tx.p), make(tx.n), make(tx.s));
+            tx.p, make(tx.n), make(tx.s));
 }
 
     void *
 make(model::planar1 tx, object_decoration * df)
 {
     tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(make(tx.x), rota);
+    direction a1 = inverse_tilt(tx.x, rota);
     return planar1_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
-            make(tx.p), make(tx.n), make(tx.s));
+            tx.p, make(tx.n), make(tx.s));
 }
 
     void *
 make(model::relative tx, object_decoration * df)
 {
     tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(make(tx.x), rota);
+    direction a1 = inverse_tilt(tx.x, rota);
     return relative_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
-            make(tx.p), make(tx.n), make(tx.s));
+            tx.p, make(tx.n), make(tx.s));
 }
 
     void *
 make(model::axial tx, object_decoration * df)
 {
     tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(make(tx.x), rota);
+    direction a1 = inverse_tilt(tx.x, rota);
     return axial_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
-            make(tx.p), make(tx.n), make(tx.s));
+            tx.p, make(tx.n), make(tx.s));
 }
 
     void *
 make(model::axial1 tx, object_decoration * df)
 {
     tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(make(tx.x), rota);
+    direction a1 = inverse_tilt(tx.x, rota);
     return axial1_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
-            make(tx.p), make(tx.n), make(tx.s));
+            tx.p, make(tx.n), make(tx.s));
 }
 
     compact_color
 make_c(model::color c)
-{ return z_filter(make(c)); }
-
-    void *
-make(model::checkers tx, object_decoration * df)
-{
-    compact_color reflection = make_c(tx.s.reflection);
-    compact_color absorption = make_c(tx.s.absorption);
-    compact_color refraction = make_c(tx.s.refraction);
-    tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(make(tx.x), rota);
-    return checkers_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
-            make(tx.p), tx.q,
-            reflection, absorption, refraction);
-}
+{ return z_filter(c); }
 
     static void
 mapping_(const ray * ray_, const void * arg,
@@ -653,9 +632,10 @@ make(model::object obj, world & world_)
 make(model::observer o)
 {
     observer ret;
-    ret.eye = make(o.e);
-    ret.view = make(o.c);
-    ret.column_direction = make(o.x);
+    ret.eye = o.e;
+    ret.view = o.c;
+    ret.column_direction = o.x;
+    // improve: adjust column so perpendicular to view-eye
     direct_row(&ret);
     return ret;
 }
@@ -675,7 +655,7 @@ make(const model::world & w)
     };
     for (auto o : w.s) make(o, ret.second);
     for (auto s : w.ls)
-        ret.second.spots_.push_back({make(s.p), make(s.c)});
+        ret.second.spots_.push_back({s.p, s.c});
     return ret;
 }
 

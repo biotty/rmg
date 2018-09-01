@@ -19,6 +19,7 @@ extern "C" {
 
 void advance(ray * ray_, real r);
 void inverse_tilt_ray(ray * ray_, tilt_arg arg);
+void inverse_base_ray(ray * ray_, base_arg arg);
 
 #ifdef __cplusplus
 }

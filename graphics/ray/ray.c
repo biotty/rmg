@@ -22,3 +22,13 @@ inverse_tilt_ray(ray * ray_, tilt_arg arg)
     // improve: re-use transformation-matrices
     ray_->head = inverse_tilt(ray_->head, arg);
 }
+
+    void
+inverse_base_ray(ray * ray_, base_arg arg)
+{
+    ray_->endpoint = point_from_origo(
+            inverse_base(direction_from_origo(ray_->endpoint),
+                arg));
+    // improve: re-use transformation-matrices
+    ray_->head = inverse_base(ray_->head, arg);
+}

@@ -57,20 +57,20 @@ class XYZ:
                 self.y * d.z - self.z * d.y,
                 self.z * d.x - self.x * d.z,
                 self.x * d.y - self.y * d.x)
-    def rotation(self, theta, phi):
+    def tilt(self, theta, phi):
         v = matrix_multiply(Ry(theta), [self.x, self.y, self.z])
         return self.__class__(*matrix_multiply(Rz(phi), v))
     @classmethod
     def at_sphere(cls, theta, phi, r=1):
-        return cls(0, 0, r).rotation(theta, phi)
-    def inverse_rotation(self, theta, phi):
+        return cls(0, 0, r).tilt(theta, phi)
+    def inverse_tilt(self, theta, phi):
         v = matrix_multiply(Rz(-phi), [self.x, self.y, self.z])
         return self.__class__(*matrix_multiply(Ry(-theta), v))
     def rotation_on_axis(self, axis, angle):
-        (t_r, t_theta, t_phi) = axis.spherical()
-        (r, theta, phi) = self.inverse_rotation(t_theta, t_phi).spherical()
+        (_, t_theta, t_phi) = axis.spherical()
+        (r, theta, phi) = self.inverse_tilt(t_theta, t_phi).spherical()
         phi += angle
-        return self.__class__(0, 0, r).rotation(theta, phi).rotation(t_theta, t_phi)
+        return self.__class__(0, 0, r).tilt(theta, phi).tilt(t_theta, t_phi)
     def spherical(self):
         r = abs(self)
         S = (self.x * self.x + self.y * self.y) ** 0.5
@@ -97,7 +97,7 @@ class Direction(XYZ):
     @classmethod
     def random(cls, h = 1):
         d = cls(0, 0, h)
-        return d.rotation(*sphere_random())
+        return d.tilt(*sphere_random())
 
 
 up = Direction(0, 0, 1)
@@ -148,7 +148,7 @@ class Orbit:
     def __call__(self, t):
         xy = self.xyellipse(t)
         d = Direction(xy.x, xy.y, self.z)
-        return Point(*d.rotation(self.phi, self.theta).xyz())
+        return Point(*d.tilt(self.phi, self.theta).xyz())
 
 
 def random_orbit():

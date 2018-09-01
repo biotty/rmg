@@ -20,6 +20,8 @@ using m3 = std::array<double, 9>;
 using color = ::color;
 using point = ::point;
 using direction = ::direction;
+inline point point_cast(direction d) { return ::point_from_origo(d); }
+inline direction direction_cast(point p) { return ::direction_from_origo(p); }
 struct rotation { direction axis; double angle; };
 struct resolution { int width; int height; };
 constexpr resolution hdtv{1920, 1080};
@@ -29,8 +31,6 @@ constexpr direction xd{1, 0, 0};
 constexpr direction yd{0, 1, 0};
 constexpr direction zd{0, 0, 1};
 constexpr point o{0, 0, 0};
-constexpr point point_cast(direction d) { return {d.x, d.y, d.z}; }
-constexpr direction direction_cast(point p) { return {p.x, p.y, p.z}; }
 constexpr point xy(double x, double y) { return {x, y, 0}; }
 constexpr point xz(double x, double z) { return {x, 0, z}; }
 constexpr point yz(double y, double z) { return {0, y, z}; }
@@ -179,17 +179,11 @@ struct planar1 : common_texture {};
 struct relative : common_texture {};
 struct axial : common_texture {};
 struct axial1 : common_texture {};
-struct checkers : common_geometric {
-    direction x;
-    int q;
-    surface s;
-};
 using texture = std::variant<
     angular,
     planar, planar1,
     relative,
-    axial, axial1,
-    checkers>;
+    axial, axial1>;
 void mul_(texture & s, double);
 void mov_(texture & s, direction offset);
 void rot_(texture & s, point at, rotation);

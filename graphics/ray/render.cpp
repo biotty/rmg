@@ -108,25 +108,29 @@ observer_ray(const observer & o, real aspect_ratio,
 render(const char * path, int width, int height,
         const observer & obs, const world & w, unsigned n_threads)
 {
-    if (0 == n_threads) {
-        if (n_threads = std::thread::hardware_concurrency();
-                0 == n_threads)
-            n_threads = 1;
-    }
+    if (n_threads == 0)
+        n_threads = std::thread::hardware_concurrency();
 
     image out = image_create(path, width, height);
-    RasterJob job{width, height,
-        [&obs, width, height, &w](typename RasterJob::type p){
-            return trace(observer_ray(obs, width /(real) height,
-                        (p.first + (real).5) / width,
-                        (p.second + (real).5) / height), w);
-        }, out};
-    std::vector<std::thread> workers;
-    for (auto i = 0u; i < n_threads; i++) {
-        workers.emplace_back(&RasterJob::run, &job);
+    if (n_threads <= 1) {
+        for (int y=0; y!=height; ++y)
+            for (int x=0; x!=width; ++x)
+                image_write(out,
+                       trace(observer_ray(obs, width /(real) height,
+                            (x + (real).5) / width,
+                            (y + (real).5) / height), w));
+    } else {
+        RasterJob job{width, height,
+            [&obs, width, height, &w](typename RasterJob::type p){
+                return trace(observer_ray(obs, width /(real) height,
+                            (p.first + (real).5) / width,
+                            (p.second + (real).5) / height), w);
+            }, out};
+        std::vector<std::thread> workers;
+        for (unsigned i = 0; i < n_threads; i++)
+            workers.emplace_back(&RasterJob::run, &job);
+        for (auto & t : workers) t.join();
     }
-
-    for (auto & t : workers) t.join();
     image_close(out);
 }
 
@@ -134,8 +138,9 @@ render(const char * path, int width, int height,
     void // linkage: "C"
 direct_row(observer * o)
 {
-    direction d = norm_cross(o->column_direction,
+    direction d = cross(o->column_direction,
         distance_vector(o->eye, o->view));
+    normalize(&d);
     scale(&d, length(o->column_direction));
     o->row_direction = d;
 }

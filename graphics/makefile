@@ -18,8 +18,8 @@ ray/rayt ray/librayt.a:
 image.jpeg: py/image1.py ray/rayt map.jpeg
 	$< |$(RAYT) 1920x1080 |pnmtojpeg >$@
 
-video.mp4: py/image1.py ray/gun map.jpeg map.movie
-	./movie_exec.sh $@ "$< -n 500 -j 2 -C $(RAYT) -o {}/"
+video.mp4: py/image1.py ray/rayt map.jpeg map.movie
+	./movie_exec.sh $@ "$< -n 500 -C $(RAYT) -o {}/"
 
 fluidwave.mp4: flow/sh flow/fluid flow/wave map.jpeg
 	$< map.jpeg $@

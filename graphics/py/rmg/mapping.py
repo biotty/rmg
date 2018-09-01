@@ -55,15 +55,3 @@ class Planar1Map(_origoMap): name = "planar1"
 class RelativeMap(_origoMap): name = "relative"
 class AxialMap(_origoMap): name = "axial"
 class Axial1Map(_origoMap): name = "axial1"
-
-class CheckersMap:
-    def __init__(self, north, angle, origo, q, a_surface, b_optics):
-        self.north = north
-        self.angle = angle
-        self.origo = origo
-        self.q = q
-        self.a_surface = a_surface
-        self.b_optics = b_optics
-    def __str__(self):
-        return "checkers %s %LG %s\n%d %s %s" % (self.north, self.angle,
-                self.origo, self.q, self.a_surface, self.b_optics)

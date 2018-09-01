@@ -88,13 +88,13 @@ octahedron_circumradius = 1.7321 * octahedron_inradius
 
 
 dodecahedron_faces = [
-    mean([P4, P8, P11, P18, P20]), 
+    mean([P4, P8, P11, P18, P20]),
     mean([P4, P8, P13, P16, P23]),
     mean([P4, P11, P13, P28, P30]),
     mean([P8, P16, P18, P34, P36]),
-    mean([P11, P20, P28, P38, P45]), 
-    mean([P13, P23, P30, P41, P47]), 
-    mean([P16, P23, P34, P41, P50]), 
+    mean([P11, P20, P28, P38, P45]),
+    mean([P13, P23, P30, P41, P47]),
+    mean([P16, P23, P34, P41, P50]),
     mean([P18, P20, P36, P38, P52]),
     mean([P28, P30, P45, P47, P56]),
     mean([P34, P36, P50, P52, P60]),
@@ -110,7 +110,7 @@ icosahedron_faces = [
     mean([P2, P6, P17]),
     mean([P2, P12, P6]),
     mean([P2, P17, P37]),
-    mean([P2, P37, P27]), 
+    mean([P2, P37, P27]),
     mean([P2, P27, P12]),
     mean([P37, P54, P27]),
     mean([P27, P54, P46]),
@@ -118,11 +118,11 @@ icosahedron_faces = [
     mean([P12, P46, P31]),
     mean([P12, P31, P6]),
     mean([P6, P31, P33]),
-    mean([P6, P33, P17]), 
+    mean([P6, P33, P17]),
     mean([P17, P33, P51]),
     mean([P17, P51, P37]),
     mean([P37, P51, P54]),
-    mean([P58, P54, P51]), 
+    mean([P58, P54, P51]),
     mean([P58, P46, P54]),
     mean([P58, P31, P46]),
     mean([P58, P33, P31]),
@@ -144,25 +144,23 @@ regular_solids_data = {
 
 class RegularSolid:
 
-    def __init__(self, n, mid_r, theta, phi):
+    def __init__(self, n, mid_r):
         self.n = n
         self.mid_r = mid_r
-        self.theta = theta
-        self.phi = phi
 
     def inscribed_at_origo(self):
         faces, mid_r, circum_r = regular_solids_data[self.n]
         resize = self.mid_r / mid_r
         r = circum_r * resize
-        m = Placement(resize, self.theta, self.phi, origo)
+        m = Placement(resize, origo)
         planes = [Plane(n.copy(), n.copy()) for n in faces]
         for p in planes:
             p.place(m)
         return planes, r
 
 
-def sole_regular(n, mid_r, theta, phi):
-    solid = RegularSolid(n, mid_r, theta, phi)
+def sole_regular(n, mid_r):
+    solid = RegularSolid(n, mid_r)
     planes, r = solid.inscribed_at_origo()
     objects = [Sphere(origo, r)]
     objects.extend(planes)

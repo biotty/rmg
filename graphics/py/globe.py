@@ -24,7 +24,7 @@ class Dash:
         self.ink = ink
 
     def discr(self, d):
-        e = d.inverse_rotation(self.theta, self.phi)
+        e = d.inverse_tilt(self.theta, self.phi)
         h = abs(e.z)
         if h > self.r: return 0
         else: return self.r - h
@@ -42,7 +42,7 @@ class Ball:
         self.ink = ink
 
     def discr(self, d):
-        e = d.inverse_rotation(self.theta, self.phi)
+        e = d.inverse_tilt(self.theta, self.phi)
         h = e.spherical()[1]
         if h > self.r: return 0
         else: return self.r - h

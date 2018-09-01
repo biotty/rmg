@@ -3,10 +3,8 @@
 #       All rights reserved
 
 class Placement:
-    def __init__(self, r, theta, phi, delta):
+    def __init__(self, r, delta):
         self.r = r
-        self.theta = theta
-        self.phi = phi
         self.delta = delta
 
 class Plane:
@@ -16,8 +14,7 @@ class Plane:
     def __str__(self):
         return "plane %s %s" % (self.point, self.normal)
     def place(self, m):
-        self.point = self.point.rotation(m.theta, m.phi) * m.r + m.delta
-        self.normal = self.normal.rotation(m.theta, m.phi) * m.r
+        self.point = self.point * m.r + m.delta
     def rotate(self, axis, angle):
         self.point = self.point.rotation_on_axis(axis, angle)
         self.normal = self.normal.rotation_on_axis(axis, angle)
@@ -33,7 +30,7 @@ class Sphere:
     def __str__(self):
         return "sphere %s %LG" % (self.center, self.radius)
     def place(self, m):
-        self.center = self.center.rotation(m.theta, m.phi) * m.r + m.delta
+        self.center = self.center * m.r + m.delta
         self.radius *= m.r
     def rotate(self, axis, angle):
         self.center = self.center.rotation_on_axis(axis, angle)
@@ -49,8 +46,8 @@ class Cylinder:
     def __str__(self):
         return "cylinder %s %s" % (self.p, self.axis)
     def place(self, m):
-        self.p = self.p.rotation(m.theta, m.phi) * m.r + m.delta
-        self.axis = self.axis.rotation(m.theta, m.phi) * m.r
+        self.p = self.p * m.r + m.delta
+        self.axis *= m.r
     def rotate(self, axis, angle):
         self.p = self.p.rotation_on_axis(axis, angle)
         self.axis = self.axis.rotation_on_axis(axis, angle)
@@ -66,8 +63,8 @@ class Cone:
     def __str__(self):
         return "cone %s %s" % (self.apex, self.axis)
     def place(self, m):
-        self.apex = self.apex.rotation(m.theta, m.phi) * m.r + m.delta
-        self.axis = self.axis.rotation(m.theta, m.phi) * m.r
+        self.apex = self.apex * m.r + m.delta
+        self.axis *= m.r
     def rotate(self, axis, angle):
         self.apex = self.apex.rotation_on_axis(axis, angle)
         self.axis = self.axis.rotation_on_axis(axis, angle)
@@ -83,8 +80,8 @@ class Parabol:
     def __str__(self):
         return "parabol %s %s" % (self.vertex, self.focus)
     def place(self, m):
-        self.vertex = self.vertex.rotation(m.theta, m.phi) * m.r + m.delta
-        self.focus = self.focus.rotation(m.theta, m.phi) * m.r
+        self.vertex = self.vertex * m.r + m.delta
+        self.focus *= m.r
     def rotate(self, focus, angle):
         self.vertex = self.vertex.rotation_on_axis(focus, angle)
         self.focus = self.focus.rotation_on_axis(focus, angle)
@@ -101,8 +98,8 @@ class Hyperbol:
     def __str__(self):
         return "hyperbol %s %s %LG" % (self.center, self.axis, self.vertex)
     def place(self, m):
-        self.center = self.center.rotation(m.theta, m.phi) * m.r + m.delta
-        self.axis = self.axis.rotation(m.theta, m.phi) * m.r
+        self.center = self.center * m.r + m.delta
+        self.axis *= m.r
         self.vertex *= m.r
     def rotate(self, axis, angle):
         self.center = self.center.rotation_on_axis(axis, angle)
@@ -113,24 +110,23 @@ class Hyperbol_(Hyperbol):
         return "-hyperbol %s %s %LG" % (self.center, self.axis, self.vertex)
 
 class Saddle:
-    def __init__(self, center, axis, v):
+    def __init__(self, center, axis, x):
         self.center = center
         self.axis = axis
-        self.v = v
+        self.x = x
     def __str__(self):
-        return "saddle %s %s %LG" % (self.center, self.axis, self.v)
+        return "saddle %s %s %s" % (self.center, self.axis, self.x)
     def place(self, m):
-        self.center = self.center.rotation(m.theta, m.phi) * m.r + m.delta
-        self.axis = self.axis.rotation(m.theta, m.phi) * m.r
-        #todo: self.v
+        self.center = self.center * m.r + m.delta
+        self.axis *= m.r
     def rotate(self, axis, angle):
         self.center = self.center.rotation_on_axis(axis, angle)
         self.axis = self.axis.rotation_on_axis(axis, angle)
-        #todo: self.v
+        self.x = self.x.rotation_on_axis(axis, angle)
 
 class Saddle_(Saddle):
     def __str__(self):
-        return "-saddle %s %s %LG" % (self.center, self.axis, self.v)
+        return "-saddle %s %s %s" % (self.center, self.axis, self.x)
 
 class Intersection:
     def __init__(self, objects):

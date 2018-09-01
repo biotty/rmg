@@ -49,16 +49,6 @@ world wgen(int i, int n)
         },
         mapping_f{o, 1, zd, xd, [](point,direction) -> surface {
             return {black,black,white}; }},
-        /*
-        checkers{
-            handle, .16, zd, xyc(seqt * n_trips * pi2), 9,
-            {
-                white,
-                black,
-                black
-            }
-        }
-        */
     };
 
     rotation rot{direction_cast(xy(1, 2)), seqt * pi2};

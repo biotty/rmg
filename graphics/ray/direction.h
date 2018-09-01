@@ -37,8 +37,15 @@ struct tilt_arg
     float phi_sin;
 };
 
+struct base_arg
+{
+    direction x;
+    direction z;
+};
+
 #ifndef __cplusplus
 typedef struct tilt_arg tilt_arg;
+typedef struct base_arg base_arg;
 #else
 extern "C" {
 #endif
@@ -96,7 +103,9 @@ void spherical_arg(direction d, real * r, tilt_arg * arg);
 void direction_to_unitsquare(const direction * d, real * x, real * y);
 direction tilt(direction d, tilt_arg arg);
 direction inverse_tilt(direction d, tilt_arg arg);
-direction norm_cross(direction a, direction b);
+direction cross(direction a, direction b);
+direction base(direction d, base_arg arg);
+direction inverse_base(direction d, base_arg arg);
 
 #ifdef __cplusplus
 }

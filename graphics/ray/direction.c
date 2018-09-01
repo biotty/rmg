@@ -95,7 +95,7 @@ transform(direction * d, const real trm[9])
 }
 
     static inline void
-rotate_xz_xy(direction  * d, const tilt_arg arg)
+rotate_xz_xy(direction * d, const tilt_arg arg)
 {
     const real ca = arg.theta_cos;
     const real sa = arg.theta_sin;
@@ -149,13 +149,41 @@ inverse_tilt(direction d, tilt_arg arg)
 }
 
     direction
-norm_cross(direction a, direction b)
+cross(direction a, direction b)
 {
-    direction ret = {
+    return (direction){
         a.y * b.z - a.z * b.y,
         a.z * b.x - a.x * b.z,
         a.x * b.y - a.y * b.x
     };
-    normalize(&ret);
-    return ret;
+}
+
+// note: d is in given base
+//       convert it to plain xyz base
+    direction
+base(direction d, base_arg arg)
+{
+    direction y = cross(arg.z, arg.x);
+
+    const real B[9] = {
+        arg.x.x, arg.x.y, arg.x.z,
+        y.x, y.y, y.z,
+        arg.z.x, arg.z.y, arg.z.z,
+    };
+    transform(&d, B);
+    return d;
+}
+
+    direction
+inverse_base(direction d, base_arg arg)
+{
+    direction y = cross(arg.z, arg.x);
+
+    const real B[9] = {
+        arg.x.x, y.x, arg.z.x,
+        arg.x.y, y.y, arg.z.y,
+        arg.x.z, y.z, arg.z.z,
+    };
+    transform(&d, B);
+    return d;
 }
