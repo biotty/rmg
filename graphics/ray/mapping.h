@@ -17,29 +17,29 @@ typedef struct texture_application texture_application;
 extern "C" {
 #endif
 
-void * normal_texture_mapping(
-        object_decoration * df, tilt_arg rota, real r,
-        real w, const char * path, texture_application a);
+void * angular_texture_mapping(
+        object_decoration * df, base_arg rota, real r,
+        const char * path, texture_application a);
 
 void * planar_texture_mapping(
-        object_decoration * df, tilt_arg rota, real r,
-        real w, point o, const char * path, texture_application a);
+        object_decoration * df, base_arg rota, real r,
+        point o, const char * path, texture_application a);
 
 void * planar1_texture_mapping(
-        object_decoration * df, tilt_arg rota, real r,
-        real w, point o, const char * path, texture_application a);
+        object_decoration * df, base_arg rota, real r,
+        point o, const char * path, texture_application a);
 
 void * relative_texture_mapping(
-        object_decoration * df, tilt_arg rota, real r,
-        real w, point o, const char * path, texture_application a);
+        object_decoration * df, base_arg rota, real r,
+        point o, const char * path, texture_application a);
 
 void * axial_texture_mapping(
-        object_decoration * df, tilt_arg rota, real r,
-        real w, point o, const char * path, texture_application a);
+        object_decoration * df, base_arg rota, real r,
+        point o, const char * path, texture_application a);
 
 void * axial1_texture_mapping(
-        object_decoration * df, tilt_arg rota, real r,
-        real w, point o, const char * path, texture_application a);
+        object_decoration * df, base_arg rota, real r,
+        point o, const char * path, texture_application a);
 
 void delete_decoration(void * decoration_arg);
 

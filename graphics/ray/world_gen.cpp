@@ -518,55 +518,43 @@ make(model::surface s)
     void *
 make(model::angular tx, object_decoration * df)
 {
-    tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(tx.x, rota);
-    return normal_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
-            make(tx.n), make(tx.s));
+    return angular_texture_mapping(df, make_base(tx.d, tx.x),
+            tx.r, make(tx.n), make(tx.s));
 }
 
     void *
 make(model::planar tx, object_decoration * df)
 {
-    tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(tx.x, rota);
-    return planar_texture_mapping(df,  rota, tx.r, ratan(a1.y, a1.x),
-            tx.p, make(tx.n), make(tx.s));
+    return planar_texture_mapping(df, make_base(tx.d, tx.x),
+            tx.r, tx.p, make(tx.n), make(tx.s));
 }
 
     void *
 make(model::planar1 tx, object_decoration * df)
 {
-    tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(tx.x, rota);
-    return planar1_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
-            tx.p, make(tx.n), make(tx.s));
+    return planar1_texture_mapping(df, make_base(tx.d, tx.x),
+            tx.r, tx.p, make(tx.n), make(tx.s));
 }
 
     void *
 make(model::relative tx, object_decoration * df)
 {
-    tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(tx.x, rota);
-    return relative_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
-            tx.p, make(tx.n), make(tx.s));
+    return relative_texture_mapping(df, make_base(tx.d, tx.x),
+            tx.r, tx.p, make(tx.n), make(tx.s));
 }
 
     void *
 make(model::axial tx, object_decoration * df)
 {
-    tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(tx.x, rota);
-    return axial_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
-            tx.p, make(tx.n), make(tx.s));
+    return axial_texture_mapping(df, make_base(tx.d, tx.x),
+            tx.r, tx.p, make(tx.n), make(tx.s));
 }
 
     void *
 make(model::axial1 tx, object_decoration * df)
 {
-    tilt_arg rota = make_tilt(tx.d);
-    direction a1 = inverse_tilt(tx.x, rota);
-    return axial1_texture_mapping(df, rota, tx.r, ratan(a1.y, a1.x),
-            tx.p, make(tx.n), make(tx.s));
+    return axial1_texture_mapping(df, make_base(tx.d, tx.x),
+            tx.r, tx.p, make(tx.n), make(tx.s));
 }
 
     compact_color

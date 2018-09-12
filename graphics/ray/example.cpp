@@ -47,8 +47,10 @@ world wgen(int i, int n)
             black,
             white,
         },
-        mapping_f{o, 1, zd, xd, [](point,direction) -> surface {
-            return {black,black,white}; }},
+        mapping_f{o, 1, zd, xd,
+            [](point, direction) -> surface {
+            return {black, black, white}; }
+        },
     };
 
     rotation rot{direction_cast(xy(1, 2)), seqt * pi2};
