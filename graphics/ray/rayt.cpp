@@ -250,38 +250,8 @@ get_texture_application()
 }
 
     void *
-get_decoration(std::string name, object_decoration * df)
+get_decoration(std::string name, object_decoration *)
 {
-    direction n;
-    real w;
-    point o;
-    std::string path;
-
-    if (name == "normal") {
-        std::cin >> n >> w >> path;
-        real r;
-        tilt_arg rota;
-        spherical_arg(n, &r, &rota);
-        return normal_texture_mapping(df, rota, r, w, path.c_str(),
-                get_texture_application());
-    }
-
-    void * (* mapping)(object_decoration * df, tilt_arg rota, real r,
-            real w, point o, const char * path, texture_application a) = nullptr;
-    if (name == "planar") mapping = planar_texture_mapping;
-    if (name == "planar1") mapping = planar1_texture_mapping;
-    if (name == "relative") mapping = relative_texture_mapping;
-    if (name == "axial") mapping = axial_texture_mapping;
-    if (name == "axial1") mapping = axial1_texture_mapping;
-    if (mapping) {
-        std::cin >> n >> w >> o >> path;
-        real r;
-        tilt_arg rota;
-        spherical_arg(n, &r, &rota);
-        return mapping(df, rota, r, w, o, path.c_str(),
-                get_texture_application());
-    }
-
     fail("decoration \"%s\"?", name.c_str());
 }
 

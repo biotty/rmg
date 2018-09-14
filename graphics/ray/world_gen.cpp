@@ -561,35 +561,47 @@ make(model::axial1 tx, object_decoration * df)
 make_c(model::color c)
 { return z_filter(c); }
 
+struct surface_decoration_arg {
+    point o;
+    real r;
+    base_arg base;
+    model::surface_f const & f;
+};
+
     static void
-mapping_(const ray * ray_, const void * arg,
+surface_decoration_(const ray * ray_, const void * arg,
         object_optics * so, const object_optics * adjust)
 {
-    auto m = static_cast<const model::mapping_f *>(arg);
+    auto da = static_cast<const surface_decoration_arg *>(arg);
     auto [p, d] = *ray_;
-    model::surface s = m->f(p, d);
+    p = point_from_origo(inverse_base(distance_vector(da->o, p), da->base));
+    d = inverse_base(d, da->base);
+    scale(&d, da->r);
+    model::surface s = da->f(p, d);
     so->refraction_index = adjust->refraction_index;
     so->passthrough_filter = adjust->passthrough_filter;
+    // improve: could encode in s usage of adjust (unused)
     so->reflection_filter = z_filter(s.reflection);
     so->absorption_filter = z_filter(s.absorption);
     so->refraction_filter = z_filter(s.refraction);
 }
 
     void *
-make(model::textmap & tm, object_decoration * df, world & world_)
+make(model::textmap const & tm, object_decoration * df, world & world_)
 {
+    void * da;
     if (std::holds_alternative<model::texture>(tm)) {
         auto tx = std::get<model::texture>(tm);
-        void * ret;
-        std::visit([&ret, df, &world_](auto arg){
-                ret = make(arg, df);
-                world_.decoration_args.push_back(ret);
-                }, tx);
-        return ret;
+        std::visit([&da, df, &world_](auto arg){
+                da = make(arg, df); }, tx);
+    } else {
+        auto const & mf = std::get<model::mapping_f>(tm);
+        using D = surface_decoration_arg;
+        da = new (alloc<D>()) D{mf.p, 1 / mf.r, make_base(mf.d, mf.x), mf.f};
+        *df = surface_decoration_;
     }
-
-    *df = mapping_;
-    return &std::get<model::mapping_f>(tm);
+    world_.decoration_args.push_back(da);
+    return da;
 }
 
     object_optics
@@ -605,7 +617,7 @@ make(model::optics o)
 }
 
     void
-make(model::object obj, world & world_)
+make(model::object const & obj, world & world_)
 {
     object_intersection fi;
     object_normal fn;
@@ -623,7 +635,7 @@ make(model::observer o)
     ret.eye = o.e;
     ret.view = o.c;
     ret.column_direction = o.x;
-    // improve: adjust column so perpendicular to view-eye
+    // todo: adjust column so perpendicular to view-eye
     direct_row(&ret);
     return ret;
 }
@@ -641,8 +653,8 @@ make(const model::world & w)
     std::pair<observer, world> ret{
         make(w.obs), world{sky_, delete_inter, delete_decoration}
     };
-    for (auto o : w.s) make(o, ret.second);
-    for (auto s : w.ls)
+    for (auto & o : w.s) make(o, ret.second);
+    for (auto & s : w.ls)
         ret.second.spots_.push_back({s.p, s.c});
     return ret;
 }

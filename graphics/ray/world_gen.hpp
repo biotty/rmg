@@ -4,9 +4,7 @@
 #define MODEL_HPP
 
 #include "sky.h"
-struct ray;
 struct photo;
-struct object_optics;
 
 #include <array>
 #include <vector>
@@ -201,16 +199,15 @@ void mul_(inter & s, point at, double);
 void mov_(inter & s, direction offset);
 void rot_(inter & s, point at, rotation);
 
+using surface_f = std::function<surface(point, direction)>;
+
 struct mapping_f
 {
     point p;
     double r;
     direction d;
     direction x;
-    std::function<surface(point, direction)> f;
-    void operator()(
-            const ray &, object_optics &,
-            const object_optics & adjust) const;
+    surface_f f;
 };
 void mul_(mapping_f & m, point at, double);
 void mov_(mapping_f & m, direction offset);
@@ -221,20 +218,6 @@ using textmap = std::variant<texture, mapping_f>;
 struct object {
     inter si;
     optics o;
-    // todo: when textmap is simply mapping_f because the
-    //       builtin textures has been moved out as
-    //       mapping_f having respective photo_base impl
-    //       as f member, the mapping_f operator() does not
-    //       need adjust as unused, and needs the fixed
-    //       passthru and refraction index.  then the above
-    //       member optics o will instead be an alternative in
-    //       the variant, so we get std::variant<optics, mapping_f>
-    //       instead of o and the optional u.  the passthru and
-    //       r-index could rather be members of mapping_f.
-    //       with no builtin there is no use of the worlds
-    //       decoration_args (world does not own a mapping_f
-    //       as taken care of -- see above make function which
-    //       does not push onto it for a mapping_f).
     std::optional<textmap> u;
     object mul(point at, double);
     object mov(direction offset);
