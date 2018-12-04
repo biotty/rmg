@@ -9,8 +9,6 @@ from rmg.board import Board, Pencil
 from rmg.draw import Drawing, TreeBuilder
 from rmg.ls import Settings, System, OperationsVisitor
 from rmg.color import Optics, Color, white, black
-from rmg.scene import World, WorldPencil, SceneObject, LightSpot, RgbSky
-from rmg.bodies import Sphere
 from rmg.space import Point, Direction
 from optparse import OptionParser
 from subprocess import Popen, PIPE
@@ -117,9 +115,7 @@ opts.add_option("-o", "--image-path", type="string", default="out.jpeg")
 opts.add_option("-p", "--print-axiom", action="store_true", default=False)
 opts.add_option("-r", "--resolution", type="string", default="1280x720")
 opts.add_option("-s", "--random-seed", type="int")
-opts.add_option("-t", "--ray-trace-mode", action="store_true", default=False)
 opts.add_option("-u", "--unit-turn-degrees", type="float", default=360)
-opts.add_option("-C", "--trace-command", type="string", default="rayt")
 opts.add_option("-G", "--display-mode", action="store_true", default=False)
 opts.add_option("-H", "--expression-help", action="store_true", default=False)
 opts.add_option("-I", "--order-independent", action="store_true", default=False)
@@ -150,8 +146,7 @@ if options.print_axiom: stderr.write("%s\n" % (ls.axiom))
 if not options.image_path: exit()
 
 stderr.write("Drawing resulting axiom\n")
-blockf = (Direction(-0.5, -0.5, -0.5), 1) if options.ray_trace_mode else None
-drawing = Drawing(adjust_factor = blockf)
+drawing = Drawing()
 tree_builder = TreeBuilder(drawing,
         u_scale = degrees_unit(options.unit_turn_degrees),
         u_default = degrees_unit(options.default_turn),
@@ -164,7 +159,7 @@ if options.display_mode:
     drawing.rescale()
     drawing.render(d.pencil())
     d.run()
-elif not options.ray_trace_mode:
+else:
     stderr.write("Rendering drawing at %s\n" % (options.resolution,))
     width, height = [int(s) for s in options.resolution.split("x")]
     board = Board.mono(width, height, white)
@@ -172,32 +167,3 @@ elif not options.ray_trace_mode:
     drawing.render(Pencil(board))
     stderr.write("Writing board to %s\n" % (options.image_path,))
     board.save(options.image_path, gray = (options.palette_breadth == 0))
-else:
-    world = World([], [
-        LightSpot(Point(-8,-8, 2), Color(.8, .2, .2)),
-        LightSpot(Point( 8,-8, 2), Color(.8, .8, .2)),
-        LightSpot(Point(-8, 8, 2), Color(.2, .8, .2)),
-        LightSpot(Point( 8, 8, 2), Color(.2, .2, .8)),
-    ], sky = RgbSky())
-    def factory(p, q, c):
-        if p == q: return []
-        r = abs(q - p) * .65
-        color = c.mix(white, .4)
-        reflection = color * .2
-        absorption = color * .6
-        optics = Optics(reflection, absorption)
-        ball = Sphere(q, r)
-        so_ball = SceneObject(optics, ball)
-        return [so_ball]
-    pencil = WorldPencil(world, factory)
-    drawing.rescale()
-    drawing.render(pencil)
-
-    comm = "%s %s %s" % (options.trace_command,
-            options.resolution, options.image_path)
-    stderr.write("Piping world to '%s'\n" % (comm,))
-    environ["RAYT_RS"] = "Yes"
-    p = Popen(comm, stdin=PIPE, shell=True, close_fds=True)
-    p.stdin.write(bytes(str(world), 'ascii'))
-    p.stdin.close()
-    exit(p.wait())

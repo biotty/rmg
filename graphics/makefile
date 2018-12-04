@@ -5,21 +5,21 @@ CXXFLAGS := -Wall -Wextra -Werror -std=c++14 -pedantic -O3
 
 all: ray/rayt flow/fluid flow/wave
 
-media: image.jpeg
+media: 0.jpeg
 
 heavy_media: video.mp4 fluid.mp4 mandelbrot.mp4
 
 flow/fluid flow/wave: ray/librayt.a
 	@$(MAKE) -C flow $(notdir $@)
 
-ray/rayt ray/librayt.a:
+ray/example ray/librayt.a:
 	@$(MAKE) -C ray
 
-image.jpeg: py/image1.py ray/rayt map.jpeg
-	$< |$(RAYT) 1920x1080 |pnmtojpeg >$@
+0.jpeg: ray/example
+	$< '' 1
 
-video.mp4: py/image1.py ray/rayt map.jpeg map.movie
-	./movie_exec.sh $@ "$< -n 500 -C $(RAYT) -o {}/"
+video.mp4: ray/example
+	./movie_exec.sh $@ "$< {}/"
 
 fluidwave.mp4: flow/sh flow/fluid flow/wave map.jpeg
 	$< map.jpeg $@

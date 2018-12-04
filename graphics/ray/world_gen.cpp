@@ -95,6 +95,12 @@ point operator+(point p, direction d)
     return point_cast(direction_cast(p) + d);
 }
 
+point & operator+=(point & p, direction d)
+{
+    p = p + d;
+    return p;
+}
+
 double abs(direction d)
 {
     return std::sqrt(d * d);

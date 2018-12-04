@@ -69,7 +69,8 @@ world wgen(int i, int n)
     };
 }
 
-int main()
+int main(int argc, char ** argv)
 {
-    sequence(wgen, 400, "", hdtv, 0);
+    sequence(wgen, argc >= 3 ? atoi(argv[2]) : 400,
+		   argc >= 2 ? argv[1] : "", hdtv, 0);
 }
