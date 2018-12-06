@@ -56,11 +56,11 @@ world wgen(int i, int n)
     rotation rot{direction_cast(xy(1, 2)), seqt * pi2};
     return {
         { yz(.1, 2), o, xd * .65 },
-            //      photo_sky{"sky.jpeg"},
-            [](direction d) -> color { return {
+                  photo_sky{"sky.jpeg"},
+           /* [](direction d) -> color { return {
                 (abs(d.x) < .01) ? 0. : (d.x + 1) * 0.5,
                 (abs(d.y) < .01) ? 1. : 0.,
-                (abs(d.x) < .01) ? 1. : 0.}; },
+                (abs(d.x) < .01) ? 1. : 0.}; },*/
         {
             tube.rot(o, rot),
             ball.rot(o, rot),
@@ -71,6 +71,11 @@ world wgen(int i, int n)
 
 int main(int argc, char ** argv)
 {
-    sequence(wgen, argc >= 3 ? atoi(argv[2]) : 400,
-		   argc >= 2 ? argv[1] : "", hdtv, 0);
+    const char * path = argc >= 2 ? argv[1] : "";
+
+    if (argc >= 3) {
+        sequence(wgen, atoi(argv[2]), path, hdtv, 0);
+    } else {
+        render(wgen(0, 1), path, hdtv, 0);
+    }
 }

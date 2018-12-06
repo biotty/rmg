@@ -678,7 +678,7 @@ void render(const model::world & w, std::string path, resolution res, unsigned n
 void sequence(world_gen_f wg, int n_frames, std::string path, resolution res, unsigned n_threads)
 {
     for (int i = 0; i < n_frames; i++) {
-        std::ostringstream buf{path};
+        std::ostringstream buf{path, std::ostringstream::ate};
         buf << i << ".jpeg";
         render(wg(i, n_frames), buf.str(), res, n_threads);
         std::cout << "\r" << i << std::flush;
