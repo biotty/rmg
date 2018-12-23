@@ -12,8 +12,8 @@ heavy_media: video.mp4 fluid.mp4 mandelbrot.mp4
 flow/fluid flow/wave: ray/librayt.a
 	@$(MAKE) -C flow $(notdir $@)
 
-ray/example ray/librayt.a:
-	@$(MAKE) -C ray
+ray/rayt ray/example ray/librayt.a:
+	@$(MAKE) -C ray $(notdir $@)
 
 0.jpeg: ray/example
 	$< '' 1

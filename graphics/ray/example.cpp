@@ -56,11 +56,13 @@ world wgen(int i, int n)
     rotation rot{direction_cast(xy(1, 2)), seqt * pi2};
     return {
         { yz(.1, 2), o, xd * .65 },
-                  photo_sky{"sky.jpeg"},
-           /* [](direction d) -> color { return {
-                (abs(d.x) < .01) ? 0. : (d.x + 1) * 0.5,
-                (abs(d.y) < .01) ? 1. : 0.,
-                (abs(d.x) < .01) ? 1. : 0.}; },*/
+           [](direction d) -> color { return {
+               (abs(d.x) < .01) ? 0. : (d.x + 1) * 0.5,
+               (abs(d.y) < .01) ? 1. : 0.,
+               (abs(d.x) < .01) ? 1. : 0.}; },
+           /* alt: to above lambda
+           photo_sky{"sky.jpeg"},
+            */
         {
             tube.rot(o, rot),
             ball.rot(o, rot),
