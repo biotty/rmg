@@ -3,7 +3,8 @@
 
 #include "scene.h"
 #include "trace.hpp"
-#include "bitarray.hpp"
+#include <vector>
+#include <algorithm>
 
     void
 init_inside(bitarray & inside, scene const & s, const ray * t)
@@ -14,8 +15,17 @@ init_inside(bitarray & inside, scene const & s, const ray * t)
         const void * arg = s[i].object_arg;
         object_intersection oi = s[i].intersection;
         segment p = oi(t, arg, &dummy);
-        inside.assign(i, p.entry <= 0 && p.exit_ >= 0);
+        inside[i] = (p.entry <= 0 && p.exit_ >= 0);
     }
+}
+
+    int
+firstset(bitarray & bits)
+{
+    auto it = std::find(bits.begin(), bits.end(), true);
+    if (bits.end() == it) return -1;
+
+    return std::distance(bits.begin(), it);
 }
 
     static real
@@ -25,7 +35,7 @@ intersect(const ray * t, scene_object const * so, int * hit, bool is_inside)
         const segment p = so->intersection(t, intersection_arg, hit);
         //if (is_inside != (p.entry <= 0 && p.exit_ >= 0)) {
         //    fprintf(stderr, "inside-tracking error.  correcting\n");
-        //    is_inside = ! is_inside; // inside->flip(i);
+        //    is_inside = ! is_inside; // inside[i].flip();
         //}
         return is_inside ? p.exit_ : p.entry;
 }
@@ -40,7 +50,7 @@ closest_surface(scene const & s, ray * const t, bitarray & inside)
     const size_t n = s.size();
     std::vector<int> hits(n);
     for (size_t i = 0; i < n; i++) {
-        const real r = intersect(t, &s[i], &hits[i], inside.isset(i));
+        const real r = intersect(t, &s[i], &hits[i], inside[i]);
         if (r >= 0 && (closest_r < 0 || r < closest_r)) {
             closest_object = &s[i];
             closest_r = r;
@@ -48,13 +58,13 @@ closest_surface(scene const & s, ray * const t, bitarray & inside)
         }
     }
     if (closest_r >= 0 && closest_r < HUGE_REAL) {
-        int precedent_i = inside.firstset();
+        int precedent_i = firstset(inside);
         if (precedent_i >= 0 && closest_i > precedent_i) {
             advance(t, closest_r);
-            inside.flip(closest_i);
+            inside[closest_i].flip();
             closest_object = closest_surface(s, t, inside);
             if (nullptr == closest_object) {
-                inside.flip(closest_i);
+                inside[closest_i].flip();
             }
         } else {
             advance(t, closest_r);

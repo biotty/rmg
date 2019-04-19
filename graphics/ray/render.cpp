@@ -112,6 +112,10 @@ render(const char * path, int width, int height,
         n_threads = std::thread::hardware_concurrency();
 
     image out = image_create(path, width, height);
+    if ( ! out) {
+        std::cerr << "ray: cannot create image " << path << "\n";
+        exit(EXIT_FAILURE);
+    }
     if (n_threads <= 1) {
         for (int y=0; y!=height; ++y)
             for (int x=0; x!=width; ++x)

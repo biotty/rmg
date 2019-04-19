@@ -3,7 +3,6 @@
 
 #include "trace.hpp"
 #include "scene.hpp"
-#include "bitarray.hpp"
 #include <cassert>
 #include <iostream>
 
@@ -25,16 +24,15 @@ struct detector {
 
 static color ray_trace(detector &, ray, const world &);
 
-
     color
 trace(ray t, const world & w)
 {
     const size_t q = w.scene_.size();
-    detector detector_{max_hops, {1, 1, 1}, q};
+    detector detector_{max_hops, {1, 1, 1}, bitarray(q)};
     init_inside(detector_.inside, w.scene_, &t);
-    if (debug && detector_.inside.firstset() >= 0)
+    if (debug && firstset(detector_.inside) >= 0)
         std::cerr << "initial detector is at inside of "
-                << detector_.inside.firstset() << "\n";
+                << firstset(detector_.inside) << "\n";
     const color detected = ray_trace(detector_, t, w);
     return detected;
 }
@@ -125,7 +123,7 @@ refraction_trace(ray ray_, const scene_object * so,
         const world & w, color * result)
 {
     const ptrdiff_t i = so - &w.scene_[0];
-    int outside_i = detector_.inside.firstset();
+    int outside_i = firstset(detector_.inside);
     const bool enters = (outside_i != i);
 
     class scoped_bit_flipper {
@@ -134,16 +132,16 @@ refraction_trace(ray ray_, const scene_object * so,
         scoped_bit_flipper(bitarray & a, int i, bool enters)
             : a(a), i(i), enters(enters)
         {
-            a.assign(i, enters);
+            a[i] = enters;
         }
         ~scoped_bit_flipper()
         {
-            a.assign(i, !enters);
+            a[i] = ! enters;
         }
     };
     scoped_bit_flipper sbf(detector_.inside, i, enters);
 
-    if ( ! enters) outside_i = detector_.inside.firstset();
+    if ( ! enters) outside_i = firstset(detector_.inside);
     float outside_refraction_index = 1.0;
     if (outside_i >= 0) {
         outside_refraction_index
@@ -200,7 +198,7 @@ ray_trace(detector & detector_, ray t, const world & w)
     }
     ray surface = t;
     assert(is_near(length(surface.head), 1));
-    const int det_inside_i = detector_.inside.firstset();
+    const int det_inside_i = firstset(detector_.inside);
     const scene_object * closest_object
         = closest_surface(w.scene_, &surface, detector_.inside);
     if ( ! closest_object) {
@@ -225,7 +223,7 @@ ray_trace(detector & detector_, ray t, const world & w)
                 &auto_store, &closest_object->optics);
         optics = &auto_store;
     }
-    const int inside_i = detector_.inside.firstset();
+    const int inside_i = firstset(detector_.inside);
     if (inside_i < 0) {
         const color absorbed = spot_absorption(
                 surface, optics, w, detector_.inside);

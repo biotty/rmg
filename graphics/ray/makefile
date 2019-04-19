@@ -11,7 +11,7 @@ example: example.o librayt.a
 librayt.a: world_gen.o mapping.o inter.o sphere.o plane.o cylinder.o \
   cone.o parabol.o hyperbol.o saddle.o scene.o render.o sky.o \
   direction.o point.o ray.o color.o photo.o image.o \
-  matrix.o bitarray.o trace.o
+  matrix.o trace.o
 	ar rc $@ $^
 
 world_gen.o:world_gen.hpp
@@ -30,7 +30,6 @@ ray.o:      ray.h
 color.o:    color.h
 render.o:   render.hpp
 matrix.o:   matrix.h
-bitarray.o: bitarray.hpp
 scene.o:    scene.h scene.hpp
 trace.o:    trace.hpp
 sky.o:      sky.h

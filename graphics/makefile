@@ -19,7 +19,7 @@ ray/rayt ray/example ray/librayt.a:
 	$< '' 1
 
 video.mp4: ray/example
-	./movie_exec.sh $@ "$< {}/"
+	./movie_exec.sh $@ "$< {}/ 256"
 
 fluidwave.mp4: flow/sh flow/fluid flow/wave map.jpeg
 	$< map.jpeg $@
