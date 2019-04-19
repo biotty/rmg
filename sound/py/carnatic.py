@@ -55,29 +55,75 @@ def sarali(n, gati):
         a.reverse()
     return a[:n]
 
-# usage: aplay -f S16_BE -r 40100 out.raw
+# usage: aplay -f S16_LE -r 40100 out.raw
 if __name__ == "__main__":
-    from math import sin, cos, pi
     from argparse import ArgumentParser
+    from random import random as rnd_01
+    def rnd(a, b): return a + (b - a) * rnd_01()
+    def lin(a, b, z): return a * (1 - z) + b * z
+
     parser = ArgumentParser()
     parser.add_argument(
-            "-a", "--adhara", type=int,
-            help="base frequency", default=110)
+            "-a", "--adhara", type=int, help="base frequency", default=160)
     parser.add_argument(
-            "-r", "--raga", type=int,
-            help="melakarta index", default=14)
+            "-r", "--raga", type=int, help="melakarta index")
+    parser.add_argument(
+            "-p", "--percussion", help="path.s16_le:offset")
     args = parser.parse_args()
     our_adhara = args.adhara
-    our_raga = melakarta[args.raga]
+    if args.raga: raga = args.raga
+    else:
+        raga = randrange(72)
+        stdout.write("raga: %d\n" % (raga,))
+    our_raga = melakarta[raga]
 
-    def sine(x):
-        return sin(2 * pi * x)
+    sr = 44100
+    speed = .6
+
+    perc = []
+    if args.percussion:
+        path, stoff = args.percussion.rsplit(":", 1)
+        offset = int(stoff)
+        with open(path, "rb") as p:
+            p.read(offset * 2)
+            for _ in range(int(4 * speed * sr)):
+                a, b = p.read(2)
+                v = (b << 8) | a
+                if v >= 32738: v -= 65536
+                perc.append(v / 32768)
+        n = int(sr * .05)
+        for i in range(n):
+            z = i / n
+            perc[i] *= z
+            perc[-i] *= z
+    px = 0
+    def percussion(v):
+        global px
+        if not perc: return v
+        px += 1
+        if px >= len(perc): px = 0
+        return lin(v, perc[px], .4)
+
+    dur_rev = .5
+    n_hist = int(sr * dur_rev)
+    hist = [0] * n_hist
+    taps = [
+            (int(sr * rnd(.01, dur_rev)), rnd(.1, .2))
+            for _ in range(5)]
+    hi = 0
     def out(v):
+        global hi
+        for sdly, ampl in taps:
+            v += ampl * hist[(hi + sdly) % n_hist]
+        v = percussion(v)
+        hist[hi] = v
+        if hi <= 0: hi = n_hist
+        hi -= 1
         u = int(32767 * v)
         if u < 0: u += 65536
-        o.write(bytes([u >> 8, u & 255]))
-    sr = 40100
-    speed = .8
+        o.write(bytes([u & 255, u >> 8]))
+    def sine(x):
+        return 1 if x % 1.0 < .5 else -1
     def nsamp(t):
         return int(speed * sr / t)
     def intra(amp):
@@ -90,20 +136,27 @@ if __name__ == "__main__":
             else: a = amp * (n - i) / m
             x = i * f / sr
             out(a * sine(x * 2))
+        pause(1 / 2)
     def pause(t):
         for i in range(nsamp(t)):
             out(0)
     def note(t, s, amp):
-        n = nsamp(t)
+        accompany_kind = randrange(3)
+        if accompany_kind == 0: r = s - 5
+        elif accompany_kind == 1: r = s + 4
+        else: r = s
         f = swara_frequency(s, our_raga, our_adhara)
+        g = swara_frequency(r, our_raga, our_adhara)
         att = int(sr // f) * randrange(2, 7)
+        n = nsamp(t)
         m = n - att
         for i in range(n):
             if i < att: a = amp * i / att
             else: a = amp * (n - i) / m
             x = i * f / sr
-            out(a * (sine(x) + sine(x * 4)))
-    aa, ab, ac = .5, .4, .3
+            y = i * g / sr
+            out(a * .5 * (sine(y) + sine(x * 2)))
+    aa, ab, ac, ad = .4, .3, .2, .1
     with open("out.raw", "wb") as o:
         for i, c in enumerate(range(8)):
             for j, s in enumerate(compose("IOO", 4, 1, sarali)):
@@ -119,4 +172,4 @@ if __name__ == "__main__":
                 else:
                     note(4, s, aa if i % 8 == 0 else ab)
             if i % 4 == 3:
-                intra(ac)
+                intra(ad)
