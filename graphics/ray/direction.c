@@ -161,7 +161,7 @@ cross(direction a, direction b)
 // note: d is in given base
 //       convert it to plain xyz base
     direction
-base(direction d, base_arg arg)
+inverse_base(direction d, base_arg arg)
 {
     direction y = cross(arg.z, arg.x);
 
@@ -175,7 +175,7 @@ base(direction d, base_arg arg)
 }
 
     direction
-inverse_base(direction d, base_arg arg)
+base(direction d, base_arg arg)
 {
     direction y = cross(arg.z, arg.x);
 
