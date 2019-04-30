@@ -24,7 +24,8 @@ struct rotation { direction axis; double angle; };
 struct resolution { int width; int height; };
 constexpr resolution hdtv{1920, 1080};
 constexpr double pi{3.14159265358979};
-constexpr double pi2{pi * 2};
+constexpr double tau{pi * 2};
+constexpr double linear(double a, double b, double u) { return a * (1 - u) + b * u; }
 constexpr direction xd{1, 0, 0};
 constexpr direction yd{0, 1, 0};
 constexpr direction zd{0, 0, 1};
@@ -45,8 +46,8 @@ constexpr double water_ri{1.3};
 constexpr double glass_ri{1.6};
 constexpr double diamond_ri{2.4};
 constexpr double red_hue{0};
-constexpr double green_hue{pi2 / 3};
-constexpr double blue_hue{2 * pi2 / 3};
+constexpr double green_hue{tau / 3};
+constexpr double blue_hue{2 * tau / 3};
 color operator+(color p, color q);
 color operator*(color p, color filter);
 inline color operator*(color p, double u) { return p * gray(u); }
@@ -60,7 +61,7 @@ direction operator-(point to, point from);
 point operator+(point, direction);
 point & operator+=(point &, direction);
 double abs(direction);
-inline direction norm(direction d) { return d * (1 / abs(d)); }
+inline direction unit(direction d) { return d * (1 / abs(d)); }
 direction xyc(double w);
 direction xzc(double w);
 direction yzc(double w);
@@ -236,9 +237,10 @@ struct world {
     std::vector<object> s;
     std::vector<light_spot> ls;
 };
-using world_gen_f = std::function<world(int i, int n)>;
+using world_gen_f = std::function<world(double)>;
 void render(const world & w, std::string path, resolution, unsigned n_threads);
 void sequence(world_gen_f wg, int nw, std::string path, resolution, unsigned n_threads);
+void main(world_gen_f wg, int argc, char **argv);
 
 class photo_base {
     photo * ph;

@@ -61,84 +61,79 @@ direction mean(std::initializer_list<direction> list)
 }
 
 direction tetrahedron_faces[] = {
-        mean({p4, p34, p47}),
-        mean({p4, p38, p34}),
-        mean({p4, p47, p38}),
-        mean({p34, p38, p47})};
+        unit(mean({p4, p34, p47})),
+        unit(mean({p4, p38, p34})),
+        unit(mean({p4, p47, p38})),
+        unit(mean({p34, p38, p47}))};
 
-double tetrahedron_inradius = abs(tetrahedron_faces[0]);
-double tetrahedron_midradius = 1.7321 * tetrahedron_inradius;
-double tetrahedron_circumradius = 3 * tetrahedron_inradius;
+double tetrahedron_mr = 1.7321;
+double tetrahedron_cr = 3;
 
 direction cube_faces[] = {
-    mean({p4, p18, p28, p38}),
-    mean({p4, p18, p23, p34}),
-    mean({p4, p23, p28, p47}),
-    mean({p28, p38, p47, p60}),
-    mean({p23, p34, p47, p60}),
-    mean({p18, p34, p38, p60})};
+    unit(mean({p4, p18, p28, p38})),
+    unit(mean({p4, p18, p23, p34})),
+    unit(mean({p4, p23, p28, p47})),
+    unit(mean({p28, p38, p47, p60})),
+    unit(mean({p23, p34, p47, p60})),
+    unit(mean({p18, p34, p38, p60}))};
 
-double cube_inradius = abs(cube_faces[0]);
-double cube_midradius = 1.41422 * cube_inradius;
-double cube_circumradius = 1.7321 * cube_inradius;
+double cube_mr = 1.41422;
+double cube_cr = 1.7321;
 
 direction octahedron_faces[] = {
-    mean({p7, p10, p43}),
-    mean({p7, p22, p10}),
-    mean({p7, p43, p49}),
-    mean({p7, p49, p22}),
-    mean({p55, p10, p43}),
-    mean({p55, p22, p10}),
-    mean({p55, p43, p49}),
-    mean({p55, p49, p22})};
+    unit(mean({p7, p10, p43})),
+    unit(mean({p7, p22, p10})),
+    unit(mean({p7, p43, p49})),
+    unit(mean({p7, p49, p22})),
+    unit(mean({p55, p10, p43})),
+    unit(mean({p55, p22, p10})),
+    unit(mean({p55, p43, p49})),
+    unit(mean({p55, p49, p22}))};
 
-double octahedron_inradius = abs(octahedron_faces[0]);
-double octahedron_midradius = 1.2248 * octahedron_inradius;
-double octahedron_circumradius = 1.7321 * octahedron_inradius;
+double octahedron_mr = 1.2248;
+double octahedron_cr = 1.7321;
 
 direction dodecahedron_faces[] = {
-    mean({p4, p8, p11, p18, p20}),
-    mean({p4, p8, p13, p16, p23}),
-    mean({p4, p11, p13, p28, p30}),
-    mean({p8, p16, p18, p34, p36}),
-    mean({p11, p20, p28, p38, p45}),
-    mean({p13, p23, p30, p41, p47}),
-    mean({p16, p23, p34, p41, p50}),
-    mean({p18, p20, p36, p38, p52}),
-    mean({p28, p30, p45, p47, p56}),
-    mean({p34, p36, p50, p52, p60}),
-    mean({p38, p45, p52, p56, p60}),
-    mean({p41, p47, p50, p56, p60})};
+    unit(mean({p4, p8, p11, p18, p20})),
+    unit(mean({p4, p8, p13, p16, p23})),
+    unit(mean({p4, p11, p13, p28, p30})),
+    unit(mean({p8, p16, p18, p34, p36})),
+    unit(mean({p11, p20, p28, p38, p45})),
+    unit(mean({p13, p23, p30, p41, p47})),
+    unit(mean({p16, p23, p34, p41, p50})),
+    unit(mean({p18, p20, p36, p38, p52})),
+    unit(mean({p28, p30, p45, p47, p56})),
+    unit(mean({p34, p36, p50, p52, p60})),
+    unit(mean({p38, p45, p52, p56, p60})),
+    unit(mean({p41, p47, p50, p56, p60}))};
 
-double dodecahedron_inradius = abs(dodecahedron_faces[0]);
-double dodecahedron_midradius = 1.17557 * dodecahedron_inradius;
-double dodecahedron_circumradius = 1.25841 * dodecahedron_inradius;
+double dodecahedron_mr = 1.17557;
+double dodecahedron_cr = 1.25841;
 
 direction icosahedron_faces[] = {
-    mean({p2, p6, p17}),
-    mean({p2, p12, p6}),
-    mean({p2, p17, p37}),
-    mean({p2, p37, p27}),
-    mean({p2, p27, p12}),
-    mean({p37, p54, p27}),
-    mean({p27, p54, p46}),
-    mean({p27, p46, p12}),
-    mean({p12, p46, p31}),
-    mean({p12, p31, p6}),
-    mean({p6, p31, p33}),
-    mean({p6, p33, p17}),
-    mean({p17, p33, p51}),
-    mean({p17, p51, p37}),
-    mean({p37, p51, p54}),
-    mean({p58, p54, p51}),
-    mean({p58, p46, p54}),
-    mean({p58, p31, p46}),
-    mean({p58, p33, p31}),
-    mean({p58, p51, p33})};
+    unit(mean({p2, p6, p17})),
+    unit(mean({p2, p12, p6})),
+    unit(mean({p2, p17, p37})),
+    unit(mean({p2, p37, p27})),
+    unit(mean({p2, p27, p12})),
+    unit(mean({p37, p54, p27})),
+    unit(mean({p27, p54, p46})),
+    unit(mean({p27, p46, p12})),
+    unit(mean({p12, p46, p31})),
+    unit(mean({p12, p31, p6})),
+    unit(mean({p6, p31, p33})),
+    unit(mean({p6, p33, p17})),
+    unit(mean({p17, p33, p51})),
+    unit(mean({p17, p51, p37})),
+    unit(mean({p37, p51, p54})),
+    unit(mean({p58, p54, p51})),
+    unit(mean({p58, p46, p54})),
+    unit(mean({p58, p31, p46})),
+    unit(mean({p58, p33, p31})),
+    unit(mean({p58, p51, p33}))};
 
-double icosahedron_inradius = abs(icosahedron_faces[0]);
-double icosahedron_midradius = 1.07047 * icosahedron_inradius;
-double icosahedron_circumradius = 1.25841 * icosahedron_inradius;
+double icosahedron_mr = 1.07047;
+double icosahedron_cr = 1.25841;
 }
 #endif
 

@@ -44,7 +44,7 @@ color from_hsv(double h, double s, double v)
 {
     if (s == 0) return gray(v);
 
-    h = fmod(h, pi2) * 3 / pi;
+    h = fmod(h, tau) * 3 / pi;
     int i = floor(h);
     double f = h - i;
     double p = v * (1 - s);
@@ -146,7 +146,7 @@ mul_(direction & d, m3 m)
     void
 rot_(direction & d, rotation ro)
 {
-    const direction u = norm(ro.axis);
+    const direction u = unit(ro.axis);
     const double c = std::cos(ro.angle);
     const double s = std::sin(ro.angle);
     const double i = 1 - c;
@@ -328,7 +328,7 @@ object::rot(point at, rotation ro)
 namespace {
 
     direction
-make_norm(model::direction d)
+make_unit(model::direction d)
 {
     normalize(&d);
     return d;
@@ -346,7 +346,7 @@ make_tilt(model::direction d)
     base_arg
 make_base(model::direction d, model::direction x)
 {
-    return { make_norm(x), make_norm(d) };
+    return { make_unit(x), make_unit(d) };
 }
 
     const char * // lifetime: str (in model::world object)
@@ -359,7 +359,7 @@ make(model::plane pl, object_intersection * fi, object_normal * fn, bool inv)
 {
         auto plane_ = alloc<plane>();
         plane_->at = pl.p;
-        plane_->normal = make_norm(pl.d);
+        plane_->normal = make_unit(pl.d);
         *fi = plane_intersection;
         *fn = plane_normal;
         if (inv) {
@@ -422,7 +422,7 @@ make(model::cone co, object_intersection * fi, object_normal * fn, bool inv)
 make(model::parabol pa, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto parabol_ = alloc<parabol>();
-    direction f = make_norm(pa.d);
+    direction f = make_unit(pa.d);
     scale(&f, pa.r * .5);
     *parabol_ = parabol{
         distance_vector(pa.p, point_from_origo(f)),
@@ -680,10 +680,22 @@ void sequence(world_gen_f wg, int n_frames, std::string path, resolution res, un
     for (int i = 0; i < n_frames; i++) {
         std::ostringstream buf{path, std::ostringstream::ate};
         buf << i << ".jpeg";
-        render(wg(i, n_frames), buf.str(), res, n_threads);
+        render(wg(i /(double) n_frames), buf.str(), res, n_threads);
         std::cout << "\r" << i << std::flush;
     }
     std::cout << std::endl;
+}
+
+void main(world_gen_f wg, int argc, char ** argv)
+{
+    const char * path = argc >= 2 ? argv[1] : "";
+
+    if (argc >= 3) {
+        sequence(wg, atoi(argv[2]), path, hdtv, 0);
+    } else {
+        // improve: take opt.float value t
+        render(wg(0.), path, hdtv, 0);
+    }
 }
 
 color photo_base::_get(real x, real y)

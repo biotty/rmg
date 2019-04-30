@@ -1,13 +1,10 @@
-
 #include "world_gen.hpp"
-
 #include <cmath>
 
 using namespace model;
 
-world wgen(int i, int n)
+world wgen(double seqt)
 {
-    double seqt = i /(double) n;
     color glass = from_hsv(red_hue, .2, .9);
 
     object tube{
@@ -43,7 +40,7 @@ world wgen(int i, int n)
         },
     };
 
-    rotation rot{direction_cast(xy(1, 2)), seqt * pi2};
+    rotation rot{direction_cast(xy(1, 2)), seqt * tau};
 
     world r{
         { xy(.1, 2), o, xd * .65 },
@@ -59,8 +56,8 @@ world wgen(int i, int n)
     point beltc = onx(.61);
     for (int k=0; k<n_balls; k++) {
         double j = k /(double) n_balls;
-        point a{ beltc + yzc((j + seqt * n_trips) * pi2) * .5};
-        point b{ beltc + yzc((j - seqt * n_trips) * pi2) * .5};
+        point a{ beltc + yzc((j + seqt * n_trips) * tau) * .5};
+        point b{ beltc + yzc((j - seqt * n_trips) * tau) * .5};
 
         tube.si.push_back(inv_sphere{a, .1});
         r.s.push_back(object{
@@ -85,11 +82,5 @@ world wgen(int i, int n)
 
 int main(int argc, char ** argv)
 {
-    const char * path = argc >= 2 ? argv[1] : "";
-
-    if (argc >= 3) {
-        sequence(wgen, atoi(argv[2]), path, hdtv, 0);
-    } else {
-        render(wgen(0, 1), path, hdtv, 0);
-    }
+    main(wgen, argc, argv);
 }
