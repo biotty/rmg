@@ -34,7 +34,7 @@ cone_intersection(
 
     const real sq_absxy = square(t.endpoint.x) + square(t.endpoint.y);
     const real a = square(t.head.z) - square(t.head.x) - square(t.head.y);
-    if (a == 0) { // parallell to some line on the surface
+    if (a == 0) { // parallel to some line on the surface
         const real sqrt2 = 1.4142135623730950488016887242096981L;
         const real absxy = sqrt(sq_absxy);
         const real z = t.endpoint.z;
@@ -45,7 +45,7 @@ cone_intersection(
     }
     const real b = 2 * (t.endpoint.z * t.head.z - t.endpoint.x * t.head.x - t.endpoint.y * t.head.y);
     const real c = square(t.endpoint.z) - sq_absxy;
-    // positive a means head intersects (out, in); has z stronger than xy-plane projection
+    // positive a means head intersects (out, in); has z greater than xy-plane projection
     // positive b means head counters normal; along hyperbolic field that enters surface
     // positive c means endpoint is inside
     return quadratic(a, b, c);

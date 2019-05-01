@@ -1,5 +1,4 @@
 #include "world_gen.hpp"
-#include <cmath>
 
 using namespace model;
 

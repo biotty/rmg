@@ -1,11 +1,11 @@
-CXXFLAGS := -Wall -Wextra -Werror -std=c++17 -pedantic -O3
-CFLAGS := -Wall -Wextra -Werror -std=c11 -pedantic -O3
+CXXFLAGS := -Wall -Wextra -Werror -std=c++17 -pedantic -O3 -I.
+CFLAGS := -Wall -Wextra -Werror -std=c11 -pedantic -O3 -I.
 LDFLAGS := -lm -pthread
 
 rayt: rayt.o librayt.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-example: example.o librayt.a
+example: examples/belt_tube.o librayt.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 librayt.a: world_gen.o mapping.o inter.o sphere.o plane.o cylinder.o \
