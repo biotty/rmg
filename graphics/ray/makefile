@@ -1,20 +1,25 @@
-CXXFLAGS := -Wall -Wextra -Werror -std=c++17 -pedantic -O3 -I.
-CFLAGS := -Wall -Wextra -Werror -std=c11 -pedantic -O3 -I.
+CXXFLAGS := -Wall -Wextra -Werror -std=c++17 -pedantic -O3
+CFLAGS := -Wall -Wextra -Werror -std=c11 -pedantic -O3
 LDFLAGS := -lm -pthread
 
-rayt: rayt.o librayt.a
+rayt: main.o librayt.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-example: examples/belt_tube.o librayt.a
+#demo: examples/belt_tube.o librayt.a
+EXAMPLE ?= belt_tube
+demo: examples/$(EXAMPLE).o librayt.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-librayt.a: world_gen.o mapping.o inter.o sphere.o plane.o cylinder.o \
+examples/%.o: examples/%.cpp
+	$(CXX) -o $@ -c $< $(CXXFLAGS) -I.
+
+librayt.a: rayt.o mapping.o inter.o sphere.o plane.o cylinder.o \
   cone.o parabol.o hyperbol.o saddle.o scene.o render.o sky.o \
   direction.o point.o ray.o color.o photo.o image.o \
   matrix.o trace.o
 	ar rc $@ $^
 
-world_gen.o:world_gen.hpp
+rayt.o:     rayt.hpp
 mapping.o:  mapping.h
 inter.o:    inter.h
 sphere.o:   sphere.h
@@ -38,8 +43,8 @@ image.o:    image.h
 
 .PHONY:
 clean:
-	@rm -f *.o
+	@rm -f *.o examples/*.o
 
 .PHONY:
 sweep: clean
-	@rm -f rayt example librayt.a
+	@rm -f rayt demo librayt.a

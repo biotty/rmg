@@ -12,13 +12,13 @@ heavy_media: video.mp4 fluid.mp4 mandelbrot.mp4
 flow/fluid flow/wave: ray/librayt.a
 	@$(MAKE) -C flow $(notdir $@)
 
-ray/rayt ray/example ray/librayt.a:
+ray/rayt ray/demo ray/librayt.a:
 	@$(MAKE) -C ray $(notdir $@)
 
-0.jpeg: ray/example
-	$< '' 1
+image.jpeg: ray/demo
+	$< $@
 
-video.mp4: ray/example
+video.mp4: ray/demo
 	./movie_exec.sh $@ "$< {}/ 256"
 
 fluidwave.mp4: flow/sh flow/fluid flow/wave map.jpeg

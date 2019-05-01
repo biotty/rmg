@@ -257,5 +257,40 @@ struct photo_sky : photo_base {
     color operator()(direction d);
 };
 
+namespace /* model:: */ solids {
+
+constexpr double g = 1.61803398875;  // golden-ratio
+constexpr double g2 = 2.618033988750235;  // golden-ratio ^ 2
+constexpr double g3 = 4.236067977500615;  // golden-ratio ^ 3
+
+static inline direction mean(std::initializer_list<direction> list)
+{
+    point mean = o;
+    for (direction d : list) {
+        mean += d;
+    }
+    return direction_cast(mean) * (1.0 / list.size());
+}
+
+extern direction tetrahedron_faces[4];
+constexpr double tetrahedron_mr = 1.7321;
+constexpr double tetrahedron_cr = 3;
+
+extern direction cube_faces[6];
+constexpr double cube_mr = 1.41422;
+constexpr double cube_cr = 1.7321;
+
+extern direction octahedron_faces[8];
+constexpr double octahedron_mr = 1.2248;
+constexpr double octahedron_cr = 1.7321;
+
+extern direction dodecahedron_faces[12];
+constexpr double dodecahedron_mr = 1.17557;
+constexpr double dodecahedron_cr = 1.25841;
+
+extern direction icosahedron_faces[20];
+constexpr double icosahedron_mr = 1.07047;
+constexpr double icosahedron_cr = 1.25841;
+}
 }
 #endif
