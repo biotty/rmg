@@ -759,7 +759,7 @@ direction p56{ 0 , g ,-g3};
 direction p58{-g2, 0 ,-g3};
 direction p60{ 0 ,-g ,-g3};
 
-direction tetrahedron_faces[4] = {
+direction tetra_faces[4] = {
         unit(mean({p4, p34, p47})),
         unit(mean({p4, p38, p34})),
         unit(mean({p4, p47, p38})),
@@ -773,7 +773,7 @@ direction cube_faces[6] = {
     unit(mean({p23, p34, p47, p60})),
     unit(mean({p18, p34, p38, p60}))};
 
-direction octahedron_faces[8] = {
+direction octa_faces[8] = {
     unit(mean({p7, p10, p43})),
     unit(mean({p7, p22, p10})),
     unit(mean({p7, p43, p49})),
@@ -783,7 +783,7 @@ direction octahedron_faces[8] = {
     unit(mean({p55, p43, p49})),
     unit(mean({p55, p49, p22}))};
 
-direction dodecahedron_faces[12] = {
+direction dodeca_faces[12] = {
     unit(mean({p4, p8, p11, p18, p20})),
     unit(mean({p4, p8, p13, p16, p23})),
     unit(mean({p4, p11, p13, p28, p30})),
@@ -797,7 +797,7 @@ direction dodecahedron_faces[12] = {
     unit(mean({p38, p45, p52, p56, p60})),
     unit(mean({p41, p47, p50, p56, p60}))};
 
-direction icosahedron_faces[20] = {
+direction icosa_faces[20] = {
     unit(mean({p2, p6, p17})),
     unit(mean({p2, p12, p6})),
     unit(mean({p2, p17, p37})),

@@ -8,7 +8,7 @@
 
 constexpr bool debug = false;
 constexpr bool verbose = false;
-constexpr int max_hops = 11;
+constexpr int max_hops = 14;
 constexpr bool transparent_on_equal_index = true;
 constexpr bool eliminate_direct_sky = false;
 constexpr color DIRECT_SKY = {.8, .8, .8};

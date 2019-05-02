@@ -272,25 +272,25 @@ static inline direction mean(std::initializer_list<direction> list)
     return direction_cast(mean) * (1.0 / list.size());
 }
 
-extern direction tetrahedron_faces[4];
-constexpr double tetrahedron_mr = 1.7321;
-constexpr double tetrahedron_cr = 3;
+extern direction tetra_faces[4];
+constexpr double tetra_mr = 1.7321;
+constexpr double tetra_cr = 3;
 
 extern direction cube_faces[6];
 constexpr double cube_mr = 1.41422;
 constexpr double cube_cr = 1.7321;
 
-extern direction octahedron_faces[8];
-constexpr double octahedron_mr = 1.2248;
-constexpr double octahedron_cr = 1.7321;
+extern direction octa_faces[8];
+constexpr double octa_mr = 1.2248;
+constexpr double octa_cr = 1.7321;
 
-extern direction dodecahedron_faces[12];
-constexpr double dodecahedron_mr = 1.17557;
-constexpr double dodecahedron_cr = 1.25841;
+extern direction dodeca_faces[12];
+constexpr double dodeca_mr = 1.17557;
+constexpr double dodeca_cr = 1.25841;
 
-extern direction icosahedron_faces[20];
-constexpr double icosahedron_mr = 1.07047;
-constexpr double icosahedron_cr = 1.25841;
+extern direction icosa_faces[20];
+constexpr double icosa_mr = 1.07047;
+constexpr double icosa_cr = 1.25841;
 }
 }
 #endif
