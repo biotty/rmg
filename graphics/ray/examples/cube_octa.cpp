@@ -12,18 +12,18 @@ using namespace model;
 world wgen(double seqt)
 {
     const optics poly_o{
-        gray(.2),
+        gray(.15),
         black,
         glass_ri,
         from_hsv(blue_hue, .2, .85),
         from_hsv(blue_hue, .3, .98)
     };
     const optics ball_o{
-        gray(.3),
+        {.2, .1, .1},
         black,
-        water_ri,
+        oil_ri,
         white,
-        gray(.4)
+        {.7, .2, .1}
     };
     struct indicator_optics : optics {
         indicator_optics(double hue)
@@ -67,8 +67,8 @@ world wgen(double seqt)
         cube_octa.si.push_back(cube_pl);
     }
 
-    const double eye_angle = pi * seqt + .1;
-    object ball{ { sphere{o +- xyc(eye_angle) * .3, .4} }, ball_o, {} };
+    const double eye_angle = pi * seqt + .2;
+    object ball{ { sphere{o +- xyc(eye_angle + .5) * .25, .25} }, ball_o, {} };
     const double scale = 1. / solids::octa_cr;
     rotation object_orientation{ poly_rotation_axis, seqt * tau };
     cube = cube.mul(o, scale * (1 - TINY_REAL)).rot(o, object_orientation);
@@ -79,8 +79,8 @@ world wgen(double seqt)
         observer{ o + xyc(eye_angle), o, xyc(eye_angle + pi * .5) },
         [](direction d) -> color {
             const double k = .5
-                * std::clamp(std::abs(d.y - .1) * 98, 0., 1.)
-                * std::clamp((.1 - d.z) * 98, 0., 1.);
+                * std::clamp(std::abs(d.y - .05) * 94., 0., 1.)
+                * std::clamp(std::abs(d.z - .45) * 1.9, 0., 1.);
             return {
                 (d.x + 1) * k,
                 (d.y + 1) * k,

@@ -65,7 +65,7 @@ world wgen(double seqt)
     struct {
         object operator()(int i) {
             return {
-                { sphere{b + t * (i - 5) * .15 + zd * .2 * (i % 2), .018 * (i + 5)} },
+                { sphere{b + t * (i - 3) * .15 + zd * .2 * (i % 2), .018 * (i + 5)} },
                 indicator_optics{linear(green_hue, blue_hue,  .3 * i)},
                 {} };
         }
@@ -90,11 +90,8 @@ world wgen(double seqt)
                 (1 + d.x)};
         },
         {
-            ball(0),
-            ball(1),
-            ball(3),
-            ball(4),
-            ball(5), dodeca_icosa, icosa, dodeca, }, {}
+            ball(0), ball(1), ball(3), ball(4), ball(5),
+            dodeca_icosa, icosa, dodeca, }, {}
     };
 }
 

@@ -5,7 +5,6 @@ LDFLAGS := -lm -pthread
 rayt: main.o librayt.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-#demo: examples/belt_tube.o librayt.a
 EXAMPLE ?= belt_tube
 demo: examples/$(EXAMPLE).o librayt.a
 	$(CXX) -o $@ $^ $(LDFLAGS)

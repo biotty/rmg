@@ -43,11 +43,15 @@ constexpr color blue {0, 0, 1};
 constexpr color white{1, 1, 1};
 constexpr color black{0, 0, 0};
 constexpr double water_ri{1.3};
+constexpr double oil_ri{1.46};
 constexpr double glass_ri{1.6};
 constexpr double diamond_ri{2.4};
+constexpr double silicon_ri{3.46};
 constexpr double red_hue{0};
+constexpr double yellow_hue{pi / 3};
 constexpr double green_hue{tau / 3};
 constexpr double blue_hue{2 * tau / 3};
+constexpr double ultra_hue{tau};
 color operator+(color p, color q);
 color operator*(color p, color filter);
 inline color operator*(color p, double u) { return p * gray(u); }
@@ -291,6 +295,10 @@ constexpr double dodeca_cr = 1.25841;
 extern direction icosa_faces[20];
 constexpr double icosa_mr = 1.07047;
 constexpr double icosa_cr = 1.25841;
+
+extern direction trunctetra_faces[8];
+constexpr double trunctetra_mr = 1.7320508075688776;
+constexpr double trunctetra_cr = 1.9148542155126764;
 }
 }
 #endif

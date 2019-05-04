@@ -818,5 +818,16 @@ direction icosa_faces[20] = {
     unit(mean({p58, p31, p46})),
     unit(mean({p58, p33, p31})),
     unit(mean({p58, p51, p33}))};
+
+direction trunctetra_faces[8] = {
+    octa_faces[0],
+    octa_faces[1] * (5 / 3.),
+    octa_faces[2] * (5 / 3.),
+    octa_faces[3],
+    octa_faces[4] * (5 / 3.),
+    octa_faces[5],
+    octa_faces[6],
+    octa_faces[7] * (5 / 3.)};
+
 }
 }
