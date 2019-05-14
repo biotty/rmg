@@ -18,6 +18,7 @@
 #include "sky.h"
 
 #include <cmath>
+#include <unistd.h>
 #include <sstream>
 #include <iostream>
 #include <type_traits>
@@ -686,16 +687,53 @@ void sequence(world_gen_f wg, int n_frames, std::string path, resolution res, un
     std::cout << std::endl;
 }
 
+static resolution parse_resolution(char *s)
+{
+    resolution r;
+    if (2 != sscanf(s, "%ux%u", &r.width, &r.height)
+            || r.width == 0 || r.height == 0
+            || r.width > 99999 || r.height > 99999) {
+        r = hdtv;
+        std::cerr << "using resolution " << s << "\n";
+    }
+    return r;
+}
+
 void main(world_gen_f wg, int argc, char ** argv)
 {
-    const char * path = argc >= 2 ? argv[1] : "";
-
-    if (argc >= 3) {
-        sequence(wg, atoi(argv[2]), path, hdtv, 0);
-    } else {
-        // improve: take opt.float value t
-        render(wg(0.), path, hdtv, 0);
+    const char * path = "";
+    resolution r = hdtv;
+    double t = 0;
+    int n = 0;
+    int j = 0;
+    int opt;
+    while ((opt = getopt(argc, argv, "j:n:r:t:")) != -1) {
+        switch (opt) {
+        case 'n':
+            n = atoi(optarg);
+            break;
+        case 'r':
+            r = parse_resolution(optarg);
+            break;
+        case 't':
+            t = atof(optarg);
+            break;
+        case 'j':
+            j = atoi(optarg);
+            if (j > 64) {
+                j = 64;
+                std::cerr << "clamping to " << j << " threads\n";
+            }
+            break;
+        default:
+            std::cerr << "Usage: %s [-j jobs] [-n frames]  [-r WxH] [-t 0..1] [path]";
+            exit(EXIT_FAILURE);
+        }
     }
+    if (optind < argc) path = argv[optind];
+
+    if (n) sequence(wg, n, path, r, 0);
+    else render(wg(t), path, r, 0);
 }
 
 color photo_base::_get(real x, real y)

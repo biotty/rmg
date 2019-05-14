@@ -90,7 +90,7 @@ world wgen(double seqt)
                 (1 + d.x)};
         },
         {
-            ball(0), ball(1), ball(3), ball(4), ball(5),
+            ball(2), ball(3), ball(4), ball(5),
             dodeca_icosa, icosa, dodeca, }, {}
     };
 }

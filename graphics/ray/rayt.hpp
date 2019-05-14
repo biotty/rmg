@@ -21,7 +21,7 @@ using direction = ::direction;
 inline point point_cast(direction d) { return ::point_from_origo(d); }
 inline direction direction_cast(point p) { return ::direction_from_origo(p); }
 struct rotation { direction axis; double angle; };
-struct resolution { int width; int height; };
+struct resolution { unsigned width; unsigned height; };
 constexpr resolution hdtv{1920, 1080};
 constexpr double pi{3.14159265358979};
 constexpr double tau{pi * 2};

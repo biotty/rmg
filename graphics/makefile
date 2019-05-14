@@ -19,7 +19,7 @@ image.jpeg: ray/demo
 	$< $@
 
 video.mp4: ray/demo
-	./movie_exec.sh $@ "$< {}/ 256"
+	./movie_exec.sh $@ "$< -n 256 {}/"
 
 fluidwave.mp4: flow/sh flow/fluid flow/wave map.jpeg
 	$< map.jpeg $@
