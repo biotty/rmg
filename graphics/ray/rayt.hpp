@@ -281,12 +281,12 @@ constexpr double tetra_mr = 1.7321;
 constexpr double tetra_cr = 3;
 
 extern direction cube_faces[6];
-constexpr double cube_mr = 1.41422;
-constexpr double cube_cr = 1.7321;
+constexpr double cube_mr = 1.4142135623730951;
+constexpr double cube_cr = 1.7320508075688772;
 
 extern direction octa_faces[8];
-constexpr double octa_mr = 1.2248;
-constexpr double octa_cr = 1.7321;
+constexpr double octa_mr = 1.2247448713915892;
+constexpr double octa_cr = 1.7320508075688772;
 
 extern direction dodeca_faces[12];
 constexpr double dodeca_mr = 1.17557;
@@ -297,8 +297,26 @@ constexpr double icosa_mr = 1.07047;
 constexpr double icosa_cr = 1.25841;
 
 extern direction trunctetra_faces[8];
-constexpr double trunctetra_mr = 1.7320508075688776;
 constexpr double trunctetra_cr = 1.9148542155126764;
-}
-}
+
+extern direction truncocta_faces[14];
+constexpr double truncocta_cr = 2; // todo
+
+extern direction cubocta_faces[14];
+constexpr double cubocta_cr = 1.4142135623730951;
+
+extern direction trunccube_faces[14];
+constexpr double trunccube_cr = 2; // todo
+
+extern direction truncdodeca_faces[32];
+constexpr double truncdodeca_cr = 2; // todo
+
+extern direction icosadodeca_faces[32];
+constexpr double icosadodeca_cr = 2; // todo
+
+extern direction truncicosa_faces[32];
+constexpr double truncicosa_cr = 2; // todo
+
+} // solids
+} // model
 #endif
