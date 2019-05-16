@@ -277,7 +277,7 @@ static inline direction mean(std::initializer_list<direction> list)
 }
 
 extern direction tetra_faces[4];
-constexpr double tetra_mr = 1.7321;
+constexpr double tetra_mr = 1.7320508075688772;
 constexpr double tetra_cr = 3;
 
 extern direction cube_faces[6];
@@ -289,33 +289,33 @@ constexpr double octa_mr = 1.2247448713915892;
 constexpr double octa_cr = 1.7320508075688772;
 
 extern direction dodeca_faces[12];
-constexpr double dodeca_mr = 1.17557;
-constexpr double dodeca_cr = 1.25841;
+constexpr double dodeca_mr = 1.1755705045849463;
+constexpr double dodeca_cr = 1.258408572364819;
 
 extern direction icosa_faces[20];
-constexpr double icosa_mr = 1.07047;
-constexpr double icosa_cr = 1.25841;
+constexpr double icosa_mr = 1.07046626931927;
+constexpr double icosa_cr = 1.258408572364819;
 
 extern direction trunctetra_faces[8];
 constexpr double trunctetra_cr = 1.9148542155126764;
 
 extern direction truncocta_faces[14];
-constexpr double truncocta_cr = 2; // todo
+constexpr double truncocta_cr = 1.2909938468095037;
 
 extern direction cubocta_faces[14];
 constexpr double cubocta_cr = 1.4142135623730951;
 
 extern direction trunccube_faces[14];
-constexpr double trunccube_cr = 2; // todo
+constexpr double trunccube_cr = 1.082392200292394;
 
 extern direction truncdodeca_faces[32];
-constexpr double truncdodeca_cr = 2; // todo
+constexpr double truncdodeca_cr = 1.0929472010050334;
 
 extern direction icosadodeca_faces[32];
-constexpr double icosadodeca_cr = 2; // todo
+constexpr double icosadodeca_cr = 1.1755743793385014;
 
 extern direction truncicosa_faces[32];
-constexpr double truncicosa_cr = 2; // todo
+constexpr double truncicosa_cr = 1.1940511957861941;
 
 } // solids
 } // model
