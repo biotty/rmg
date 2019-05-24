@@ -6,6 +6,11 @@
 #include <cassert>
 #include <iostream>
 
+int trace_max_hops = 14;
+bool trace_eliminate_direct_sky = false;
+color trace_direct_sky = {.8, .8, .8};
+bool trace_transparent_on_equal_index = true;
+
 world::world(scene_sky sky, del_f inter_f, del_f decoration_f)
     : sky(sky), del_inter(inter_f), del_decoration(decoration_f)
 {}
@@ -28,7 +33,7 @@ static color ray_trace(detector &, ray, const world &);
 trace(ray t, const world & w)
 {
     const size_t q = w.scene_.size();
-    detector detector_{max_hops, {1, 1, 1}, bitarray(q)};
+    detector detector_{trace_max_hops, {1, 1, 1}, bitarray(q)};
     init_inside(detector_.inside, w.scene_, &t);
     if (debug && firstset(detector_.inside) >= 0)
         std::cerr << "initial detector is at inside of "
@@ -148,13 +153,13 @@ refraction_trace(ray ray_, const scene_object * so,
             = w.scene_[outside_i].optics.refraction_index;
         if (0 == outside_refraction_index) {
             if (debug) {
-                if (detector_.hop != max_hops)  // <-- view MAY be inside
+                if (detector_.hop != trace_max_hops)  // <-- view MAY be inside
                     std::cerr << "we got inside opaque object " << i << "\n";
             }
             return opaque;
         }
     }
-    if (transparent_on_equal_index
+    if (trace_transparent_on_equal_index
             && so->decoration == nullptr
             && outside_refraction_index
             == optics_refraction_index) {
@@ -181,8 +186,8 @@ refraction_trace(ray ray_, const scene_object * so,
     static color
 sky(detector & detector_, direction d, scene_sky f)
 {
-    if (eliminate_direct_sky && detector_.hop == max_hops)
-        return DIRECT_SKY;
+    if (trace_eliminate_direct_sky && detector_.hop == trace_max_hops)
+        return trace_direct_sky;
 
     return f(d);
 }
