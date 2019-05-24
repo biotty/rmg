@@ -319,15 +319,15 @@ def quadr(o, p):
 
 
 class Tracker:
-    def __init__(self, p, s, dim, atoms, vh, ah):
-        self.p = self.init_p = p
-        self.s = s
+    def __init__(self, dim, atoms, vh, ah):
+        self.p = self.init_p = XY(0, dim.y * .3)
+        self.s = s = dim.y * o.tracker
         self.sf = dim * .5 - XY(s, s)
         self.atoms = atoms
         self.v = XY(0, 0)
         self.vh = vh
         self.ah = ah
-        self.ideal_count = s * s * .6
+        self.ideal_count = s * s * .3
 
     def quadr(self, p):
         min_x = self.p.x - self.s
@@ -379,7 +379,7 @@ class Lab:
         self.delta_t = t_per_frame / self.stride
         self.zoom = XY(1 / dim.x, 1 / dim.y)
         if o.tracker:
-            self.tracker = Tracker(XY(0, dim.y * .3), dim.y * .1, dim, self.atoms, 1, .05)
+            self.tracker = Tracker(dim, self.atoms, 1, .07)
         else:
             self.tracker = None
 
@@ -510,12 +510,16 @@ class Overlay:
 
 
 class RollWriter:
-    def __init__(self, width, height, outfile, overlay):
+    def __init__(self, width, height, overlay, path, i):
+        self.outfile = os.popen("pnmtojpeg > %s%d.jpeg" % (path, i), "w")
+        s = "P6\n%d %d 255\n" % (width, height)
+        self.outfile.buffer.write(bytes(s, 'ascii'))
+        roll_h = height // 40
+        assert height % roll_h == 0
+        self.lines = [[black] * width for _ in range(roll_h)]
         self.width = width
-        self.height = height
+        self.height = roll_h
         self.offset = 0
-        self.lines = [[black] * width for _ in range(height)]
-        self.outfile = outfile
         self.overlay = overlay
 
     def advance(self, i):
@@ -573,15 +577,9 @@ class Exporter:
 
 class Frame:
     def __init__(self, width, height, bulb, overlay, path, i):
-        name = "%s%d.jpeg" % (path, i)
-        f = os.popen("pnmtojpeg >" + name, "w")
-        s = "P6\n%d %d 255\n" % (width, height)
-        f.buffer.write(bytes(s, 'ascii'))
         self.dim = XY(width, height)
-        roll_h = height // 20
-        assert height % roll_h == 0
-        self.roll = RollWriter(width, roll_h, f, overlay)
         self.bulb = bulb
+        self.roll = RollWriter(width, height, overlay, path, i) if o.roll else None
         self.exporter = Exporter(path, i) if o.export else None
 
     def _pixel(self, p):
@@ -595,28 +593,31 @@ class Frame:
             j = self.dim.x - 1
         return i, j
 
-    def put(self, p, hue6, a):
+    def put_bulb(self, p, hue, a):
         bus = [atan2(b.p.y - a.p.y, b.p.x - a.p.x) for b in a.bond]
         # note: other coordinate base, but angles hold
         i, j = self._pixel(p)
-        i -= self.roll.advance(i + bulb.r)
-        for q, (y, x) in enumerate(bulb.offsets):
-            if not bulb.v_bond[q]:
+        i -= self.roll.advance(i + self.bulb.r)
+        for q, (y, x) in enumerate(self.bulb.offsets):
+            if not self.bulb.v_bond[q]:
                 continue  # assume: bond zero ==> bare zero
             for b in bus:
-                if abs(anglediff(bulb.angles[q], b)) < pi/12:
-                    values = bulb.v_bond
+                if abs(anglediff(self.bulb.angles[q], b)) < pi/12:
+                    values = self.bulb.v_bond
                     break
             else:
-                values = bulb.v_bare
-            hue = (hue6 % 6) * pi/3
+                values = self.bulb.v_bare
             c = Color.from_hsv(hue, 1, values[q]) if a.m_inv != 1 else Color.gray(values[q])
             self.roll.add_el(i + y, j + x, c)
+
+    def put(self, p, hue6, a):
+        hue = (hue6 % 6) * pi/3
+        if self.roll: self.put_bulb(p, hue, a)
         if self.exporter and a.m_inv != 1:
             self.exporter.put_atom(p, hue, a)
 
     def close(self):
-        self.roll.close(self.dim.y)
+        if self.roll: self.roll.close(self.dim.y)
         if self.exporter: self.exporter.close()
 
     def mark_tracker(self, tr, scale_f):
@@ -649,12 +650,13 @@ cast_r = 5.5
 opts = OptionParser()
 opts.add_option("-e", "--height", type="float", default=160)
 opts.add_option("-o", "--out-prefix", type="string", default="")
-opts.add_option("-n", "--frame-count", type="int", default=736)
+opts.add_option("-n", "--frame-count", type="int", default=800)
 opts.add_option("-r", "--resolution", type="string", default="1280x720")
-opts.add_option("-s", "--start-t", type="float", default=40)
-opts.add_option("-t", "--stop-t", type="float", default=400)
-opts.add_option("-x", "--tracker", action="store_true")
-opts.add_option("-m", "--export", action="store_true")
+opts.add_option("-s", "--start-t", type="float", default=30)
+opts.add_option("-t", "--stop-t", type="float", default=300)
+opts.add_option("-j", "--no-jpeg", dest="roll", action="store_false", default=True)
+opts.add_option("-x", "--export", action="store_true")
+opts.add_option("-f", "--tracker", type="float")
 # value: height in physical spatial units; at scale of span of atom
 # note: t -- a lab-time unit behaves nicely played in about 1/8 sec
 o, a = opts.parse_args()
@@ -674,5 +676,5 @@ lab = Lab(XY(_w, _h), par, t_per_frame,
         Blend(_h * .16, _h * .2, int(rnd(250, 350)), rnd(5, 9)),
         Spoon(rnd(.09, .15), _h * .35, rnd(.04, .07), _h * .15, par.bounce_c, 1),
         Fork(XY(_w, _h) * .46, XY(.19416, .12) * _h, rnd(3, 6), par.bounce_c, 1),
-        Hue6Shift(_w, rnd(.5, .9)), printer)
+        Hue6Shift(_w, rnd(.1, .3)), printer)
 lab.run(o.frame_count)

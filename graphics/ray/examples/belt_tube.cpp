@@ -1,6 +1,6 @@
 #include "rayt.hpp"
 
-using namespace model;
+using namespace rayt;
 
 world wgen(double seqt)
 {
@@ -81,5 +81,5 @@ world wgen(double seqt)
 
 int main(int argc, char ** argv)
 {
-    main(wgen, argc, argv);
+    args(argc, argv).run(wgen);
 }

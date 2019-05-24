@@ -1,7 +1,7 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
-#ifndef MODEL_HPP
-#define MODEL_HPP
+#ifndef RAYT_HPP
+#define RAYT_HPP
 
 #include "sky.h"
 struct photo;
@@ -12,7 +12,7 @@ struct photo;
 #include <optional>
 #include <functional>
 
-namespace model {
+namespace rayt {
 
 using m3 = std::array<double, 9>;
 using color = ::color;
@@ -244,7 +244,11 @@ struct world {
 using world_gen_f = std::function<world(double)>;
 void render(const world & w, std::string path, resolution, unsigned n_threads);
 void sequence(world_gen_f wg, int nw, std::string path, resolution, unsigned n_threads);
-void main(world_gen_f wg, int argc, char **argv);
+struct args {
+    const char * path = ""; resolution r = hdtv; double t = 0; int n = 0, j = 0;
+    args(int argc, char ** argv);
+    void run(world_gen_f wg);
+};
 
 class photo_base {
     photo * ph;
@@ -261,7 +265,7 @@ struct photo_sky : photo_base {
     color operator()(direction d);
 };
 
-namespace /* model:: */ solids {
+namespace /* rayt:: */ solids {
 
 constexpr double g = 1.61803398875;  // golden-ratio
 constexpr double g2 = 2.618033988750235;  // golden-ratio ^ 2
@@ -318,5 +322,5 @@ extern direction truncicosa_faces[32];
 constexpr double truncicosa_cr = 1.1940511957861941;
 
 } // solids
-} // model
+} // rayt
 #endif

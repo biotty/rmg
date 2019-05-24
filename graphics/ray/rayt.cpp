@@ -23,7 +23,7 @@
 #include <iostream>
 #include <type_traits>
 
-namespace model {
+namespace rayt {
 
 color operator+(color p, color q)
 {
@@ -329,14 +329,14 @@ object::rot(point at, rotation ro)
 namespace {
 
     direction
-make_unit(model::direction d)
+make_unit(rayt::direction d)
 {
     normalize(&d);
     return d;
 }
 
     tilt_arg
-make_tilt(model::direction d)
+make_tilt(rayt::direction d)
 {
     tilt_arg rota;
     real ignore_r;
@@ -345,18 +345,18 @@ make_tilt(model::direction d)
 }
 
     base_arg
-make_base(model::direction d, model::direction x)
+make_base(rayt::direction d, rayt::direction x)
 {
     return { make_unit(x), make_unit(d) };
 }
 
-    const char * // lifetime: str (in model::world object)
-make(const model::str & s) {
+    const char * // lifetime: str (in rayt::world object)
+make(const rayt::str & s) {
     return s.c_str();
 }
 
     void *
-make(model::plane pl, object_intersection * fi, object_normal * fn, bool inv)
+make(rayt::plane pl, object_intersection * fi, object_normal * fn, bool inv)
 {
         auto plane_ = alloc<plane>();
         plane_->at = pl.p;
@@ -370,7 +370,7 @@ make(model::plane pl, object_intersection * fi, object_normal * fn, bool inv)
 }
 
     void *
-make(model::sphere sp, object_intersection * fi, object_normal * fn, bool inv)
+make(rayt::sphere sp, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto sphere_ = alloc<sphere>();
     sphere_->center = sp.p;
@@ -386,7 +386,7 @@ make(model::sphere sp, object_intersection * fi, object_normal * fn, bool inv)
 }
 
     void *
-make(model::cylinder cy, object_intersection * fi, object_normal * fn, bool inv)
+make(rayt::cylinder cy, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto cylinder_ = alloc<cylinder>();
     *cylinder_ = cylinder{
@@ -403,7 +403,7 @@ make(model::cylinder cy, object_intersection * fi, object_normal * fn, bool inv)
 }
 
     void *
-make(model::cone co, object_intersection * fi, object_normal * fn, bool inv)
+make(rayt::cone co, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto cone_ = alloc<cone>();
     *cone_ = cone{
@@ -420,7 +420,7 @@ make(model::cone co, object_intersection * fi, object_normal * fn, bool inv)
 }
 
     void *
-make(model::parabol pa, object_intersection * fi, object_normal * fn, bool inv)
+make(rayt::parabol pa, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto parabol_ = alloc<parabol>();
     direction f = make_unit(pa.d);
@@ -439,7 +439,7 @@ make(model::parabol pa, object_intersection * fi, object_normal * fn, bool inv)
 }
 
     void *
-make(model::hyperbol hy, object_intersection * fi, object_normal * fn, bool inv)
+make(rayt::hyperbol hy, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto hyperbol_ = alloc<hyperbol>();
     *hyperbol_ = hyperbol{
@@ -456,7 +456,7 @@ make(model::hyperbol hy, object_intersection * fi, object_normal * fn, bool inv)
 }
 
     void *
-make(model::saddle sa, object_intersection * fi, object_normal * fn, bool inv)
+make(rayt::saddle sa, object_intersection * fi, object_normal * fn, bool inv)
 {
     auto saddle_ = alloc<saddle>();
     *saddle_ = saddle{
@@ -473,7 +473,7 @@ make(model::saddle sa, object_intersection * fi, object_normal * fn, bool inv)
 }
 
     void *
-make(model::shape sh, object_intersection * fi, object_normal * fn)
+make(rayt::shape sh, object_intersection * fi, object_normal * fn)
 {
     // note: different overload(/name) prevents that if function for variant-
     //       alternative is omitted by mistake then we get compile error
@@ -481,7 +481,7 @@ make(model::shape sh, object_intersection * fi, object_normal * fn)
     //       match via implicit conversion by variant constructor
     void * ret;
     std::visit([&ret, fi, fn](auto arg) {
-            constexpr bool inv = std::is_base_of<model::inv_shape, decltype(arg)>::value;
+            constexpr bool inv = std::is_base_of<rayt::inv_shape, decltype(arg)>::value;
             ret = make(arg, fi, fn, inv);
             }, sh);
     return ret;
@@ -490,15 +490,15 @@ make(model::shape sh, object_intersection * fi, object_normal * fn)
     void *
 member_get(object_intersection * fi, object_normal * fn, void * state)
 {
-    auto pp = static_cast<model::shape **>(state);
+    auto pp = static_cast<rayt::shape **>(state);
     return make(*(*pp)++, fi, fn);
 }
 
     void *
-make(model::inter in, object_intersection * fi, object_normal * fn, world & owner_)
+make(rayt::inter in, object_intersection * fi, object_normal * fn, world & owner_)
 {
     const size_t n = in.size();
-    model::shape * ptr = &in[0];
+    rayt::shape * ptr = &in[0];
     if (n == 0) return nullptr;
 
     void * ret;
@@ -513,7 +513,7 @@ make(model::inter in, object_intersection * fi, object_normal * fn, world & owne
 }
 
     texture_application
-make(model::surface s)
+make(rayt::surface s)
 {
     return {
         s.reflection,
@@ -523,56 +523,56 @@ make(model::surface s)
 }
 
     void *
-make(model::angular tx, object_decoration * df)
+make(rayt::angular tx, object_decoration * df)
 {
     return angular_texture_mapping(df, make_base(tx.d, tx.x),
             tx.r, make(tx.n), make(tx.s));
 }
 
     void *
-make(model::planar tx, object_decoration * df)
+make(rayt::planar tx, object_decoration * df)
 {
     return planar_texture_mapping(df, make_base(tx.d, tx.x),
             tx.r, tx.p, make(tx.n), make(tx.s));
 }
 
     void *
-make(model::planar1 tx, object_decoration * df)
+make(rayt::planar1 tx, object_decoration * df)
 {
     return planar1_texture_mapping(df, make_base(tx.d, tx.x),
             tx.r, tx.p, make(tx.n), make(tx.s));
 }
 
     void *
-make(model::relative tx, object_decoration * df)
+make(rayt::relative tx, object_decoration * df)
 {
     return relative_texture_mapping(df, make_base(tx.d, tx.x),
             tx.r, tx.p, make(tx.n), make(tx.s));
 }
 
     void *
-make(model::axial tx, object_decoration * df)
+make(rayt::axial tx, object_decoration * df)
 {
     return axial_texture_mapping(df, make_base(tx.d, tx.x),
             tx.r, tx.p, make(tx.n), make(tx.s));
 }
 
     void *
-make(model::axial1 tx, object_decoration * df)
+make(rayt::axial1 tx, object_decoration * df)
 {
     return axial1_texture_mapping(df, make_base(tx.d, tx.x),
             tx.r, tx.p, make(tx.n), make(tx.s));
 }
 
     compact_color
-make_c(model::color c)
+make_c(rayt::color c)
 { return z_filter(c); }
 
 struct surface_decoration_arg {
     point o;
     real r;
     base_arg base;
-    model::surface_f const & f;
+    rayt::surface_f const & f;
 };
 
     static void
@@ -584,7 +584,7 @@ surface_decoration_(const ray * ray_, const void * arg,
     p = point_from_origo(inverse_base(distance_vector(da->o, p), da->base));
     d = inverse_base(d, da->base);
     scale(&d, da->r);
-    model::surface s = da->f(p, d);
+    rayt::surface s = da->f(p, d);
     so->refraction_index = adjust->refraction_index;
     so->passthrough_filter = adjust->passthrough_filter;
     // improve: could encode in s usage of adjust (unused)
@@ -594,15 +594,15 @@ surface_decoration_(const ray * ray_, const void * arg,
 }
 
     void *
-make(model::textmap const & tm, object_decoration * df, world & world_)
+make(rayt::textmap const & tm, object_decoration * df, world & world_)
 {
     void * da;
-    if (std::holds_alternative<model::texture>(tm)) {
-        auto tx = std::get<model::texture>(tm);
+    if (std::holds_alternative<rayt::texture>(tm)) {
+        auto tx = std::get<rayt::texture>(tm);
         std::visit([&da, df, &world_](auto arg){
                 da = make(arg, df); }, tx);
     } else {
-        auto const & mf = std::get<model::mapping_f>(tm);
+        auto const & mf = std::get<rayt::mapping_f>(tm);
         using D = surface_decoration_arg;
         da = new (alloc<D>()) D{mf.p, 1 / mf.r, make_base(mf.d, mf.x), mf.f};
         *df = surface_decoration_;
@@ -612,7 +612,7 @@ make(model::textmap const & tm, object_decoration * df, world & world_)
 }
 
     object_optics
-make(model::optics o)
+make(rayt::optics o)
 {
     return object_optics{
         static_cast<float>(o.refraction_index),
@@ -624,7 +624,7 @@ make(model::optics o)
 }
 
     void
-make(model::object const & obj, world & world_)
+make(rayt::object const & obj, world & world_)
 {
     object_intersection fi;
     object_normal fn;
@@ -636,7 +636,7 @@ make(model::object const & obj, world & world_)
 }
 
     observer
-make(model::observer o)
+make(rayt::observer o)
 {
     observer ret;
     ret.eye = o.e;
@@ -649,13 +649,13 @@ make(model::observer o)
     static color
 sky_(direction d)
 {
-    return (*static_cast<model::sky_f *>(sky_arg))(d);
+    return (*static_cast<rayt::sky_f *>(sky_arg))(d);
 }
 
     std::pair<observer, world>
-make(const model::world & w)
+make(const rayt::world & w)
 {
-    sky_arg = const_cast<model::sky_f *>(&w.sky);
+    sky_arg = const_cast<rayt::sky_f *>(&w.sky);
     std::pair<observer, world> ret{
         make(w.obs), world{sky_, delete_inter, delete_decoration}
     };
@@ -667,9 +667,9 @@ make(const model::world & w)
 
 }
 
-namespace model {
+namespace rayt {
 
-void render(const model::world & w, std::string path, resolution res, unsigned n_threads) {
+void render(const rayt::world & w, std::string path, resolution res, unsigned n_threads) {
     auto [obs, world_] = make(w);
     render(path.c_str(), res.width, res.height, obs, world_, n_threads);
     sky_arg = nullptr;  // init: by make(w)
@@ -698,16 +698,8 @@ static resolution parse_resolution(char *s)
     return r;
 }
 
-void main(world_gen_f wg, int argc, char ** argv)
+args::args(int argc, char ** argv)
 {
-    // improve: instantiate object to run so that parsed
-    //          params may be expected when constructing
-    //          the model to be rendered
-    const char * path = "";
-    resolution r = hdtv;
-    double t = 0;
-    int n = 0;
-    int j = 0;
     int opt;
     while ((opt = getopt(argc, argv, "j:n:r:t:")) != -1) {
         switch (opt) {
@@ -733,9 +725,12 @@ void main(world_gen_f wg, int argc, char ** argv)
         }
     }
     if (optind < argc) path = argv[optind];
+}
 
-    if (n) sequence(wg, n, path, r, 0);
-    else render(wg(t), path, r, 0);
+void args::run(world_gen_f wg)
+{
+    if (n) sequence(wg, n, path, r, j);
+    else render(wg(t), path, r, j);
 }
 
 color photo_base::_get(real x, real y)
@@ -757,7 +752,7 @@ color photo_sky::operator()(direction d)
     return _get(x, y);
 }
 
-namespace /* model:: */ solids {
+namespace /* rayt:: */ solids {
 
 //  selection of vertices in 120-polyhedron
 direction p2 { g2, 0 , g3};
@@ -1026,4 +1021,4 @@ direction truncicosa_faces[32] = {
     icosa_faces[19] * truncicosa_ratio};
 
 } // solids
-} // model
+} // rayt

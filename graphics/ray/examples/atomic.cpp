@@ -5,7 +5,7 @@
 #include <fstream>
 #include <cstdlib>
 
-using namespace model;
+using namespace rayt;
 
 namespace {
     
@@ -30,14 +30,13 @@ direction rnd_direction()
 
 class state
 {
-    static constexpr double complete_angle_max = 99;
     rotation complete_rot;
     double init_angle;
 public:
     const double r;
 
     state()
-        : complete_rot{ rnd_direction(), rnd() * complete_angle_max }
+        : complete_rot{ rnd_direction(), rnd() * 30 + 5 }
         , init_angle{ rnd() * tau }
         , r{ rnd() * .004 + .008 }
     {}
@@ -58,19 +57,19 @@ void factory(inter & si, int kind)
     double cr = 0.123;
     switch (kind) {
     case 1:
-        si.push_back(sphere{o, cr = tetra_cr});
+        si.push_back(sphere{o, cr = tetra_cr}); cr *= .9;
         for (auto d : tetra_faces) si.push_back(plane{o + d, d});
         break;
     case 2:
-        si.push_back(sphere{o, cr = cube_cr});
+        si.push_back(sphere{o, cr = cube_cr}); cr *= .8;
         for (auto d : cube_faces) si.push_back(plane{o + d, d});
         break;
     case 3:
-        si.push_back(sphere{o, cr = cubocta_cr});
+        si.push_back(sphere{o, cr = cubocta_cr}); cr *= .75;
         for (auto d : cubocta_faces) si.push_back(plane{o + d, d});
         break;
     case 4:
-        si.push_back(sphere{o, cr = truncocta_cr});
+        si.push_back(sphere{o, cr = truncocta_cr}); cr *= .75;
         for (auto d : truncocta_faces) si.push_back(plane{o + d, d});
         break;
     case 5:
@@ -78,17 +77,18 @@ void factory(inter & si, int kind)
         for (auto d : dodeca_faces) si.push_back(plane{o + d, d});
         break;
     case 6:
-        si.push_back(sphere{o, 1}); cr = 2;
+        si.push_back(sphere{o, 1}); cr = 1.8;
         break;
     }
     mul_(si, o, 1 / cr);
 }
 
 struct wgen {
+    wgen(double s, double w) : tr_s(s), tr_w(w) {}
     world operator()(double seqt);
     int i = 0;
-    const double tr_s = .1;
-    const double tr_w = 1920. / 1080;  // assume hdtv
+    const double tr_s;
+    const double tr_w;
     std::map<std::string, state> states = {};
 };
 
@@ -145,6 +145,7 @@ world wgen::operator()(double seqt)
 }
 
 int main(int argc, char ** argv)
-{
-    main(wgen(), argc, argv);
+{   auto a{ args(argc, argv) };
+    a.run(wgen{ .12, a.r.width /(double) a.r.height });
+    // ^ improve: ability to pass user-param args
 }
