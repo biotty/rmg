@@ -642,7 +642,6 @@ make(model::observer o)
     ret.eye = o.e;
     ret.view = o.c;
     ret.column_direction = o.x;
-    // todo: adjust column so perpendicular to view-eye
     direct_row(&ret);
     return ret;
 }

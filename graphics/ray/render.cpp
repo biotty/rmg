@@ -142,9 +142,14 @@ render(const char * path, int width, int height,
     void // linkage: "C"
 direct_row(observer * o)
 {
-    direction d = cross(o->column_direction,
-        distance_vector(o->eye, o->view));
+    real s = length(o->column_direction);
+    direction e = distance_vector(o->eye, o->view);
+    direction d = cross(o->column_direction, e);
     normalize(&d);
-    scale(&d, length(o->column_direction));
+    scale(&d, s);
     o->row_direction = d;
+    d = cross(e, d);
+    normalize(&d);
+    scale(&d, s);
+    o->column_direction = d;
 }
