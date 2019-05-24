@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#       © Christian Sommerfeldt Øien
+#       Christian Sommerfeldt Øien
 #       All rights reserved
 
 from rmg.plane import XY, origo
@@ -314,15 +314,60 @@ def plane_partition(a, r, off, rows = 10, columns = 10):
     return q
 
 
+def quadr(o, p):
+    return int(o.x < p.x) + 2 * int(o.y < p.y)
+
+
+class Tracker:
+    def __init__(self, p, s, dim, atoms, vh, ah):
+        self.p = self.init_p = p
+        self.s = s
+        self.sf = dim * .5 - XY(s, s)
+        self.atoms = atoms
+        self.v = XY(0, 0)
+        self.vh = vh
+        self.ah = ah
+        self.ideal_count = s * s * .6
+
+    def quadr(self, p):
+        min_x = self.p.x - self.s
+        max_x = self.p.x + self.s
+        min_y = self.p.y - self.s
+        max_y = self.p.y + self.s
+        if p.x > min_x and p.x < max_x and p.y > min_y and p.y < max_y:
+            return quadr(p, self.p)
+        return -1
+
+    def accel(self, q):
+        return XY(*[(1, 1), (-1, 1), (1, -1), (-1, -1)][q]) * self.ah
+
+    def step(self):
+        qs = [0] * 4
+        for a in self.atoms:
+            i = self.quadr(a.p)
+            if i >= 0: qs[i] += 1
+        c = sum(qs)
+        if c == 0: qs[quadr(self.init_p, self.p)] = 1
+        abundant = c > self.ideal_count
+        d = 1 if abundant else -1
+        q = sorted(enumerate(qs), key=lambda k: d * k[1])[0][0]
+        self.v += self.accel(q)
+        vv = abs(self.v)
+        if vv > self.vh:
+            self.v *= (self.vh / vv)
+        self.p += self.v
+        if self.p.x > self.sf.x: self.p.x, self.v.x = self.sf.x, 0
+        if self.p.x < -self.sf.x: self.p.x, self.v.x = -self.sf.x, 0
+        if self.p.y > self.sf.y: self.p.y, self.v.y = self.sf.y, 0
+        if self.p.y < -self.sf.y: self.p.y, self.v.y = -self.sf.y, 0
+
+
 class Lab:
     def __init__(self, dim, par, t_per_frame, blend, spoon, fork, hue6shift, printer):
         self.realt = time()
         self.t = 0
         self.par = par
         self.corner = dim * .5
-        w = lambda r: int(r * printer.height / dim.y - .5)
-        self.bulb = Bulb(w(par.spring_r * .5), 1.9, w(par.detach_r * .6), 1.2)
-        # consider: bulb belongs in printer
         self.atoms = []
         self.blend = blend
         self.spoon = spoon
@@ -333,6 +378,10 @@ class Lab:
         self.stride = int(t_per_frame / par.good_dt)
         self.delta_t = t_per_frame / self.stride
         self.zoom = XY(1 / dim.x, 1 / dim.y)
+        if o.tracker:
+            self.tracker = Tracker(XY(0, dim.y * .3), dim.y * .1, dim, self.atoms, 1, .05)
+        else:
+            self.tracker = None
 
     def _scaled(self, p):
         return (p + self.corner) * self.zoom
@@ -396,12 +445,18 @@ class Lab:
 
     def _output(self, frame):
         self.hue6shift.update(self.t)
+        if self.tracker:
+            ta = frame.mark_tracker(self.tracker, self._scaled)
+            self.atoms.extend(ta)
         self.atoms.sort(key = lambda e: e.p.y)
         for a in self.atoms:
             shift = self.hue6shift(a.p)
             hue6 = shift - a.max_bond
-            p = self._scaled(a.p)
-            frame.put_bulb(p, hue6, self.bulb, a)
+            frame.put(self._scaled(a.p), hue6, a)
+        if self.tracker:
+            for a in ta:
+                self.atoms.remove(a)
+            self.tracker.step()
 
     def run(self, n_frames):
         overlay = Overlay(lambda i, j:
@@ -411,11 +466,11 @@ class Lab:
                 self.fork.overlay_f)
         for i in range(self.stride * (n_frames - self.printer.i)):
             if 0 == i % self.steps:
-                lab._inject()
-                lab._restruct()
-            lab.t += self.delta_t
-            lab._work()
-            lab._displace()
+                self._inject()
+                self._restruct()
+            self.t += self.delta_t
+            self._work()
+            self._displace()
             if (i + 1) % self.stride != 0:
                 continue
 
@@ -425,7 +480,7 @@ class Lab:
             if frame:
                 self.spoon.set_casters(self.atoms)
                 self.fork.set_casters(self.atoms)
-                lab._output(frame)
+                self._output(frame)
                 frame.close()
             realt = time()
             calct = realt - self.realt
@@ -501,8 +556,24 @@ class RollWriter:
         self.outfile.close()
 
 
+class Exporter:
+    def __init__(self, path, i):
+        name = "%s%d.txt" % (path, i)
+        self.f = open(name, "w")
+
+    def put_tracker(self, p):
+        self.f.write("%s\n" % (p,))
+
+    def put_atom(self, p, hue, a):
+        self.f.write("%s %s %d %s\n" % (id(a), p, a.max_bond, hue))
+
+    def close(self):
+        self.f.close()
+
+
 class Frame:
-    def __init__(self,  width, height, overlay, name):
+    def __init__(self, width, height, bulb, overlay, path, i):
+        name = "%s%d.jpeg" % (path, i)
         f = os.popen("pnmtojpeg >" + name, "w")
         s = "P6\n%d %d 255\n" % (width, height)
         f.buffer.write(bytes(s, 'ascii'))
@@ -510,6 +581,8 @@ class Frame:
         roll_h = height // 20
         assert height % roll_h == 0
         self.roll = RollWriter(width, roll_h, f, overlay)
+        self.bulb = bulb
+        self.exporter = Exporter(path, i) if o.export else None
 
     def _pixel(self, p):
         p *= self.dim
@@ -522,7 +595,7 @@ class Frame:
             j = self.dim.x - 1
         return i, j
 
-    def put_bulb(self, p, hue6, bulb, a):
+    def put(self, p, hue6, a):
         bus = [atan2(b.p.y - a.p.y, b.p.x - a.p.x) for b in a.bond]
         # note: other coordinate base, but angles hold
         i, j = self._pixel(p)
@@ -536,18 +609,30 @@ class Frame:
                     break
             else:
                 values = bulb.v_bare
-            c = Color.from_hsv(hue6 * pi/3, 1, values[q])
+            hue = (hue6 % 6) * pi/3
+            c = Color.from_hsv(hue, 1, values[q]) if a.m_inv != 1 else Color.gray(values[q])
             self.roll.add_el(i + y, j + x, c)
+        if self.exporter and a.m_inv != 1:
+            self.exporter.put_atom(p, hue, a)
 
     def close(self):
         self.roll.close(self.dim.y)
+        if self.exporter: self.exporter.close()
+
+    def mark_tracker(self, tr, scale_f):
+        if self.exporter: self.exporter.put_tracker(scale_f(tr.p))
+
+        return [Atom(1, 1, XY(x, y))
+                for x in (tr.p.x - tr.s, tr.p.x, tr.p.x + tr.s)
+                for y in (tr.p.y - tr.s, tr.p.y, tr.p.y + tr.s)]
 
 
 class Printer:
-    def __init__(self, dim, img_out, skip_i):
+    def __init__(self, dim, bulb, path, skip_i):
+        self.bulb = bulb
         self.width = dim.x
         self.height = dim.y
-        self.name_fmt = "%s%%d.jpeg" % (img_out,)
+        self.path = path
         self.i = -skip_i
 
     def frame(self, overlay):
@@ -555,8 +640,7 @@ class Printer:
         self.i += 1
         if i < 0: return
 
-        name = self.name_fmt % (i,)
-        return Frame(self.width, self.height, overlay, name)
+        return Frame(self.width, self.height, self.bulb, overlay, self.path, i)
 
 
 shade_m = .1
@@ -567,8 +651,10 @@ opts.add_option("-e", "--height", type="float", default=160)
 opts.add_option("-o", "--out-prefix", type="string", default="")
 opts.add_option("-n", "--frame-count", type="int", default=736)
 opts.add_option("-r", "--resolution", type="string", default="1280x720")
-opts.add_option("-s", "--start-t", type="float", default=20)
+opts.add_option("-s", "--start-t", type="float", default=40)
 opts.add_option("-t", "--stop-t", type="float", default=400)
+opts.add_option("-x", "--tracker", action="store_true")
+opts.add_option("-m", "--export", action="store_true")
 # value: height in physical spatial units; at scale of span of atom
 # note: t -- a lab-time unit behaves nicely played in about 1/8 sec
 o, a = opts.parse_args()
@@ -581,9 +667,12 @@ img_res = XY(*(int(q) for q in o.resolution.split("x")))
 _h = o.height
 _w = _h * (img_res.x / img_res.y)
 par = PhysPars(rnd(1.1, 1.2), rnd(1.4, 1.5), rnd(450, 550), rnd(4, 6))
+w = lambda r: int(r * img_res.y / _h - .5)
+bulb = Bulb(w(par.spring_r * .5), 1.9, w(par.detach_r * .6), 1.2)
+printer = Printer(img_res, bulb, img_out, intro_n)
 lab = Lab(XY(_w, _h), par, t_per_frame,
         Blend(_h * .16, _h * .2, int(rnd(250, 350)), rnd(5, 9)),
         Spoon(rnd(.09, .15), _h * .35, rnd(.04, .07), _h * .15, par.bounce_c, 1),
         Fork(XY(_w, _h) * .46, XY(.19416, .12) * _h, rnd(3, 6), par.bounce_c, 1),
-        Hue6Shift(_w, rnd(.5, .9)), Printer(img_res, img_out, intro_n))
+        Hue6Shift(_w, rnd(.5, .9)), printer)
 lab.run(o.frame_count)

@@ -700,6 +700,9 @@ static resolution parse_resolution(char *s)
 
 void main(world_gen_f wg, int argc, char ** argv)
 {
+    // improve: instantiate object to run so that parsed
+    //          params may be expected when constructing
+    //          the model to be rendered
     const char * path = "";
     resolution r = hdtv;
     double t = 0;
