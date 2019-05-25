@@ -26,6 +26,7 @@ constexpr resolution hdtv{1920, 1080};
 constexpr double pi{3.14159265358979};
 constexpr double tau{pi * 2};
 constexpr double linear(double a, double b, double u) { return a * (1 - u) + b * u; }
+constexpr double delinear(double a, double b, double u) { return (a - u) / (a + b); }
 constexpr direction xd{1, 0, 0};
 constexpr direction yd{0, 1, 0};
 constexpr direction zd{0, 0, 1};

@@ -36,9 +36,9 @@ public:
     const double r;
 
     state()
-        : complete_rot{ rnd_direction(), rnd() * 30 + 5 }
+        : complete_rot{ rnd_direction(), rnd() * 19 + 9 }
         , init_angle{ rnd() * tau }
-        , r{ rnd() * .004 + .008 }
+        , r{ rnd() * .006 + .008 }
     {}
 
     void orient(inter & si, double t)
@@ -65,11 +65,11 @@ void factory(inter & si, int kind)
         for (auto d : cube_faces) si.push_back(plane{o + d, d});
         break;
     case 3:
-        si.push_back(sphere{o, cr = cubocta_cr}); cr *= .75;
+        si.push_back(sphere{o, cr = cubocta_cr}); cr *= .9;
         for (auto d : cubocta_faces) si.push_back(plane{o + d, d});
         break;
     case 4:
-        si.push_back(sphere{o, cr = truncocta_cr}); cr *= .75;
+        si.push_back(sphere{o, cr = truncocta_cr});
         for (auto d : truncocta_faces) si.push_back(plane{o + d, d});
         break;
     case 5:
@@ -77,7 +77,8 @@ void factory(inter & si, int kind)
         for (auto d : dodeca_faces) si.push_back(plane{o + d, d});
         break;
     case 6:
-        si.push_back(sphere{o, 1}); cr = 1.8;
+        si.push_back(sphere{o, cr = octa_cr}); cr *= 1.2;
+        for (auto d : octa_faces) si.push_back(plane{o + d, d});
         break;
     }
     mul_(si, o, 1 / cr);
@@ -89,22 +90,24 @@ struct wgen {
     int i = 0;
     const double tr_s;
     const double tr_w;
+    std::string data_path;
     std::map<std::string, state> states = {};
 };
 
 world wgen::operator()(double seqt)
 {
     std::ostringstream oss;
-    oss << i++ << ".txt";
+    oss << data_path << i++ << ".txt";
     std::ifstream f(oss.str());
 
     world wr{
-        observer{ onz(1), o, xd * tr_s },
+        observer{ onz(.5), o, xd * tr_s },
         [seqt](direction d) -> color {
-            double a = pi + atan2(d.x, d.z) + seqt;
-            if (std::abs(d.y) > .01)
-                return from_hsv(a, .7, 1);
-            return black;
+            double a = atan2(d.x, d.z) + tau * (.5 + seqt * .6);
+            double s = d.x < 0 ? .8 : .6;
+            double y = std::abs(d.y);
+            double v = y < .05 ? .1 : .9;
+            return from_hsv(a, s, v);
         },
         {}, {}
     };
@@ -146,6 +149,10 @@ world wgen::operator()(double seqt)
 
 int main(int argc, char ** argv)
 {   auto a{ args(argc, argv) };
-    a.run(wgen{ .12, a.r.width /(double) a.r.height });
-    // ^ improve: ability to pass user-param args
+    wgen g{
+        .12, a.r.width /(double) a.r.height
+    };
+    // improve: ability to pass user-param args
+    g.data_path = "a.movie/";
+    a.run(g);
 }

@@ -22,13 +22,13 @@ if [ 0 -ne $# ]; then
         echo "Directory kept" >&2
         exit 0; fi
     rm -rf $p
-    rm $d ${d/[.]movie/.jpeg}
+    rm $d
     exit 0; fi
 
 d=$$.movie
 p=$t/$d
 mkdir $p
 ln -sf $p .
-ln -sf $d/0.jpeg snap.$$.jpeg
+ln -sf $d/0.jpeg
 [ y = "$MOVIE_KEEP" ] && touch $d/k
 echo $d

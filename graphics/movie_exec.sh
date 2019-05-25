@@ -1,23 +1,16 @@
 #!/usr/bin/env bash
 
 d=$(./storage.sh)
-o=$1
-c=${2/\{\}/$d}
+c=${1/\{\}/$d}
+o=$2
 
 echo "{} = $d"
 eval $c
 
-if [[ "$o" != */ ]]
+if [[ "$o" == */ ]]
 then
+    mv $d `dirname $o.`
+else
     ./compiler.sh $d/ $o
     ./storage.sh -d $d
-    exit 0
 fi
-
-if [ -e "$o" -a ! -h "$o" ]
-then
-     echo >&2 "Exists non-symlink $o"
-     exit 1
-fi
-
-mv -T $d $(dirname $o.)

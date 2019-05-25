@@ -320,7 +320,7 @@ def quadr(o, p):
 
 class Tracker:
     def __init__(self, dim, atoms, vh, ah):
-        self.p = self.init_p = XY(0, dim.y * .3)
+        self.p = self.init_p = XY(dim.x * -.1, dim.y * .2)
         self.s = s = dim.y * o.tracker
         self.sf = dim * .5 - XY(s, s)
         self.atoms = atoms
@@ -623,9 +623,11 @@ class Frame:
     def mark_tracker(self, tr, scale_f):
         if self.exporter: self.exporter.put_tracker(scale_f(tr.p))
 
-        return [Atom(1, 1, XY(x, y))
-                for x in (tr.p.x - tr.s, tr.p.x, tr.p.x + tr.s)
-                for y in (tr.p.y - tr.s, tr.p.y, tr.p.y + tr.s)]
+        n = int(tr.s * .4)
+        d = tr.s / n
+        v = [Atom(1, 1, XY(tr.p.x + d * i, tr.p.y)) for i in range(-n, n + 1)]
+        h = [Atom(1, 1, XY(tr.p.x, tr.p.y + d * i)) for i in range(-n, n + 1)]
+        return v + h
 
 
 class Printer:
@@ -652,7 +654,7 @@ opts.add_option("-e", "--height", type="float", default=160)
 opts.add_option("-o", "--out-prefix", type="string", default="")
 opts.add_option("-n", "--frame-count", type="int", default=800)
 opts.add_option("-r", "--resolution", type="string", default="1280x720")
-opts.add_option("-s", "--start-t", type="float", default=30)
+opts.add_option("-s", "--start-t", type="float", default=20)
 opts.add_option("-t", "--stop-t", type="float", default=300)
 opts.add_option("-j", "--no-jpeg", dest="roll", action="store_false", default=True)
 opts.add_option("-x", "--export", action="store_true")

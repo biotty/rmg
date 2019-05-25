@@ -3,6 +3,7 @@
 
 #include "color.h"
 #include <stdlib.h>
+#include <assert.h>
 
 
     void
@@ -30,6 +31,11 @@ intensity(color c)
     color
 from_hsv(real h, const real s, const real v)
 {
+    assert(h >= 0);
+    assert(s >= 0);
+    assert(s <= 1);
+    assert(v >= 0);
+    assert(v <= 1);
     if (s == 0) {
         return (color){v, v, v};
     }

@@ -5,9 +5,9 @@ CXXFLAGS := -Wall -Wextra -Werror -std=c++14 -pedantic -O3
 
 all: ray/rayt flow/fluid flow/wave
 
-media: 0.jpeg
+media: image.jpeg
 
-heavy_media: video.mp4 fluid.mp4 mandelbrot.mp4
+heavy_media: video.mp4 fluidwave.mp4 mandelbrot.mp4
 
 flow/fluid flow/wave: ray/librayt.a
 	@$(MAKE) -C flow $(notdir $@)
@@ -18,8 +18,8 @@ ray/rayt ray/demo ray/librayt.a:
 image.jpeg: ray/demo
 	$< $@
 
-video.mp4: ray/demo
-	./movie_exec.sh $@ "$< -n 256 {}/"
+video.mp4: ray/demo a.movie
+	./movie_exec.sh "$< -n 800 {}/"
 
 fluidwave.mp4: flow/sh flow/fluid flow/wave map.jpeg
 	$< map.jpeg $@
@@ -28,13 +28,13 @@ follow: follow.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -Iray -Iflow $<
 
 mandelbrot.mp4: follow
-	./movie_exec.sh $@ "./follow |./movie_pipe.sh {}/"
+	./movie_exec.sh "./follow |./movie_pipe.sh {}/" $@
 
 map.jpeg: py/globe.py
 	$< 320x200 $@
 
-map.movie: py/atomic.py
-	./movie_exec.sh $@/ "$< -n 500 -o {}/"
+a.movie: py/atomic.py
+	./movie_exec.sh "$< -f.12 -r 640x360 -xo {}/" $@/
 
 clean:
 	@$(foreach d,ray flow,$(MAKE) $@ -C $(d);)
