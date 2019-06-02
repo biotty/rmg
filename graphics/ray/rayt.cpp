@@ -698,33 +698,41 @@ static resolution parse_resolution(char *s)
     return r;
 }
 
+[[ noreturn ]] void usage()
+{
+    std::cerr << "Usage: %s [-j jobs] [-n frames]"
+        " [-r WxH] [-t 0..1] [path]\n";
+    std::exit(EXIT_FAILURE);
+}
+
 args::args(int argc, char ** argv)
 {
     int opt;
-    while ((opt = getopt(argc, argv, "j:n:r:t:")) != -1) {
+    while ((opt = getopt(argc, argv, "hj:n:r:t:")) != -1) {
         switch (opt) {
         case 'n':
-            n = atoi(optarg);
+            n = std::atoi(optarg);
             break;
         case 'r':
             r = parse_resolution(optarg);
             break;
         case 't':
-            t = atof(optarg);
+            t = std::atof(optarg);
             break;
         case 'j':
-            j = atoi(optarg);
+            j = std::atoi(optarg);
             if (j > 64) {
                 j = 64;
                 std::cerr << "clamping to " << j << " threads\n";
             }
             break;
+        case 'h':
         default:
-            std::cerr << "Usage: %s [-j jobs] [-n frames]  [-r WxH] [-t 0..1] [path]";
-            exit(EXIT_FAILURE);
+            usage();
         }
     }
     if (optind < argc) path = argv[optind];
+    else if (n == 0) path = "image.jpeg";
 }
 
 void args::run(world_gen_f wg)

@@ -62,6 +62,13 @@ class Atom:
         return True
 
 
+class MarkerAtom:
+    def __init__(self, p):
+        self.max_bond = 0
+        self.bond = []
+        self.p = p
+
+
 def attach_bond(a, b):
     a.bond.append(b)
     b.bond.append(a)
@@ -314,54 +321,6 @@ def plane_partition(a, r, off, rows = 10, columns = 10):
     return q
 
 
-def quadr(o, p):
-    return int(o.x < p.x) + 2 * int(o.y < p.y)
-
-
-class Tracker:
-    def __init__(self, dim, atoms, vh, ah):
-        self.p = self.init_p = XY(dim.x * -.1, dim.y * .2)
-        self.s = s = dim.y * o.tracker
-        self.sf = dim * .5 - XY(s, s)
-        self.atoms = atoms
-        self.v = XY(0, 0)
-        self.vh = vh
-        self.ah = ah
-        self.ideal_count = s * s * .3
-
-    def quadr(self, p):
-        min_x = self.p.x - self.s
-        max_x = self.p.x + self.s
-        min_y = self.p.y - self.s
-        max_y = self.p.y + self.s
-        if p.x > min_x and p.x < max_x and p.y > min_y and p.y < max_y:
-            return quadr(p, self.p)
-        return -1
-
-    def accel(self, q):
-        return XY(*[(1, 1), (-1, 1), (1, -1), (-1, -1)][q]) * self.ah
-
-    def step(self):
-        qs = [0] * 4
-        for a in self.atoms:
-            i = self.quadr(a.p)
-            if i >= 0: qs[i] += 1
-        c = sum(qs)
-        if c == 0: qs[quadr(self.init_p, self.p)] = 1
-        abundant = c > self.ideal_count
-        d = 1 if abundant else -1
-        q = sorted(enumerate(qs), key=lambda k: d * k[1])[0][0]
-        self.v += self.accel(q)
-        vv = abs(self.v)
-        if vv > self.vh:
-            self.v *= (self.vh / vv)
-        self.p += self.v
-        if self.p.x > self.sf.x: self.p.x, self.v.x = self.sf.x, 0
-        if self.p.x < -self.sf.x: self.p.x, self.v.x = -self.sf.x, 0
-        if self.p.y > self.sf.y: self.p.y, self.v.y = self.sf.y, 0
-        if self.p.y < -self.sf.y: self.p.y, self.v.y = -self.sf.y, 0
-
-
 class Lab:
     def __init__(self, dim, par, t_per_frame, blend, spoon, fork, hue6shift, printer):
         self.realt = time()
@@ -374,14 +333,15 @@ class Lab:
         self.fork = fork
         self.hue6shift = hue6shift
         self.printer = printer
-        self.steps = 4  # value: good_dt has encounters within amount of steps
+        self.steps = 4
         self.stride = int(t_per_frame / par.good_dt)
         self.delta_t = t_per_frame / self.stride
         self.zoom = XY(1 / dim.x, 1 / dim.y)
-        if o.tracker:
-            self.tracker = Tracker(dim, self.atoms, 1, .07)
+        if not o.tracker_height: self.tracker = NoTracker()
         else:
-            self.tracker = None
+            d = t_per_frame
+            self.tracker = Tracker(dim, self.atoms, d, .06 * d)
+
 
     def _scaled(self, p):
         return (p + self.corner) * self.zoom
@@ -445,18 +405,20 @@ class Lab:
 
     def _output(self, frame):
         self.hue6shift.update(self.t)
-        if self.tracker:
-            ta = frame.mark_tracker(self.tracker, self._scaled)
+        if self.tracker.p:
+            frame.exporter.put_tracker(self._scaled(self.tracker.p))
+            ta = frame.mark_tracker(self.tracker)
             self.atoms.extend(ta)
+        else: ta = []
+        frame.exporter.put_spoon(
+                self._scaled(self.spoon.p), self.zoom.y * self.spoon.r)
         self.atoms.sort(key = lambda e: e.p.y)
         for a in self.atoms:
             shift = self.hue6shift(a.p)
             hue6 = shift - a.max_bond
             frame.put(self._scaled(a.p), hue6, a)
-        if self.tracker:
-            for a in ta:
-                self.atoms.remove(a)
-            self.tracker.step()
+        for a in ta: self.atoms.remove(a)
+        self.tracker.step()
 
     def run(self, n_frames):
         overlay = Overlay(lambda i, j:
@@ -526,12 +488,12 @@ class RollWriter:
         i -= self.offset
         r = self.offset
         while i >= self.height:
-            self.write_line()
+            self._write_line()
             i -= 1
             r += 1
         return r
 
-    def write_line(self):
+    def _write_line(self):
         i = self.offset
         b = self.outfile.buffer
         s = self.overlay.line_shaders(i)
@@ -556,8 +518,61 @@ class RollWriter:
 
     def close(self, dim_height):
         for _ in range(dim_height - self.offset):
-            self.write_line()
+            self._write_line()
         self.outfile.close()
+
+
+class NoTracker:
+    def __init__(self): self.p = None
+    def step(self): pass
+
+
+def quadr(o, p):
+    return int(o.x < p.x) + 2 * int(o.y < p.y)
+
+
+class Tracker:
+    def __init__(self, dim, atoms, vh, ah):
+        self.p = self.init_p = XY(dim.x * -.1, dim.y * .2)
+        self.s = s = o.tracker_height * .5
+        self.sf = dim * .5 - XY(s, s)
+        self.atoms = atoms
+        self.v = XY(0, 0)
+        self.vh = vh
+        self.ah = ah
+        self.ideal_count = s * s * .3
+
+    def _quadr(self, p):
+        min_x = self.p.x - self.s
+        max_x = self.p.x + self.s
+        min_y = self.p.y - self.s
+        max_y = self.p.y + self.s
+        if p.x > min_x and p.x < max_x and p.y > min_y and p.y < max_y:
+            return quadr(p, self.p)
+        return -1
+
+    def accel(self, q):
+        return XY(*[(1, 1), (-1, 1), (1, -1), (-1, -1)][q]) * self.ah
+
+    def step(self):
+        qs = [0] * 4
+        for a in self.atoms:
+            i = self._quadr(a.p)
+            if i >= 0: qs[i] += 1
+        c = sum(qs)
+        if c == 0: qs[quadr(self.init_p, self.p)] = 1
+        abundant = c > self.ideal_count
+        d = 1 if abundant else -1
+        q = sorted(enumerate(qs), key=lambda k: d * k[1])[0][0]
+        self.v += self.accel(q)
+        vv = abs(self.v)
+        if vv > self.vh:
+            self.v *= (self.vh / vv)
+        self.p += self.v
+        if self.p.x > self.sf.x: self.p.x, self.v.x = self.sf.x, 0
+        if self.p.x < -self.sf.x: self.p.x, self.v.x = -self.sf.x, 0
+        if self.p.y > self.sf.y: self.p.y, self.v.y = self.sf.y, 0
+        if self.p.y < -self.sf.y: self.p.y, self.v.y = -self.sf.y, 0
 
 
 class Exporter:
@@ -568,11 +583,22 @@ class Exporter:
     def put_tracker(self, p):
         self.f.write("%s\n" % (p,))
 
+    def put_spoon(self, p, r):
+        self.f.write("%s %LF\n" % (p, r))
+
     def put_atom(self, p, hue, a):
-        self.f.write("%s %s %d %s\n" % (id(a), p, a.max_bond, hue))
+        if a.max_bond:  # otherwise a tracker-mark atom
+            self.f.write("%s %s %d %s\n" % (id(a), p, a.max_bond, hue))
 
     def close(self):
         self.f.close()
+
+
+class NoExporter:
+    def put_tracker(self, p): pass
+    def put_spoon(self, p, r): pass
+    def put_atom(self, p, hue, a): pass
+    def close(self): pass
 
 
 class Frame:
@@ -580,7 +606,7 @@ class Frame:
         self.dim = XY(width, height)
         self.bulb = bulb
         self.roll = RollWriter(width, height, overlay, path, i) if o.roll else None
-        self.exporter = Exporter(path, i) if o.export else None
+        self.exporter = Exporter(path, i) if o.export else NoExporter()
 
     def _pixel(self, p):
         p *= self.dim
@@ -607,26 +633,24 @@ class Frame:
                     break
             else:
                 values = self.bulb.v_bare
-            c = Color.from_hsv(hue, 1, values[q]) if a.m_inv != 1 else Color.gray(values[q])
+            c = Color.from_hsv(hue, 1, values[q]) if a.max_bond else Color.gray(values[q])
             self.roll.add_el(i + y, j + x, c)
 
     def put(self, p, hue6, a):
         hue = (hue6 % 6) * pi/3
         if self.roll: self.put_bulb(p, hue, a)
-        if self.exporter and a.m_inv != 1:
-            self.exporter.put_atom(p, hue, a)
+        self.exporter.put_atom(p, hue, a)
 
     def close(self):
         if self.roll: self.roll.close(self.dim.y)
-        if self.exporter: self.exporter.close()
+        self.exporter.close()
 
-    def mark_tracker(self, tr, scale_f):
-        if self.exporter: self.exporter.put_tracker(scale_f(tr.p))
-
+    def mark_tracker(self, tr):
+        if not tr: return
         n = int(tr.s * .4)
         d = tr.s / n
-        v = [Atom(1, 1, XY(tr.p.x + d * i, tr.p.y)) for i in range(-n, n + 1)]
-        h = [Atom(1, 1, XY(tr.p.x, tr.p.y + d * i)) for i in range(-n, n + 1)]
+        v = [MarkerAtom(XY(tr.p.x + d * i, tr.p.y)) for i in range(-n, n + 1)]
+        h = [MarkerAtom(XY(tr.p.x, tr.p.y + d * i)) for i in range(-n, n + 1)]
         return v + h
 
 
@@ -652,13 +676,13 @@ cast_r = 5.5
 opts = OptionParser()
 opts.add_option("-e", "--height", type="float", default=160)
 opts.add_option("-o", "--out-prefix", type="string", default="")
-opts.add_option("-n", "--frame-count", type="int", default=800)
+opts.add_option("-n", "--frame-count", type="int", default=1600)
 opts.add_option("-r", "--resolution", type="string", default="1280x720")
-opts.add_option("-s", "--start-t", type="float", default=20)
-opts.add_option("-t", "--stop-t", type="float", default=300)
+opts.add_option("-s", "--start-t", type="float", default=120)
+opts.add_option("-t", "--stop-t", type="float", default=880)
 opts.add_option("-j", "--no-jpeg", dest="roll", action="store_false", default=True)
 opts.add_option("-x", "--export", action="store_true")
-opts.add_option("-f", "--tracker", type="float")
+opts.add_option("-f", "--tracker-height", type="float", default=32)
 # value: height in physical spatial units; at scale of span of atom
 # note: t -- a lab-time unit behaves nicely played in about 1/8 sec
 o, a = opts.parse_args()

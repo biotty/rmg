@@ -29,6 +29,5 @@ d=$$.movie
 p=$t/$d
 mkdir $p
 ln -sf $p .
-ln -sf $d/0.jpeg
 [ y = "$MOVIE_KEEP" ] && touch $d/k
 echo $d

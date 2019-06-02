@@ -108,7 +108,7 @@ struct Fractal
 
 void subject(std::complex<double> & z, const std::complex<double> c)
 {
-    z = pow(z, 4.);
+    z *= z;
     z += c;
 }
 
@@ -762,10 +762,10 @@ struct FractalMovie
     {
         XY c = (frame->a + frame->b) * .5;
         const double ang = std::atan2(c.y, c.x);
-        XY igp = XY(std::cos(ang) * 2, std::sin(ang) * (1 + frame->aspect())) * 1.2;
+        XY igp = XY(std::cos(ang) * 2, std::sin(ang) * (1 + frame->aspect())) * 1.4;
         //  quantity: factor is dependent of subject fractal, to get outside it ^
         XY igq = igp - c;
-        const double igz = .01;
+        const double igz = .05;
         const int u = counts.size() - 1;
         std::vector<JI> edge;
         int n = 0; // <-- tech: only to silence compiler warn
@@ -787,10 +787,13 @@ struct FractalMovie
                 const double z = zi * std::pow(.5, x);
                 const int count = n + static_cast<int>(h * d);
                 std::cerr << (k*i+j) << " " << count << "\r";
-                XY dc = xy::zero;
+                const double r = std::pow(1 - 2 * std::abs(.5 - x / (u+1)), 4)
+                    * z * .1;
+                const double a = x * .6;
+                XY dc = XY(cos(a), sin(a)) * r;
                 if (z > igz) {
                     const double b = (z - igz) / (zi - igz);
-                    dc = igq * (b * b);
+                    dc += igq * (b * b);
                 }
                 frame->reset(c + dc, z, count, edge);
                 if (fixed_max) {

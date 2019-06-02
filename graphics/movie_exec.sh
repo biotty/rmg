@@ -9,7 +9,7 @@ eval $c
 
 if [[ "$o" == */ ]]
 then
-    mv $d `dirname $o.`
+    ln -sfT $d `dirname $o.`
 else
     ./compiler.sh $d/ $o
     ./storage.sh -d $d

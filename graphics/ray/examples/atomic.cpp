@@ -3,7 +3,9 @@
 #include <map>
 #include <sstream>
 #include <fstream>
+#include <iostream>
 #include <cstdlib>
+#include <ctime>
 
 using namespace rayt;
 
@@ -36,9 +38,9 @@ public:
     const double r;
 
     state()
-        : complete_rot{ rnd_direction(), rnd() * 19 + 9 }
-        , init_angle{ rnd() * tau }
-        , r{ rnd() * .006 + .008 }
+        : complete_rot{ rnd_direction(), tau * (rnd() + .5) * 60 }
+        , init_angle{ rnd() * tau }  // ^ improve: dep on n-frames
+        , r{ rnd() * .0065 + .0085 }
     {}
 
     void orient(inter & si, double t)
@@ -92,65 +94,105 @@ struct wgen {
     const double tr_w;
     std::string data_path;
     std::map<std::string, state> states = {};
+private:
+    void redim(double & x, double & y) {
+        x -= .5; y -= .5; x *= tr_w; y = -y;
+    }
 };
+
+static bool file_exists(const char * path)
+{
+    std::ifstream infile(path);
+    return infile.good();
+}
 
 world wgen::operator()(double seqt)
 {
+    std::function<color(direction)> sky = [seqt](direction d) -> color
+    {
+            double a = atan2(d.x, d.y) + tau * (.9 + seqt * .6);
+            double s = d.x < 0 ? .8 : .6;
+            double v = d.z < 0 ? .4 : .8;
+            return from_hsv(a, s, v);
+    };
+    const char * sky_path = "sky.jpeg";
+    if (file_exists(sky_path)) {
+        sky = photo_sky(sky_path);
+    }
+
     std::ostringstream oss;
     oss << data_path << i++ << ".txt";
     std::ifstream f(oss.str());
 
+    struct glass : optics {
+        glass(double h, double s, double r)
+        : optics{
+            from_hsv(h, .3 * s, .08),
+            from_hsv(h, .4 * s, .06), glass_ri,
+            from_hsv(h, .8 * s, .88),
+            from_hsv(h, .8 * s, .92 * r)}
+        {}
+    };
+
     world wr{
-        observer{ onz(.5), o, xd * tr_s },
-        [seqt](direction d) -> color {
-            double a = atan2(d.x, d.z) + tau * (.5 + seqt * .6);
-            double s = d.x < 0 ? .8 : .6;
-            double y = std::abs(d.y);
-            double v = y < .05 ? .1 : .9;
-            return from_hsv(a, s, v);
-        },
-        {}, {}
+        observer{ ony(tr_w), o, xd * tr_s },
+        sky, {}, {{{ 6, 0, 9 }, white }}
     };
     std::string line;
     double tr_x, tr_y;
     if (std::getline(f, line)) {
         std::istringstream iss(line);
         iss >> tr_x >> tr_y;
-        tr_x -= .5; tr_y -= .5; tr_x *= tr_w;
+        redim(tr_x, tr_y);
     }
+    double sp_x, sp_y, sp_r;
+    if (std::getline(f, line)) {
+        std::istringstream iss(line);
+        iss >> sp_x >> sp_y >> sp_r;
+        redim(sp_x, sp_y);
+    }
+    if ( ! f) std::cerr << "bad input\n";
     while (std::getline(f, line)) {
         std::istringstream iss(line);
         std::string id;
         double x, y, hue;
         int kind;
         iss >> id >> x >> y >> kind >> hue;
-        x -= .5; y -= .5; x *= tr_w;
+        redim(x, y);
 
-        if (std::abs(x - tr_x) < 1.1 * tr_w * tr_s
-                && std::abs(y - tr_y) < 1.1 * tr_s) {
+        if (std::abs(x - tr_x) < 1.2 * tr_w * tr_s
+                && std::abs(y - tr_y) < 1.2 * tr_s) {
             double r = states[id].r;
-            object poly{ {}, optics{
-                    from_hsv(hue, .5, .09),
-                    black, glass_ri,
-                    from_hsv(hue, .6, .9),
-                    from_hsv(hue, .5, .85 * r)
-                }, {} };
+            object poly{ {}, glass{hue, 1, r}, {} };
             factory(poly.si, kind);
             states[id].orient(poly.si, seqt);
-            mov_(poly.si, direction{x, y, 0});
+            mov_(poly.si, direction{x, 0, y});
             wr.s.push_back(poly);
         }
     }
-    wr.obs.c = {tr_x, tr_y, 0};
+    const double s = sp_r * .14;
+    object ball{
+        {
+            sphere{ {sp_x, 0, sp_y}, sp_r + s },
+            inv_sphere{ {sp_x, 0, sp_y}, sp_r - s },
+            plane{ony(s), yd},
+            inv_plane{ony(-s), yd}
+        },
+        glass{ 0, 0, 1 }, {}
+    };
+    wr.s.push_back(ball);
+    wr.obs.c = {tr_x, 0, tr_y};
     return wr;
 }
 
 }
 
 int main(int argc, char ** argv)
-{   auto a{ args(argc, argv) };
+{
+    std::srand(std::time(nullptr));
+    auto a{ args(argc, argv) };
     wgen g{
-        .12, a.r.width /(double) a.r.height
+        .1, a.r.width /(double) a.r.height
     };
     // improve: ability to pass user-param args
     g.data_path = "a.movie/";

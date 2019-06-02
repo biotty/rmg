@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 from sys import stdout
-from random import randrange, choice
+from random import randrange, choice, random
 
 def shruti(swara_halfnote, adhara):
     return adhara * 2 ** (swara_halfnote / 12)
@@ -131,11 +131,12 @@ if __name__ == "__main__":
         f = swara_frequency(randrange(0, 2) * 2, our_raga, our_adhara)
         att = int(sr // f)
         m = n - att
+        r = random()
         for i in range(n):
             if i < att: a = amp * i / att
             else: a = amp * (n - i) / m
             x = i * f / sr
-            out(a * sine(x * 2))
+            out(a * sine(r + x * 2))
         pause(1 / 2)
     def pause(t):
         for i in range(nsamp(t)):

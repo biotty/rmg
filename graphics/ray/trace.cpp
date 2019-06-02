@@ -6,10 +6,10 @@
 #include <cassert>
 #include <iostream>
 
-int trace_max_hops = 14;
+int trace_max_hops = 11;
 bool trace_eliminate_direct_sky = false;
 color trace_direct_sky = {.8, .8, .8};
-bool trace_transparent_on_equal_index = true;
+bool trace_transparent_on_equal_index = false;
 
 world::world(scene_sky sky, del_f inter_f, del_f decoration_f)
     : sky(sky), del_inter(inter_f), del_decoration(decoration_f)

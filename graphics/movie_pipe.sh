@@ -12,6 +12,6 @@ do
         pnmtojpeg 2>/dev/null $f>$g && rm -- "$f"
     done
 done &
-pnmsplit - $o%d.pnm 2>t
+pnmsplit - $o%d.pnm 2>$o.t
 sleep 5
 rm -- "$r"
