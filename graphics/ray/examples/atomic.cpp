@@ -111,8 +111,8 @@ world wgen::operator()(double seqt)
     std::function<color(direction)> sky = [seqt](direction d) -> color
     {
             double a = atan2(d.x, d.y) + tau * (.9 + seqt * .6);
-            double s = d.x < 0 ? .8 : .6;
-            double v = d.z < 0 ? .4 : .8;
+            double s = d.x > 0 ? .8 : .6;
+            double v = d.z < -.1 ? .4 : .8;
             return from_hsv(a, s, v);
     };
     const char * sky_path = "sky.jpeg";
@@ -190,11 +190,10 @@ world wgen::operator()(double seqt)
 int main(int argc, char ** argv)
 {
     std::srand(std::time(nullptr));
-    auto a{ args(argc, argv) };
+    auto a{ args(argc, argv, "D") };
     wgen g{
         .1, a.r.width /(double) a.r.height
     };
-    // improve: ability to pass user-param args
-    g.data_path = "a.movie/";
+    g.data_path = a.get('D');
     a.run(g);
 }

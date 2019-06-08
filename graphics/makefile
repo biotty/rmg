@@ -19,7 +19,7 @@ image.jpeg: ray/demo
 	$< $@
 
 video.mp4: ray/demo a.movie
-	./movie_exec.sh "$< -n $$(ls a.movie/*txt|wc -l) {}/"
+	./movie_exec.sh "$< -n $$(ls a.movie/*txt|wc -l) -D a.movie/ {}/"
 
 fluidwave.mp4: flow/sh flow/fluid flow/wave map.jpeg
 	$< map.jpeg $@
@@ -38,7 +38,6 @@ a.movie: py/atomic.py
 
 clean:
 	@$(foreach d,ray flow,$(MAKE) $@ -C $(d);)
-	@for d in $$(ls -d *.movie);do [ ! -e "$d" ] && rm $d;done
 	@py3clean py
 
 sweep: clean

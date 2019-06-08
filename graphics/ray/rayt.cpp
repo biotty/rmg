@@ -698,18 +698,35 @@ static resolution parse_resolution(char *s)
     return r;
 }
 
-[[ noreturn ]] void usage()
+[[ noreturn ]] static void usage(const char * pn, const std::string & extra)
 {
-    std::cerr << "Usage: %s [-j jobs] [-n frames]"
-        " [-r WxH] [-t 0..1] [path]\n";
+    std::cerr << "Usage: " << pn << " [-j jobs] [-m hops] [-n frames]"
+        " [-r WxH] [-t 0..1]";
+    if ( ! extra.empty()) {
+        std::cerr << " [-" << extra << " x]";
+    }
+    std::cerr << " [path]\n";
     std::exit(EXIT_FAILURE);
 }
 
-args::args(int argc, char ** argv)
+args::args(int argc, char ** argv, const std::string & extra)
 {
+    std::string spec = "hj:m:n:r:t:";
+    for (char c : extra) {
+        if (std::isupper(c)) {
+            spec.append(1, c);
+            spec.append(1, ':');
+        } else abort();
+    }
     int opt;
-    while ((opt = getopt(argc, argv, "hj:n:r:t:")) != -1) {
+    while ((opt = getopt(argc, argv, spec.c_str())) != -1) {
         switch (opt) {
+        case 'j':
+            j = std::atoi(optarg);
+            break;
+        case 'm':
+            trace_max_hops = std::atoi(optarg);
+            break;
         case 'n':
             n = std::atoi(optarg);
             break;
@@ -719,20 +736,32 @@ args::args(int argc, char ** argv)
         case 't':
             t = std::atof(optarg);
             break;
-        case 'j':
-            j = std::atoi(optarg);
-            if (j > 64) {
-                j = 64;
-                std::cerr << "clamping to " << j << " threads\n";
-            }
-            break;
-        case 'h':
         default:
-            usage();
+            if (extra.find(opt) != std::string::npos) {
+                values.append(1, '\t');
+                values.append(1, opt);
+                values.append(optarg);
+                break;
+            }
+            [[fallthrough]];
+        case 'h':
+            usage(argv[0], extra);
         }
     }
     if (optind < argc) path = argv[optind];
     else if (n == 0) path = "image.jpeg";
+}
+
+std::string args::get(char opt)
+{
+    std::string needle{"\t"};
+    needle.append(1, opt);
+    auto at = values.find(needle);
+    if (at == std::string::npos) return "";
+    at += 2;
+    auto n = values.find('\t', at);
+    if (n != std::string::npos) n -= at;
+    return values.substr(at, n);
 }
 
 void args::run(world_gen_f wg)

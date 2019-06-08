@@ -3,7 +3,9 @@
 #ifndef RAYT_HPP
 #define RAYT_HPP
 
-#include "sky.h"
+#include "color.h"
+#include "direction.h"
+extern int trace_max_hops;
 struct photo;
 
 #include <array>
@@ -247,8 +249,11 @@ void render(const world & w, std::string path, resolution, unsigned n_threads);
 void sequence(world_gen_f wg, int nw, std::string path, resolution, unsigned n_threads);
 struct args {
     const char * path = ""; resolution r = hdtv; double t = 0; int n = 0, j = 0;
-    args(int argc, char ** argv);
+    args(int argc, char ** argv, const std::string & extra = "");
+    std::string get(char opt);
     void run(world_gen_f wg);
+private:
+    std::string values;
 };
 
 class photo_base {

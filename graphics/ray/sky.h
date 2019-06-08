@@ -13,11 +13,6 @@ extern void * sky_arg;
 extern "C" {
 #endif
 
-extern int trace_max_hops;
-extern color trace_direct_sky;
-extern bool trace_eliminate_direct_sky;
-extern bool trace_transparent_on_equal_index;
-
 color ph_sky(direction d);
 color rgb_sky(direction d);
 color hsv_sky(direction d);

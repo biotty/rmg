@@ -174,13 +174,6 @@ struct weighted_transform : mix
     bool more();
 };
 
-// cleanup:
-//   remove product. (unused)
-//   remove mg_ptr. (specific class when used)
-//   remove weight on sum. (scale output instead, or individuals if needed)
-//   remove weighted_transform. (abstraction nor weight-component needed)
-//   remove unit.add and unit.mul. (unused)
-
 struct sum : weighted_transform
 {
     sum();

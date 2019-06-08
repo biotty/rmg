@@ -339,8 +339,8 @@ class Lab:
         self.zoom = XY(1 / dim.x, 1 / dim.y)
         if not o.tracker_height: self.tracker = NoTracker()
         else:
-            d = t_per_frame
-            self.tracker = Tracker(dim, self.atoms, d, .06 * d)
+            s = 1.5 * t_per_frame
+            self.tracker = Tracker(dim, self.atoms, s, .07 * s)
 
 
     def _scaled(self, p):
@@ -540,7 +540,7 @@ class Tracker:
         self.v = XY(0, 0)
         self.vh = vh
         self.ah = ah
-        self.ideal_count = s * s * .3
+        self.ideal_count = s * s * .32
 
     def _quadr(self, p):
         min_x = self.p.x - self.s
