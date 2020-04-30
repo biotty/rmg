@@ -7,7 +7,7 @@ from rmg.plane import XY, origo
 from rmg.color import Color, black, white
 from rmg.math_ import rnd, rnd_weighted
 from math import hypot, atan2, sin, cos, pi
-from optparse import OptionParser
+from argparse import ArgumentParser
 from itertools import product
 from time import time
 import os, sys, operator
@@ -673,19 +673,19 @@ class Printer:
 shade_m = .1
 cast_r = 5.5
 
-opts = OptionParser()
-opts.add_option("-e", "--height", type="float", default=160)
-opts.add_option("-o", "--out-prefix", type="string", default="")
-opts.add_option("-n", "--frame-count", type="int", default=1600)
-opts.add_option("-r", "--resolution", type="string", default="1280x720")
-opts.add_option("-s", "--start-t", type="float", default=120)
-opts.add_option("-t", "--stop-t", type="float", default=880)
-opts.add_option("-j", "--no-jpeg", dest="roll", action="store_false", default=True)
-opts.add_option("-x", "--export", action="store_true")
-opts.add_option("-f", "--tracker-height", type="float", default=32)
+opts = ArgumentParser(description="animate two dimentional molecular bindings")
+opts.add_argument("-e", "--height", type=float, default=160)
+opts.add_argument("-o", "--out-prefix", type=str, default="")
+opts.add_argument("-n", "--frame-count", type=int, default=1600)
+opts.add_argument("-r", "--resolution", type=str, default="1280x720")
+opts.add_argument("-s", "--start-t", type=float, default=120)
+opts.add_argument("-t", "--stop-t", type=float, default=880)
+opts.add_argument("-j", "--no-jpeg", dest="roll", action="store_false")
+opts.add_argument("-x", "--export", action="store_true")
+opts.add_argument("-f", "--tracker-height", type=float, default=32)
 # value: height in physical spatial units; at scale of span of atom
 # note: t -- a lab-time unit behaves nicely played in about 1/8 sec
-o, a = opts.parse_args()
+o = opts.parse_args()
 
 assert o.stop_t > o.start_t
 t_per_frame = (o.stop_t - o.start_t) / o.frame_count

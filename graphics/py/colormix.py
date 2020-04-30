@@ -5,8 +5,8 @@
 
 from rmg.color import Color, InkColor
 from rmg.board import Photo, Image
-from sys import exit
-from optparse import OptionParser
+from argparse import ArgumentParser
+from sys import exit, stderr
 
 
 def additive_filter(a, b):
@@ -48,19 +48,29 @@ def subtractive_remove(a, b):
     return convert(Color, cap(ink_a - ink_b))
 
 
-options = OptionParser()
-options.add_option("-m", "--mode", default="additive-filter")
-(opts, args) = options.parse_args()
+modes = {
+    "add": additive_blend,
+    "sub": subtractive_blend,
+    "addr": additive_remove,
+    "subr": subtractive_remove,
+    "addf": additive_filter,
+    "subf": subtractive_filter,
+}
 
+ap = ArgumentParser(description="mix two images")
+ap.add_argument("-m", "--mode", default="addf",
+    help=", ".join(modes.keys()))
+ap.add_argument("path_a", help="first image")
+ap.add_argument("path_b", help="second image")
+args = ap.parse_args()
 
-if opts.mode == "additive": blend = additive_blend
-elif opts.mode == "subtractive": blend = subtractive_blend
-elif opts.mode == "additive-remove": blend = additive_remove
-elif opts.mode == "subtractive-remove": blend = subtractive_remove
-elif opts.mode == "additive-filter": blend = additive_filter
-elif opts.mode == "subtractive-filter": blend = subtractive_filter
-else: exit(1)
-
+try:
+    blend = modes[args.mode]
+except KeyError:
+    ap.print_help(stderr)
+    stderr.write("\ngiven mode argument '%s' not recognized\n" % (
+        args.mode))
+    exit(1)
 
 def get_color(p, x, y):
     q = p.quality
@@ -69,10 +79,10 @@ def get_color(p, x, y):
     return p.color_at(column, row)
 
 
-p = Photo.from_file(args[0])
+p = Photo.from_file(args.path_a)
 q = p.quality
 r = Image(q.width, q.height)
-s = Photo.from_file(args[1])
+s = Photo.from_file(args.path_b)
 for row in range(q.height):
     y = row / float(q.height)
     for column in range(q.width):
@@ -82,4 +92,3 @@ for row in range(q.height):
         c = blend(a, b)
         r.put(c)
 r.close()
-

@@ -10,7 +10,7 @@ from rmg.draw import Drawing, TreeBuilder
 from rmg.ls import Settings, System, OperationsVisitor
 from rmg.color import Optics, Color, white, black
 from rmg.space import Point, Direction
-from optparse import OptionParser
+from argparse import ArgumentParser
 from subprocess import Popen, PIPE
 from sys import stdout, stdin, stderr, exit
 from os import environ
@@ -102,34 +102,34 @@ def examples():
     """, symbols_used = "f+-")
     parametric.derive(2)
 
-opts = OptionParser()
-opts.add_option("-a", "--auto-test", action="store_true", default=False)
-opts.add_option("-b", "--palette-breadth", type="int", default=32)
-opts.add_option("-c", "--derivations-count", type="int", default=6)
-opts.add_option("-d", "--default-turn", type="float", default=90)
-opts.add_option("-e", "--l-system-expression", type="string", default="")
-opts.add_option("-g", "--eval-globals", type="string", default="")
-opts.add_option("-i", "--palette-index", type="int", default=0)
-opts.add_option("-n", "--only-last-nodes", type="int")
-opts.add_option("-o", "--image-path", type="string", default="out.jpeg")
-opts.add_option("-p", "--print-axiom", action="store_true", default=False)
-opts.add_option("-r", "--resolution", type="string", default="1280x720")
-opts.add_option("-s", "--random-seed", type="int")
-opts.add_option("-u", "--unit-turn-degrees", type="float", default=360)
-opts.add_option("-G", "--display-mode", action="store_true", default=False)
-opts.add_option("-H", "--expression-help", action="store_true", default=False)
-opts.add_option("-I", "--order-independent", action="store_true", default=False)
-(options, args) = opts.parse_args()
+ap = ArgumentParser()
+ap.add_argument("-a", "--auto-test", action="store_true")
+ap.add_argument("-b", "--palette-breadth", type=int, default=32)
+ap.add_argument("-c", "--derivations-count", type=int, default=6)
+ap.add_argument("-d", "--default-turn", type=float, default=90)
+ap.add_argument("-e", "--l-system-expression", type=str, default="")
+ap.add_argument("-g", "--eval-globals", type=str, default="")
+ap.add_argument("-i", "--palette-index", type=int, default=0)
+ap.add_argument("-n", "--only-last-nodes", type=int)
+ap.add_argument("-o", "--image-path", type=str, default="out.jpeg")
+ap.add_argument("-p", "--print-axiom", action="store_true")
+ap.add_argument("-r", "--resolution", type=str, default="1280x720")
+ap.add_argument("-s", "--random-seed", type=int)
+ap.add_argument("-u", "--unit-turn-degrees", type=float, default=360)
+ap.add_argument("-G", "--display-mode", action="store_true")
+ap.add_argument("-H", "--expression-help", action="store_true")
+ap.add_argument("-I", "--order-independent", action="store_true")
+ap.add_argument("self_test_mode", nargs="*")
+options = ap.parse_args()
 if options.expression_help:
     stderr.write("See examples() in this file\n")
     exit()
-if len(args):
+if options.self_test_mode:
     stderr.write("Positional arguments triggers self-test mode\n")
     examples()
     exit()
 if not options.l_system_expression:
-    stderr.write("Please specify expression with -e.  For help use -h\n")
-    exit()
+    stderr.write("Please enter the L-System expressions:\n")
 
 param_globals = {"rnd": rnd}
 exec(options.eval_globals, {}, param_globals)

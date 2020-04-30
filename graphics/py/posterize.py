@@ -6,10 +6,10 @@
 from rmg.color import Color, InkColor, white_ink
 from rmg.board import Photo, Image, Board
 from rmg.plane import XY
+from argparse import ArgumentParser
+from sys import stderr
 from math import sqrt, floor
 from copy import copy
-from sys import exit, stderr
-from optparse import OptionParser
 
 
 def most_central_available(board):
@@ -93,23 +93,23 @@ def ink_post(x, y):
     return Color.from_hsv(*ink.hsv())
 
 
-options = OptionParser()
-options.add_option("-s", "--sides", default="17,19,23")
-(opts, args) = options.parse_args()
+ap = ArgumentParser()
+ap.add_argument("infile", type=str)
+ap.add_argument("outfile", type=str, nargs="?", default="-")
+ap.add_argument("side_cyan", type=int, nargs="?", default=17)
+ap.add_argument("side_magenta", type=int, nargs="?", default=19)
+ap.add_argument("side_yellow", type=int, nargs="?", default=23)
+args = ap.parse_args()
 
-
-if len(args) == 0:
-    status("give path of photo\n")
-    exit(1)
-
-p = Photo.from_file(args[0])
+p = Photo.from_file(args.infile)
 q = p.quality
-r = Image(q.width, q.height, None if len(args) < 2 else args[1])
-s = opts.sides.split(",")
+r = Image(q.width, q.height,
+    None if args.outfile=="-" else args.outfile)
 
-cyan_poster = Poster(p, int(s[0]), 0)
-magenta_poster = Poster(p, int(s[1]), 1)
-yellow_poster = Poster(p, int(s[2]), 2)
+
+cyan_poster = Poster(p, args.side_cyan, 0)
+magenta_poster = Poster(p, args.side_magenta, 1)
+yellow_poster = Poster(p, args.side_yellow, 2)
 
 for row in range(q.height):
     status("rendering row %d\r" % (row,))

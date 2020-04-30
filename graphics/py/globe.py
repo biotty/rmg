@@ -7,15 +7,14 @@ from rmg.color import Color, InkColor, white_ink
 from rmg.space import Direction
 from rmg.math_ import rnd, golden_ratio
 from rmg.board import Image
-from math import pi
-from copy import copy
+from argparse import ArgumentParser
 from sys import exit, stderr
-from optparse import OptionParser
-import sys
+from copy import copy
+from math import pi
+
 
 def status(m):
-    sys.stderr.write(m)
-
+    stderr.write(m)
 
 class Dash:
     def __init__(self, n, r, ink):
@@ -96,22 +95,24 @@ class GlobeMapRenderer:
 
 
 if __name__ == "__main__":
-    options = OptionParser()
-    options.add_option("-d", "--dash-count", default="6")
-    options.add_option("-b", "--ball-count", default="16")
-    options.add_option("-p", "--pen-thickness", default="15")
-    (opts, args) = options.parse_args()
-    size = args[0].split("x")
-    oname = args[1] if len(args) > 1 else "globe.jpeg"
-    width = int(size[0])
-    height = int(size[1])
+    ap = ArgumentParser()
+    ap.add_argument("-d", "--dash-count", default="6")
+    ap.add_argument("-b", "--ball-count", default="16")
+    ap.add_argument("-p", "--pen-thickness", default="15")
+    ap.add_argument("size", help="WxH")
+    ap.add_argument("path", nargs="?", default="globe.jpeg")
+    args = ap.parse_args()
+    try:
+        size = args.size.split("x")
+        width = int(size[0])
+        height = int(size[1])
+    except (IndexError, ValueError):
+        stderr.write("bad size argument.  must be of format WxH")
+        exit(1)
 
     globe = GlobeMapRenderer.random(
-            int(opts.dash_count),
-            int(opts.ball_count),
-            int(opts.pen_thickness) * 2 * pi / 360)
+            int(args.dash_count),
+            int(args.ball_count),
+            int(args.pen_thickness) * 2 * pi / 360)
 
-    def status(m):
-        stderr.write(m)
-
-    globe.render(width, height, oname)
+    globe.render(width, height, args.path)

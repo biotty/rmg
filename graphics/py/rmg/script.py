@@ -3,7 +3,7 @@
 #       All rights reserved
 
 from sys import argv, stderr, stdout
-from optparse import OptionParser
+from argparse import ArgumentParser
 from subprocess import Popen, PIPE
 from rmg.scene import World
 
@@ -36,17 +36,19 @@ class ScriptInvocation:
 
     @classmethod
     def from_sys(cls):
-        opts = OptionParser()
-        opts.add_option("-n", "--frame-count", type="int", default=0)
-        opts.add_option("-j", "--parallel", type="int", default=1)
-        opts.add_option("-o", "--output-path", type="string", default="")
-        opts.add_option("-r", "--resolution", type="string", default="1280x720")
-        opts.add_option("-C", "--trace-command", type="string", default="rayt")
-        opts.add_option("-t", "--time-offset", type="float", default="0")
-        opts.add_option("-w", "--world-tee", action="store_true")
-        o, a = opts.parse_args()
+        ap = ArgumentParser()
+        ap.add_argument("-n", "--frame-count", type=int, default=0)
+        ap.add_argument("-j", "--parallel", type=int, default=1)
+        ap.add_argument("-o", "--output-path", type=str, default="")
+        ap.add_argument("-r", "--resolution", type=str, default="1280x720")
+        ap.add_argument("-C", "--trace-command", type=str, default="rayt")
+        ap.add_argument("-t", "--time-offset", type=float, default=0)
+        ap.add_argument("-w", "--world-tee", action="store_true")
+        ap.add_argument("user_defined_args", nargs="*", type=str)
+        o = ap.parse_args()
         return cls(o.resolution, o.frame_count, o.parallel,
-                o.trace_command, o.output_path, o.time_offset, o.world_tee, a)
+                o.trace_command, o.output_path, o.time_offset, o.world_tee,
+                o.user_defined_args)
 
     def pipe(self, world, path):
         data = bytes(str(world), 'ascii')
