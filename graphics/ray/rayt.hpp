@@ -123,6 +123,15 @@ struct saddle {
     void _mov(direction offset);
     void _rot(point at, rotation);
 };
+struct cuboid {
+    point p;
+    direction d;
+    direction x;
+    direction s;
+    void _mul(double);
+    void _mov(direction offset);
+    void _rot(point at, rotation);
+};
 
 struct inv_shape {};
 struct inv_plane : plane, inv_shape { inv_plane(point _p, direction _d); };
@@ -137,6 +146,8 @@ struct inv_hyperbol : hyperbol, inv_shape
 { inv_hyperbol(point _p, double _r, direction _d, double _h); };
 struct inv_saddle : saddle, inv_shape
 { inv_saddle(point _p, direction _d, direction _x, double _h); };
+struct inv_cuboid : cuboid, inv_shape
+{ inv_cuboid(point _p, direction _d, direction _x, direction _s); };
 
 using shape = std::variant<
     plane, inv_plane,
@@ -145,7 +156,8 @@ using shape = std::variant<
     cone, inv_cone,
     hyperbol, inv_hyperbol,
     parabol, inv_parabol,
-    saddle, inv_saddle>;
+    saddle, inv_saddle,
+    cuboid, inv_cuboid>;
 
 void mul_(shape & s, double);
 void mov_(shape & s, direction offset);

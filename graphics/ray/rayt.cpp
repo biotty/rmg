@@ -11,6 +11,7 @@
 #include "parabol.h"
 #include "hyperbol.h"
 #include "saddle.h"
+#include "cuboid.h"
 #include "inter.h"
 #include "mapping.h"
 #include "photo.h"
@@ -207,6 +208,15 @@ void saddle::_rot(point at, rotation ro)
     rot_(x, ro);
 }
 
+void cuboid::_mul(double factor) { mul_(s, factor); }
+void cuboid::_mov(direction offset) { mov_(p, offset); }
+void cuboid::_rot(point at, rotation ro)
+{
+    rot_(p, at, ro);
+    rot_(d, ro);
+    rot_(x, ro);
+}
+
 inv_plane::inv_plane(point _p, direction _d) : plane{_p, _d} {}
 inv_sphere::inv_sphere(point _p, double _r) : sphere{_p, _r} {}
 inv_cylinder::inv_cylinder(point _p, double _r, direction _d) : cylinder{_p, _r, _d} {}
@@ -214,6 +224,7 @@ inv_cone::inv_cone(point _p, double _r, direction _d) : cone{_p, _r, _d} {}
 inv_parabol::inv_parabol(point _p, double _r, direction _d) : parabol{_p, _r, _d} {}
 inv_hyperbol::inv_hyperbol(point _p, double _r, direction _d, double _h) : hyperbol{_p, _r, _d, _h} {}
 inv_saddle::inv_saddle(point _p, direction _d, direction _x, double _h) : saddle{_p, _d, _x, _h} {}
+inv_cuboid::inv_cuboid(point _p, direction _d, direction _x, direction _s) : cuboid{_p, _d, _x, _s} {}
 
 void mul_(shape & s, double factor)
 {
@@ -470,6 +481,27 @@ make(rayt::saddle sa, object_intersection * fi, object_normal * fn, bool inv)
         saddle_->base.x = cross(saddle_->base.z, saddle_->base.x);
     }
     return saddle_;
+}
+
+    void *
+make(rayt::cuboid cu, object_intersection * fi, object_normal * fn, bool inv)
+{
+    auto cuboid_ = alloc<cuboid>();
+    *cuboid_ = cuboid{
+        distance_vector(cu.p, origo),
+            make_base(cu.d, cu.x),
+            {   2 /(float) cu.s.x,
+                2 /(float) cu.s.y,
+                2 /(float) cu.s.z }
+    };
+    if (inv) {
+        *fi = _cuboid_intersection;
+        *fn = _cuboid_normal;
+    } else {
+        *fi = cuboid_intersection;
+        *fn = cuboid_normal;
+    }
+    return cuboid_;
 }
 
     void *

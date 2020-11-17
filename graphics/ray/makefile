@@ -1,11 +1,11 @@
 CXXFLAGS := -Wall -Wextra -Werror -std=c++17 -pedantic -O3
-CFLAGS := -Wall -Wextra -Werror -std=c11 -pedantic -O3
+CFLAGS := -Wall -Wextra -Werror -std=c11 -O3
 LDFLAGS := -lm -pthread
 
 rayt: main.o librayt.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-EXAMPLE ?= atomic
+EXAMPLE ?= blocks
 demo: examples/$(EXAMPLE).o librayt.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
@@ -13,7 +13,7 @@ examples/%.o: examples/%.cpp
 	$(CXX) -o $@ -c $< $(CXXFLAGS) -I.
 
 librayt.a: rayt.o mapping.o inter.o sphere.o plane.o cylinder.o \
-  cone.o parabol.o hyperbol.o saddle.o scene.o render.o sky.o \
+  cone.o parabol.o hyperbol.o saddle.o cuboid.o scene.o render.o sky.o \
   direction.o point.o ray.o color.o photo.o image.o \
   matrix.o trace.o
 	ar rc $@ $^
@@ -28,6 +28,7 @@ cone.o:     cone.h
 parabol.o:  parabol.h
 hyperbol.o: hyperbol.h
 saddle.o:   saddle.h
+cuboid.o:   cuboid.h
 direction.o:direction.h
 point.o:    point.h
 ray.o:      ray.h

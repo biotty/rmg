@@ -5,6 +5,21 @@
 
 #include "scene.h"
 
+#ifdef INTER_H_EXPORT_INTER
+segment inter_intersection(const ray * ray_, const void * inter__, int * hit);
+
+typedef struct {
+    object_intersection intersection;
+    object_normal normal;
+    void * arg;
+} inter_object;
+
+typedef struct {
+    int count;
+    inter_object objects[];
+} inter_inter;
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

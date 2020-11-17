@@ -3,6 +3,22 @@
 
 #include "plane.h"
 
+segment axis_plane_intersection(
+        double a,
+        double b)
+{
+    if (b == 0) {
+        return (segment){-1, (a >= 0) ? HUGE_REAL : -1};
+    }
+    if (b < 0 && a >= 0) return (segment){-1, HUGE_REAL};
+    if (b > 0 && a <= 0) return (segment){-1, -1};
+    const real r = a / b;
+    if (b < 0)
+        return (segment){r, HUGE_REAL};
+    else
+        return (segment){-1, r};
+}
+
 segment
 plane_intersection(
         const ray * ray_,
@@ -14,16 +30,7 @@ plane_intersection(
     const real b = scalar_product(plane_->normal, ray_->head);
     const direction v = distance_vector(ray_->endpoint, plane_->at);
     const real a = scalar_product(plane_->normal, v);
-    if (b == 0) {
-        return (segment){-1, (a >= 0) ? HUGE_REAL : -1};
-    }
-    if (b < 0 && a >= 0) return (segment){-1, HUGE_REAL};
-    if (b > 0 && a <= 0) return (segment){-1, -1};
-    const real r = a / b;
-    if (b < 0)
-        return (segment){r, HUGE_REAL};
-    else
-        return (segment){-1, r};
+    return axis_plane_intersection(a, b);
 }
 
 direction

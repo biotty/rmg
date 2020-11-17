@@ -49,7 +49,10 @@ struct Painting
         q_pnm << "q" << n << ".pnm";
         std::string qpath(path);
         size_t i = qpath.find(".png");
-        assert(i != std::string::npos);
+        if (i == std::string::npos) {
+            std::cerr << "error: not .png\n";
+            return;
+        }
         qpath.replace(i + 1, 3, q_pnm.str());
         std::ostringstream cmd;
         // note: pngquant may have --nofs

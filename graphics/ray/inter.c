@@ -1,23 +1,13 @@
 //      © Christian Sommerfeldt Øien
 //      All rights reserved
 
-#include "inter.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdalign.h>
 #include <assert.h>
 
-
-typedef struct {
-    object_intersection intersection;
-    object_normal normal;
-    void * arg;
-} object;
-
-typedef struct {
-    int count;
-    object objects[];
-} inter;
+#define INTER_H_EXPORT_INTER
+#include "inter.h"
 
 typedef struct {
     segment p;
@@ -67,7 +57,7 @@ partition_substract(partition part, const partition * subs, int n_subs)
     segment
 inter_intersection(const ray * ray_, const void * inter__, int * hit)
 {
-    const inter * inter_ = inter__;
+    const inter_inter * inter_ = inter__;
     partition subs[inter_->count], part = empty;
     int n_subs = 0;
     for (int i = 0; i < inter_->count; i++) {
@@ -100,7 +90,7 @@ inter_intersection(const ray * ray_, const void * inter__, int * hit)
     direction
 inter_normal(point p, const void * inter__, int hit)
 {
-    const inter * inter_ = inter__;
+    const inter_inter * inter_ = inter__;
     assert(hit >= 0 && hit < inter_->count);
     return inter_->objects[hit].normal(p, inter_->objects[hit].arg, -1);
 }
@@ -109,10 +99,10 @@ inter_normal(point p, const void * inter__, int hit)
 make_inter(object_intersection * fi, object_normal * fn,
         int m, object_generator get, void * get_state)
 {
-    inter * inter_ = malloc(sizeof (inter) + m * sizeof (object));
+    inter_inter * inter_ = malloc(sizeof (inter_inter) + m * sizeof (inter_object));
     inter_->count = m;
     for (int i=0; i<m; i++) {
-        object o;
+        inter_object o;
         o.arg = get(&o.intersection, &o.normal, get_state);
         inter_->objects[i] = o;
     }
@@ -124,7 +114,7 @@ make_inter(object_intersection * fi, object_normal * fn,
     void
 delete_inter(void * inter__)
 {
-    inter * inter_ = inter__;
+    inter_inter * inter_ = inter__;
     for (int i = 0; i < inter_->count; i++) {
         free(inter_->objects[i].arg);
     }
