@@ -2,6 +2,7 @@
 #include "sky.h"
 
 #include <vector>
+#include <limits>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
@@ -9,50 +10,57 @@
 using namespace rayt;
 using namespace std;
 
+namespace {
+
+constexpr double delinearb(double a, double b, double u)
+{
+    const double r = delinear(a, b, u);
+    if (r <= 0) return 0;
+    if (r >= 1) return 1;
+    return r;
+}
+
 double randd()
 {
   return (double)rand() / ((double)RAND_MAX + 1);
 }
-
-// note: random utilities are needed, to accompany rayt.hpp
-//       or as part of it - the following are also found in
-//       the droplets example !
-//
-struct polar {
-    double theta;
-    double phi;
-};
-
-polar sphere_uniform(double u, double v)
-{
-    double theta = 2 * pi * u;
-    double phi = acos(2 * v - 1);
-    return { theta, phi };
-}
-
-direction sphere_random()
-{
-    direction r = zd;
-    polar p = sphere_uniform(randd(), randd());
-    rot_(r, { xyc(p.phi), p.theta });
-    return r;
-}
-// ^ :note
-//
 
 unsigned rands(unsigned n)
 {
     return static_cast<unsigned>(floor(randd() * n));
 }
 
+#define N_PLASTICS 10
+struct {
+    unsigned h, s, v;
+} plastics[N_PLASTICS] = {
+    {  0, 1, 1},
+    {151, 0, 2},
+    {242, 2, 1},
+    { 51, 1, 1},
+    {208, 2, 0},
+    {315, 2, 2},
+    { 82, 0, 2},
+    { 26, 0, 1},
+    {208, 0, 1},
+    {266, 4, 0},
+};
+
 struct plastic_optics : optics {
-    plastic_optics(double hue) : optics{
-        from_hsv(hue, .3, .2),
-        black,
-        glass_ri,
-        from_hsv(hue, .5, .8),
-        from_hsv(hue, .4, .7) }
-    {}
+    enum class location { inner, outer };
+    plastic_optics(unsigned i, location y, double t) {
+        assert(i < N_PLASTICS);
+        assert(t >= 0);
+        assert(t <= 1);
+        const double h = plastics[i].h * pi / 180;
+        const double s = linear(1 - .1 * plastics[i].s, 0, t);
+        const double v = linear(1 - .1 * plastics[i].v, .9, t);
+        reflection_filter = from_hsv(h, .15 * s, v * (.15 + .05 * (int)y));
+        absorption_filter = black;
+        refraction_index = linear(glass_ri, 1, t);
+        refraction_filter = from_hsv(h, .55 * s, v * (.95 - .05 * (int)y));
+        passthrough_filter = from_hsv(h, .35 * s, v * .85);
+    }
 };
 
 namespace factory {
@@ -75,44 +83,69 @@ namespace factory {
 
     struct fixture {
         point p;
-        direction v;
-        double hue;
+        unsigned plastic_i;
         double h;
         unsigned x_n;
         unsigned y_n;
         unsigned modus;
+        double e;
+        double s;
     };
 
-    void make(vector<object> &blocks, fixture f, double seqt)
+    void make(vector<object> &blocks, fixture & f, double s)
     {
+        if (f.s < 0) return;
+
+        point c = f.p + zd * (f.h / 2 - s);
+        if (c.z + f.e > 0) return;
+
+        if (f.s == 0) f.s = s + (c.z + f.e);
+        const double t = (s - f.s) * .4;
+        if (t >= 1) {
+            f.s = -1;
+            return;
+        }
+        assert(t >= 0);
+        double vt = 0;
+        if (t > .8) vt = delinearb(.8, 1, t);
+        else if (t < .3) {
+            c.z += square(delinear(.3, 0, t) * 4);
+            if (t < .2) vt = delinearb(.2, 0, t);
+        }
+
         assert(f.x_n && f.y_n);
+
+        const auto optou = plastic_optics{ f.plastic_i, plastic_optics::location::outer, vt };
         const direction mxd = modus_direction(f.modus);
         const direction myd = modus_direction(f.modus + 1);
-        const point c = f.p + zd * (f.h / 2) + f.v * square(1 - seqt);
         const point g = c + mxd * (.5 * (f.x_n - 1)) + myd * (.5 * (f.y_n - 1));
+
         blocks.push_back({{
             cuboid{g,
                 zd, mxd, {f.x_n - tiny_d, f.y_n - tiny_d, f.h - tiny_d}},
             inv_cuboid{g +- zd * (height / 6),
                 zd, mxd, {bump_d + (f.x_n - 1), bump_d + (f.y_n - 1), f.h}},
-            }, plastic_optics(f.hue), {}});
+            }, optou, {}});
         for (unsigned y_i = 0; y_i < f.y_n; y_i++) {
             for (unsigned x_i = 0; x_i < f.x_n; x_i++) {
+                const point bc = c + mxd * x_i + myd * y_i;
                 blocks.push_back({{
-                    cylinder{c + mxd * x_i + myd * y_i, bump_d / 2 - tiny_d, zd},
+                    cylinder{bc, bump_d / 2 - tiny_d, zd},
                     inv_plane{c + zd * (f.h / 2 - tiny_d), zd},
                     plane{c + zd * (f.h / 2 + height / 6 - tiny_d), zd},
-                    }, plastic_optics(f.hue), {}});
+                    }, optou, {}});
             }
         }
+
+        const auto optin = plastic_optics{ f.plastic_i, plastic_optics::location::inner, vt };
         for (unsigned y_j = 1; y_j < f.y_n; y_j++) {
             for (unsigned x_j = 1; x_j < f.x_n; x_j++) {
                 blocks.push_back({{
                     cylinder{c + mxd * (x_j - .5) + myd * (y_j - .5),
                         trunk_r - tiny_d, zd},
-                    inv_plane{c +- zd * (f.h / 2 + tiny_d), zd},
+                    inv_plane{c +- zd * (f.h / 2 - tiny_d), zd},
                     plane{c + zd * (f.h / 2 - tiny_d), zd},
-                    }, plastic_optics(f.hue), {}});
+                    }, optin, {}});
             }
         }
         if ((f.x_n == 1) != (f.y_n == 1)) {
@@ -121,9 +154,9 @@ namespace factory {
             for (unsigned k = 1; k < n; k++) {
             blocks.push_back({{
                 cylinder{c + md * (k - .5), height / 6 - tiny_d, zd},
-                inv_plane{c +- zd * (f.h / 2 + tiny_d), zd},
+                inv_plane{c +- zd * (f.h / 2 - tiny_d), zd},
                 plane{c + zd * (f.h / 2 - tiny_d), zd},
-                }, plastic_optics(f.hue), {}});
+                }, optin, {}});
             }
         }
     }
@@ -202,7 +235,7 @@ namespace factory {
 } // end: namespace factory
 
 struct wgen {
-    double eye_phi;
+    double eye_phi, eye_tan;
     vector<factory::fixture> fixtures;
     wgen(unsigned board_n, unsigned n_blocks);
     world operator()(double seqt);
@@ -212,11 +245,10 @@ wgen::wgen(unsigned board_n, unsigned n_blocks)
 {
     using namespace factory;
     eye_phi = randd() * pi * 2;
+    eye_tan = .4 * (1 + randd());
     const unsigned block_n = 4;
     reserver rs(board_n + 2 * block_n, board_n + 2 * block_n);
     for (unsigned i = 0; i < n_blocks; i++) {
-        const direction v = sphere_random() * board_n;
-        const double hue = randd() * pi * 2;
         const unsigned z_n = (i % 3 == 0) ? 1 : 3;
         unsigned x_n, y_n;
         if (z_n == 1) {
@@ -226,51 +258,62 @@ wgen::wgen(unsigned board_n, unsigned n_blocks)
             x_n = 1 + rands(2);
             y_n = 1 + rands(block_n);
         }
-        unsigned b_n = x_n * y_n;
-        reserver::probe_arg a = {};
-        reserver::probe_result r = {};
-        unsigned x_c, y_c, modus;
-        for (unsigned insist = 0; insist < board_n * 4; insist++) {
-            x_c = rands(board_n);
-            y_c = rands(board_n);
-            modus = rands(4);
-            a = { x_c + block_n, y_c + block_n, x_n, y_n, modus };
-            r = rs.probe(a);
-            if (r.count == b_n)
-            for (int j = b_n; j >= 0; j--)
-                if (r.count == (unsigned)j && rands(1 + b_n - j) == 0)
-                    goto e;
+        const unsigned b_n = x_n * y_n;
+
+        unsigned r_h = numeric_limits<unsigned>::max();
+        reserver::probe_arg best = {};
+        for (unsigned compete = 0; compete < 4; compete++) {
+            reserver::probe_result r = {};
+            reserver::probe_arg a = {};
+            for (unsigned insist = 0; insist < board_n; insist++) {
+                const unsigned x_c = rands(board_n);
+                const unsigned y_c = rands(board_n);
+                const unsigned modus = rands(4);
+                a = { x_c + block_n, y_c + block_n, x_n, y_n, modus };
+                r = rs.probe(a);
+                for (int j = b_n; j >= (1 + (int)b_n) / 2; j--)
+                    if (r.count == (unsigned)j && rands(1 + b_n - j) == 0)
+                        goto ok;
+            }
+ok:         if (r_h > r.h) {
+                r_h = r.h;
+                best = a;
+            }
         }
-e:      if (r.count > b_n / 2) {
-            const unsigned z_u = r.h + z_n;
-            rs.take(a, z_u);
-            double x = (x_c - .5 * board_n);
-            double y = (y_c - .5 * board_n);
-            point p = o + xd * x + yd * y + zd * (r.h * h_unit);
-            fixtures.push_back({ p, v, hue, z_n * h_unit, x_n, y_n, modus });
-        }
+
+        const unsigned z_u = r_h + z_n;
+        rs.take(best, z_u);
+        const double x = (best.x_c - (.5 * board_n + block_n));
+        const double y = (best.y_c - (.5 * board_n + block_n));
+        point p = o + xd * x + yd * y + zd * (r_h * h_unit);
+        fixtures.push_back({
+                p, rands(N_PLASTICS),  // alt: hue set to srand(8)
+                z_n * h_unit, x_n, y_n, best.modus, randd(), 0 });
     }
 }
 
 world wgen::operator()(double seqt)
 {
+    double h = fixtures.back().p.z;
     double r = 0;
     vector<object> blocks;
-    for (auto f : fixtures) {
+    for (auto & f : fixtures) {
         const double rr = max(abs(f.p.x), abs(f.p.y));
         if (r < rr)
             r = rr;
-        factory::make(blocks, f, seqt);
+        factory::make(blocks, f, seqt * h);
     }
 
-    const direction right = xyc(eye_phi + pi * .5);
-    return {
-        observer{ o +- xyc(eye_phi) * r * 2 + zd * .4 * r * (1 + randd()),
-            o, right * r }, rgb_sky,
-        blocks,
-        {}
-    };
+    const double phi = eye_phi + seqt;
+    const direction right = xyc(phi + pi * .5);
+    const point eye = o +- xyc(phi) * r * 2
+        + zd * r * (eye_tan + sin(seqt * 5));
+    const point focus = o +- zd * 1.8;
+
+    return { observer{ eye, focus, right * r }, rgb_sky, blocks, {} };
 }
+
+} // namespace ""
 
 int main(int argc, char ** argv)
 {
@@ -278,5 +321,5 @@ int main(int argc, char ** argv)
     unsigned s = e ? atoi(e) : time(NULL);
     cout << "SRAND=" << s << "\n";
     srand(s);
-    args(argc, argv).run(wgen(16, 128));
+    args(argc, argv).run(wgen(9, 100));
 }
