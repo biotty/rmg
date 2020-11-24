@@ -12,14 +12,6 @@ using namespace std;
 
 namespace {
 
-constexpr double delinearb(double a, double b, double u)
-{
-    const double r = delinear(a, b, u);
-    if (r <= 0) return 0;
-    if (r >= 1) return 1;
-    return r;
-}
-
 double randd()
 {
   return (double)rand() / ((double)RAND_MAX + 1);
@@ -54,7 +46,7 @@ struct plastic_optics : optics {
         assert(t <= 1);
         const double h = plastics[i].h * pi / 180;
         const double s = linear(1 - .1 * plastics[i].s, 0, t);
-        const double v = linear(1 - .1 * plastics[i].v, .9, t);
+        const double v = linear(1 - .1 * plastics[i].v, .98, t);
         reflection_filter = from_hsv(h, .15 * s, v * (.15 + .05 * (int)y));
         absorption_filter = black;
         refraction_index = linear(glass_ri, 1, t);
@@ -100,17 +92,18 @@ namespace factory {
         if (c.z + f.e > 0) return;
 
         if (f.s == 0) f.s = s + (c.z + f.e);
-        const double t = (s - f.s) * .4;
+        const double t = (s - f.s) * .35;
         if (t >= 1) {
             f.s = -1;
             return;
         }
         assert(t >= 0);
         double vt = 0;
-        if (t > .8) vt = delinearb(.8, 1, t);
-        else if (t < .3) {
+        if (t > .8) {
+            vt = delinear(.8, 1, t);
+        } else if (t < .3) {
             c.z += square(delinear(.3, 0, t) * 4);
-            if (t < .2) vt = delinearb(.2, 0, t);
+            if (t < .2) vt = delinear(.2, 0, t);
         }
 
         assert(f.x_n && f.y_n);
@@ -294,7 +287,7 @@ ok:         if (r_h > r.h) {
 
 world wgen::operator()(double seqt)
 {
-    double h = fixtures.back().p.z;
+    double h = fixtures.back().p.z + 4.5;
     double r = 0;
     vector<object> blocks;
     for (auto & f : fixtures) {
@@ -304,10 +297,10 @@ world wgen::operator()(double seqt)
         factory::make(blocks, f, seqt * h);
     }
 
-    const double phi = eye_phi + seqt;
+    const double phi = eye_phi + pi * .5 * sin(seqt * 2 * pi);
     const direction right = xyc(phi + pi * .5);
     const point eye = o +- xyc(phi) * r * 2
-        + zd * r * (eye_tan + sin(seqt * 5));
+        + zd * r * .5 * (eye_tan + sin(seqt * 4 * pi));
     const point focus = o +- zd * 1.8;
 
     return { observer{ eye, focus, right * r }, rgb_sky, blocks, {} };
@@ -321,5 +314,5 @@ int main(int argc, char ** argv)
     unsigned s = e ? atoi(e) : time(NULL);
     cout << "SRAND=" << s << "\n";
     srand(s);
-    args(argc, argv).run(wgen(9, 100));
+    args(argc, argv).run(wgen(9, 99));
 }

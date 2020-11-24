@@ -71,7 +71,7 @@ wgen::wgen(int n)
 {
     eye_phi = 1;
     for (int i=0; i<n; i++) {
-        point p = o + sphere_random() * 6 * randd();
+        point p = o + sphere_random() * 5 * randd();
         double r = (randd() + 1) * .5;
         double a = randd() * 2 * pi;
         rotation pr = { sphere_random(), randd() * pi };
@@ -140,7 +140,7 @@ world wgen::operator()(double seqt)
 
     const direction right = xyc(eye_phi + pi * .5);
     return {
-        observer{ o + zd * 3 +- xyc(eye_phi) * 8, o, right * 3 },
+        observer{ o + zd * 3 +- xyc(eye_phi) * 5, o, right * 2 },
             [](direction d) -> color {
                 if (d.z > .5) {
                     return white * 2.1;
@@ -172,5 +172,5 @@ int main(int argc, char ** argv)
     unsigned s = e ? atoi(e) : time(NULL);
     cout << "SRAND=" << s << "\n";
     srand(s);
-    args(argc, argv).run(wgen(64));
+    args(argc, argv).run(wgen(48));
 }
