@@ -86,18 +86,17 @@ namespace factory {
 
     void make(vector<object> &blocks, fixture & f, double s)
     {
+        if (s < f.p.z + f.e) return;
         if (f.s < 0) return;
 
-        point c = f.p + zd * (f.h / 2 - s);
-        if (c.z + f.e > 0) return;
-
-        if (f.s == 0) f.s = s + (c.z + f.e);
+        if (f.s == 0) f.s = s;
         const double t = (s - f.s) * .35;
         if (t >= 1) {
             f.s = -1;
             return;
         }
-        assert(t >= 0);
+
+        point c = f.p + zd * (f.h / 2 - s);
         double vt = 0;
         if (t > .8) {
             vt = delinear(.8, 1, t);
@@ -228,7 +227,7 @@ namespace factory {
 } // end: namespace factory
 
 struct wgen {
-    double eye_phi, eye_tan;
+    double eye_phi, eye_tan, r, h;
     vector<factory::fixture> fixtures;
     wgen(unsigned board_n, unsigned n_blocks);
     world operator()(double seqt);
@@ -236,6 +235,7 @@ struct wgen {
 
 wgen::wgen(unsigned board_n, unsigned n_blocks)
 {
+    r = h = 0;
     using namespace factory;
     eye_phi = randd() * pi * 2;
     eye_tan = .4 * (1 + randd());
@@ -256,51 +256,62 @@ wgen::wgen(unsigned board_n, unsigned n_blocks)
         unsigned r_h = numeric_limits<unsigned>::max();
         reserver::probe_arg best = {};
         for (unsigned compete = 0; compete < 4; compete++) {
-            reserver::probe_result r = {};
-            reserver::probe_arg a = {};
+            reserver::probe_result rpr = {};
+            reserver::probe_arg rpa = {};
+            bool good = false;
             for (unsigned insist = 0; insist < board_n; insist++) {
                 const unsigned x_c = rands(board_n);
                 const unsigned y_c = rands(board_n);
                 const unsigned modus = rands(4);
-                a = { x_c + block_n, y_c + block_n, x_n, y_n, modus };
-                r = rs.probe(a);
-                for (int j = b_n; j >= (1 + (int)b_n) / 2; j--)
-                    if (r.count == (unsigned)j && rands(1 + b_n - j) == 0)
-                        goto ok;
+                rpa = { x_c + block_n, y_c + block_n, x_n, y_n, modus };
+                rpr = rs.probe(rpa);
+                for (int j = b_n; j >= (1 + (int)b_n) / 2; j--) {
+                    if (rpr.count == (unsigned)j && rands(1 + b_n - j) == 0) {
+                        good = true;
+                        goto done;
+                    }
+                }
             }
-ok:         if (r_h > r.h) {
-                r_h = r.h;
-                best = a;
+done:
+            if (good && r_h > rpr.h) {
+                r_h = rpr.h;
+                best = rpa;
             }
         }
+        if (best.x_n == 0) continue;
 
         const unsigned z_u = r_h + z_n;
         rs.take(best, z_u);
         const double x = (best.x_c - (.5 * board_n + block_n));
         const double y = (best.y_c - (.5 * board_n + block_n));
-        point p = o + xd * x + yd * y + zd * (r_h * h_unit);
+        const point p = o + xd * x + yd * y + zd * (r_h * h_unit);
+        const double e = .65 * randd();
+
+        {
+            const double rr = max(abs(p.x), abs(p.y));
+            if (r < rr) r = rr;
+            const double hh = p.z + e;
+            if (h < hh) h = hh;
+        }
+
         fixtures.push_back({
                 p, rands(N_PLASTICS),  // alt: hue set to srand(8)
-                z_n * h_unit, x_n, y_n, best.modus, randd(), 0 });
+                z_n * h_unit, x_n, y_n, best.modus, e, 0 });
     }
+    h += 1 / .35;
 }
 
 world wgen::operator()(double seqt)
 {
-    double h = fixtures.back().p.z + 4.5;
-    double r = 0;
     vector<object> blocks;
     for (auto & f : fixtures) {
-        const double rr = max(abs(f.p.x), abs(f.p.y));
-        if (r < rr)
-            r = rr;
         factory::make(blocks, f, seqt * h);
     }
 
-    const double phi = eye_phi + pi * .5 * sin(seqt * 2 * pi);
+    const double phi = eye_phi + .8 * sin(seqt * 2 * pi);
     const direction right = xyc(phi + pi * .5);
     const point eye = o +- xyc(phi) * r * 2
-        + zd * r * .5 * (eye_tan + sin(seqt * 4 * pi));
+        + zd * r * .7 * (eye_tan + sin(seqt * 4 * pi));
     const point focus = o +- zd * 1.8;
 
     return { observer{ eye, focus, right * r }, rgb_sky, blocks, {} };
