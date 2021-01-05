@@ -1,253 +1,283 @@
-bits    64
-default rel
-global  _start
+bits      64
+default   rel
+global    _start
 
-%define t_ 1080
-%define n_ 1920
+%define   t_        1080
+%define   n_        1920
 
-section .data
+section   .data
 
-t:      dd      t_
-n:      dd      n_
-a:      dq      2.4
-b:      dq      4.0
-mth:    dq      1e-6
-rdn:    dd      1
-rnd_s:  dd      32768
-one:	dd		1
-farg_msg: db "argument not in float format of 'd[.]dddddd'", 10, 0
-farg_msgn: equ $ - farg_msg
-%defstr t_s    t_
-%defstr n_s    n_
-hdr:    db      "P5", 10, n_s, 32, t_s, 32, 10, "255", 10, 0
-hdrn:   equ     $ - hdr
+t:        dd        t_
+n:        dd        n_
+one:      dq        1.0
+micro:    dq        1e-6
+rnd_s:    dq        0.000030517578125  ; 1/32768
+abcd:     dq        2.4, 4.0, 0.0, 1.0  ; (default) args
+rdn:      dd        1, 2, 3, 4  ; random seeds
+farg_msg: db        "argument not in float format of 'd[.]dddddd'", 10
+farg_msgn:equ       $ - farg_msg
+%defstr   t_s       t_
+%defstr   n_s       n_
+hdr:      db        "P5", 10, n_s, 32, t_s, 32, 10, "255", 10
+hdrn:     equ       $ - hdr
 
-section .bss
+section   .bss
 
-r:      resq    1
-i:      resd    1
-j:      resd    1
-m:      resq    1
-ba_t:   resq    1
-v:      resw    n_
-v_i:    resd    1
+          align     32
+r:        resq      4
+j:        resd      1
+m:        resq      1
+ba_t:     resq      1
+v:        resw      n_
 
-section .text
+section   .text
+
+%macro    decimal   2
+
+          sub       %1, 48
+          cmp       %1, 9
+          ja        %2
+
+%endmacro
 
 ; ba_t = (b - a) / t
 init:
-        fld     qword [b]
-		fld     qword [a]
-		fsubp
-		fidiv   dword [t]
-		fstp    qword [ba_t]
-		ret
+          fld       qword [abcd+8]
+          fld       qword [abcd]
+          fsubp
+          fidiv     dword [t]
+          fstp      qword [ba_t]
 
-; m = j * ba_t + a
-linear:
-		fild    dword [j]
-		fmul    qword [ba_t]
-		fadd    qword [a]
-		fstp    qword [m]
-		ret
+; ymm4 = four of n / (d - c)
+; ymm5 = four of c
+          vbroadcastsd ymm5, [abcd+16]
+          movq      xmm0, [abcd+24]
+          subsd     xmm0, xmm5
+          cvtsi2sd  xmm1, dword [n]
+          divsd     xmm1, xmm0
+          sub       rsp, 8
+          movq      [rsp], xmm1
+          vbroadcastsd ymm4, [rsp]
+          add       rsp, 8
+          ret
 
-; r = 0..1
+; four of r = 0..1
 rnd:
-		mov     eax, 1103515245
-		mul     dword [rdn]
-		add     eax, 12345
-		mov     [rdn], eax
-		shr     eax, 16
-		and     ax, 32767
-		mov     word [r],ax
-		fild    word [r]
-		fidiv   dword [rnd_s]
-		fstp    qword [r]
-		ret
+          lea       rdi, [rdn]
+          mov       ebx, 1103515245
+          mov       rcx, 4
+          cld
 
-; y = m * y * (1 - y)
-logistic:
-		movq    xmm0, xmm3
-		subsd   xmm0, xmm1
-		mulsd   xmm0, xmm1
-		mulsd   xmm0, xmm2
-		movq    xmm1, xmm0
-		ret
-
-; count hits of logistic map until any is at max
-feig_row:
-		call    rnd
-		movsd   xmm1, [r]
-		movsd   xmm2, [m]
-		cvtsi2sd xmm3, dword [one]
-		cvtsi2sd xmm4, dword [n]
-		mov     dx, 65535
-
-feig_loop:
-        movq    xmm0, xmm4
-		mulsd   xmm0, xmm1
-		cvtsd2si ecx, xmm0
-		mov     [v_i], ecx
-		lea     rbx, [v]
-		mov     eax, dword [v_i]
-		add     rbx, rax
-		add     rbx, rax
-		cmp     word [rbx], dx
-		jb      feig_while
-		ret
-
-feig_while:
-		inc     word [rbx]
-		call	logistic
-		jmp     feig_loop
+rnd_nums:
+          mov       eax, ebx
+          mul       dword [rdi]
+          add       eax, 12345
+          stosd
+          shr       eax, 16
+          and       ax, 32767
+          lea       edx, [r+rcx*8-8]
+          mov       dword [edx], eax
+          cvtsi2sd  xmm0, dword [rdx]
+          mulsd     xmm0, [rnd_s]
+          movsd     [rdx], xmm0
+          loop      rnd_nums
+          ret
 
 ; rdi c-string parsed as decimal to
 ; rbx and trashes all other general registers
 anum:
-        xor     rbx, rbx
-        mov     rsi, rdi
-        mov     rdi, 10
-		mov     rcx, 7
-        cld
+          xor       rbx, rbx
+          mov       rsi, rdi
+          mov       rdi, 10
+          mov       rcx, 7
+          cld
 
 anum_loop:
-        xor     rax, rax
-        lodsb
-        test    al, al
-		jz      anum_break
-        sub     al, 48
-		cmp     al, 9
-		ja      anum_loop
-
-        xchg    rax, rbx
-        mul     rdi
-        add     rbx, rax
-        loop    anum_loop
-        jmp     anum_leave
+          xor       rax, rax
+          lodsb
+          test      al, al
+          jz        anum_break
+          decimal   al, anum_loop
+          xchg      rax, rbx
+          mul       rdi
+          add       rbx, rax
+          loop      anum_loop
+          jmp       anum_leave
 
 anum_break:
-		mov     rax, 1
+          mov       rax, 1
 
 anum_complete:
-		mul     rdi
-		loop    anum_complete
-		mul     rbx
-		mov     rbx, rax
+          mul       rdi
+          loop      anum_complete
+          mul       rbx
+          mov       rbx, rax
 
 anum_leave:
-        ret
+          ret
 
 ; rdi c-string integer scaled a millionth and stored at
-; r8 as a double float.  function conserves rsi only
+; r8 as a double float.  function conserves rsi and rcx
 farg:
-        push    rsi
-		mov     al, [rdi]
-		sub     al, 48
-		cmp     al, 9
-		ja      farg_err
-        call    anum
-        mov     [r8], rbx
-        fild    qword [r8]
-        fmul    qword [mth]
-        fstp    qword [r8]
-		clc
+          push      rsi
+          push      rcx
+          mov       al, [rdi]
+          decimal   al, farg_err
+          call      anum
+          mov       [r8], rbx
+          fild      qword [r8]
+          fmul      qword [micro]
+          fstp      qword [r8]
+          clc
 
 farg_leave:
-        pop     rsi
-        ret
+          pop       rcx
+          pop       rsi
+          ret
 
 farg_err:
-		lea     rsi, [farg_msg]
-		mov     rdx, farg_msgn
-		call    print
-		stc
-		jmp     farg_leave
+          lea       rsi, [farg_msg]
+          mov       rdx, farg_msgn
+          call      print
+          stc
+          jmp       farg_leave
 
 ; rsi, rdx to write (1) to fd 1 until all has been written
 ; and is trashing those and rax, rdi and of syscall i.e rcx.
 ; will return on err, in which case rsi, rdx indicates pos
 print:
-        mov     rdi, 1
+          xor       rdi, rdi
+          inc       rdi
 
 print_loop:
-        mov     rax, 1
-        syscall
-        cmp     rax, -1
-	    je      print_leave
-	    add     rsi, rax
-	    sub     rdx, rax
-	    jnz     print_loop
+          mov       rax, rdi
+          syscall
+          cmp       rax, -1
+          je        print_leave
+          add       rsi, rax
+          sub       rdx, rax
+          jnz       print_loop
 
 print_leave:
-	    ret
+          ret
 
-; compress v inplace and write it.  erase all.
-flush_v:
-		lea     rsi, [v]
-		mov     rdi, rsi
-		inc     rsi
-		mov     rcx, n_
-		cld
-
-compress_v:
-        movsb
-		inc     rsi
-		loop    compress_v
-
-		lea     rsi, [v]
-		mov     rdx, n_
-		call    print
-
-		xor     ax, ax
-		lea     rdi, [v]
-		mov     rcx, n_
-		cld
-        rep stosw
-		ret
-
-; two args sets a and b to non-defaults
-; then generate and output pnm of feigenbaum
 main:
-        push    rbp
-        cmp     rdi, 3
-        jb      args_endif
+          push      rbp
+          cmp       rdi, 5
+          jb        args_endif
+          lea       r8, [abcd]
+          mov       rcx, 4
 
-        lea     r8, [a]
-        mov     rdi, [rsi+8]
-        call    farg
-		jc      main_leave
-
-        lea     r8, [b]
-        mov     rdi, [rsi+16]
-        call    farg
-		jc      main_leave
+args:
+          add       rsi, 8
+          mov       rdi, [rsi]
+          call      farg
+          jc        main_leave
+          add       r8, 8
+          loop args
 
 args_endif:
-        mov     rsi, hdr
-        mov     rdx, hdrn
-		call    print
-        call    init
+          mov       rsi, hdr
+          mov       rdx, hdrn
+          call      print
+          call      init
 
-t_loop:
-		call    linear
-		call    feig_row
-		call    flush_v
-		inc     dword [j]
-		cmp     dword [j], t_
-		jb      t_loop
-		clc
+feig:
+; m = j * ba_t + a
+          fild      dword [j]
+          fmul      qword [ba_t]
+          fadd      qword [abcd]
+          fstp      qword [m]
+
+; count hits of logistic map until any is at max
+          call      rnd
+          vmovapd   ymm1, [r]
+          vbroadcastsd ymm2, [m]
+          vbroadcastsd ymm3, [one]
+          xor       rcx, rcx
+          mov       edi, n_
+          xor       si, si
+
+row_do:
+          vsubpd    ymm0, ymm1, ymm5
+          vmulpd    ymm0, ymm0, ymm4
+          vcvtpd2dq xmm0, ymm0
+          mov       cl, 4
+          xor       dl, dl
+
+dist:
+          pextrw    eax, xmm0, 0
+          pshufd    xmm0, xmm0, 57
+          cmp       eax, edi
+          jae       oob
+          lea       rbx, [v]
+          add       rbx, rax
+          add       rbx, rax
+          inc       word [rbx]
+          jnz       cont
+          dec       word [rbx]
+          jmp       flush
+
+oob:
+          inc       dl
+
+cont:
+          loop      dist
+          cmp       dl, 4
+          je        none
+          xor       si, si
+          jmp       logistic
+
+none:
+          inc       si
+          jnz       logistic
+          jmp       flush
+
+logistic:
+          vsubpd    ymm0, ymm3, ymm1
+          vmulpd    ymm0, ymm0, ymm1
+          vmulpd    ymm1, ymm0, ymm2
+          jmp       row_do
+
+; compress v inplace and write it.  erase all.
+flush:
+          lea       rsi, [v]
+          mov       rdi, rsi
+          inc       rsi
+          mov       rcx, n_
+          cld
+
+compress:
+          movsb
+          inc       rsi
+          loop      compress
+
+          lea       rsi, [v]
+          mov       rdx, n_
+          call      print
+
+          xor       ax, ax
+          lea       rdi, [v]
+          mov       rcx, n_
+          cld
+      rep stosw
+
+          inc       dword [j]
+          cmp       dword [j], t_
+          jb        feig
+          clc
 
 main_leave:
-        pop     rbp
-        mov     eax, 0
-		rcl     al, 1
-		mov     edi, eax
-        ret
+          pop       rbp
+          mov       eax, 0
+          rcl       al, 1
+          mov       edi, eax
+          ret
 
 _start:
-        mov     rdi, [rsp]
-        lea     rsi, [rsp+8]
-        call    main
-        mov     rax, 60
-        syscall
+          mov       rdi, [rsp]
+          lea       rsi, [rsp+8]
+          call      main
+          mov       rax, 60
+          syscall
 
