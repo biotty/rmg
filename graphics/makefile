@@ -44,12 +44,3 @@ sweep: clean
 	@$(foreach d,ray flow,$(MAKE) $@ -C $(d);)
 	@rm -f follow *.pnm *.png *.jpeg *.mp4
 	@ls -d *.movie 2>/dev/null |xargs -I{} ./storage.sh -D {}
-
-feigen: feigen.o
-	ld $^ -o $@
-
-feigen.o: feigen.S
-	nasm -f elf64 $^
-
-feigen.pnm:
-	gforth > $@ feigenbaum.fs
