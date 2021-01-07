@@ -10,8 +10,8 @@ section   .data
 t:        dd        t_
 n:        dd        n_
 one:      dq        1.0
-micro:    dq        1e-6
-rnd_s:    dq        0.000030517578125  ; 1/32768
+femto:    dq        1e-15
+rnd_s:    dq        0.000030517578125  ; 1 / 32768
 abcd:     dq        2.4, 4.0, 0.0, 1.0  ; (default) args
 rdn:      dd        1, 2, 3, 4  ; random seeds
 farg_msg: db        "argument not in float format of 'd[.]dddddd'", 10
@@ -61,7 +61,7 @@ init:
           add       rsp, 8
           ret
 
-; four of r = 0..1
+; r = four of 0..1
 rnd:
           lea       rdi, [rdn]
           mov       ebx, 1103515245
@@ -89,7 +89,7 @@ anum:
           xor       rbx, rbx
           mov       rsi, rdi
           mov       rdi, 10
-          mov       rcx, 7
+          mov       rcx, 16
           cld
 
 anum_loop:
@@ -126,7 +126,7 @@ farg:
           call      anum
           mov       [r8], rbx
           fild      qword [r8]
-          fmul      qword [micro]
+          fmul      qword [femto]
           fstp      qword [r8]
           clc
 
@@ -203,10 +203,10 @@ row_do:
           vmulpd    ymm0, ymm0, ymm4
           vcvtpd2dq xmm0, ymm0
           mov       cl, 4
-          xor       dl, dl
+          mov       dl, cl
 
 dist:
-          pextrw    eax, xmm0, 0
+          pextrd    eax, xmm0, 0
           pshufd    xmm0, xmm0, 57
           cmp       eax, edi
           jae       oob
@@ -219,19 +219,18 @@ dist:
           jmp       flush
 
 oob:
-          inc       dl
+          dec       dl
 
 cont:
           loop      dist
-          cmp       dl, 4
-          je        none
+          test      dl, dl
+          jz        none
           xor       si, si
           jmp       logistic
 
 none:
           inc       si
-          jnz       logistic
-          jmp       flush
+          jz        flush
 
 logistic:
           vsubpd    ymm0, ymm3, ymm1
@@ -269,9 +268,9 @@ compress:
 
 main_leave:
           pop       rbp
-          mov       eax, 0
           rcl       al, 1
-          mov       edi, eax
+          and       al, 254
+          movzx     edi, al
           ret
 
 _start:
