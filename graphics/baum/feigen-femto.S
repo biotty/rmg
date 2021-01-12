@@ -22,6 +22,7 @@ j:        resd      1
 m:        resq      1
 ba_t:     resq      1
 v:        resw      n_
+mode:     resb      1
 
 section   .text
 
@@ -36,49 +37,28 @@ section   .text
           mov       %1, [%2]
 %endmacro
 
-; ba_t = (b - a) / t
-init:
-          fld       qword [abcd+8]
-          fld       qword [abcd]
-          fsubp
-          fidiv     dword [t]
-          fstp      qword [ba_t]
+%macro    logistic  0
+          vsubpd    ymm0, ymm3, ymm1
+          vmulpd    ymm0, ymm0, ymm1
+          vmulpd    ymm1, ymm0, ymm2
+%endmacro
 
-; ymm4 = four of n / (d - c)
-; ymm5 = four of c
-          mov       eax, [n]
-          push      rax
-          vbroadcastsd ymm5, [abcd+16]
-          movq      xmm0, [abcd+24]
-          subsd     xmm0, xmm5
-          cvtsi2sd  xmm1, dword [rsp]
-          divsd     xmm1, xmm0
-          movq      [rsp], xmm1
-          vbroadcastsd ymm4, [rsp]
-          add       rsp, 8
-          ret
+; rsi, rdx to write (1) to fd 1 until all has been written
+; or return early on any err
+print:
+          xor       rdi, rdi
+          inc       rdi
 
-; r = four of 0..1 (POSIX.1-2001 rand() example)
-rnd:
-          lea       rdi, [rdn]
-          mov       ebx, 1103515245
-          mov       rcx, 4
-          cld
+print_loop:
+          mov       rax, rdi
+          syscall
+          cmp       eax, -1
+          je        print_leave
+          add       rsi, rax
+          sub       rdx, rax
+          jnz       print_loop
 
-rnd_nums:
-          mov       eax, ebx
-          mul       dword [rdi]
-          add       eax, 12345
-          stosd
-          shr       eax, 16
-          and       ax, 32767
-          lea       edx, [r+rcx*8-8]
-          mov       dword [edx], eax
-          cvtsi2sd  xmm0, dword [rdx]
-          mulsd     xmm0, [rnd_s]
-          movsd     [rdx], xmm0
-          loop      rnd_nums
-      rep
+print_leave:
           ret
 
 ; rdi c-str decimals as integer to rbx
@@ -107,7 +87,8 @@ anum_leave:
 anum_break:
           test      r8, r8
           jz        anum_leave
-          mov       eax, 1
+          xor       rax, rax
+          inc       eax
 
 anum_complete:
           mul       rdi
@@ -137,41 +118,50 @@ farg_err:
           stc
           jmp       farg_leave
 
-; rsi, rdx to write (1) to fd 1 until all has been written
-; or return early on any err
-print:
-          xor       rdi, rdi
-          inc       rdi
+; r = four of 0..1 (POSIX.1-2001 rand() example)
+rnd:
+          lea       rdi, [rdn]
+          mov       ebx, 1103515245
+          mov       ecx, 4
+          cld
 
-print_loop:
-          mov       rax, rdi
-          syscall
-          cmp       eax, -1
-          je        print_leave
-          add       rsi, rax
-          sub       rdx, rax
-          jnz       print_loop
+rnd_nums:
+          mov       eax, ebx
+          mul       dword [rdi]
+          add       eax, 12345
+          stosd
+          shr       eax, 16
+          and       ax, 32767
+          lea       edx, [r+rcx*8-8]
+          mov       dword [edx], eax
+          cvtsi2sd  xmm0, dword [rdx]
+          mulsd     xmm0, [rnd_s]
+          movsd     [rdx], xmm0
+          loop      rnd_nums
       rep
-
-print_leave:
           ret
 
 ; using rbx but not called conventionally
 ; so no need to push-pop-conserve it
 _start:
           mov       rax, [rsp]
-          cmp       rax, 7
+          sub       ax, 7
           jb        args_endif
-          lea       r8, [abcd]
-          lea       r9, [rsp+8]
-          mov       rcx, 4
+          dec       ax
+          jb        args
+          inc       byte [mode]
 
 args:
+          lea       r8, [abcd]
+          lea       r9, [rsp+8]
+          mov       ecx, 4
+
+args_abcd:
           nextq     rdi, r9
           call      farg
           jc        main_leave
           add       r8, 8
-          loop args
+          loop      args_abcd
           xor       r8, r8
           nextq     rdi, r9
           call      anum
@@ -183,7 +173,25 @@ args:
           mov       [n], ebx
 
 args_endif:
-          call      init
+; ba_t = (b - a) / t
+          fld       qword [abcd+8]
+          fld       qword [abcd]
+          fsubp
+          fidiv     dword [t]
+          fstp      qword [ba_t]
+
+; ymm4 = four of n / (d - c)
+; ymm5 = four of c
+          mov       eax, [n]
+          push      rax
+          vbroadcastsd ymm5, [abcd+16]
+          movq      xmm0, [abcd+24]
+          subsd     xmm0, xmm5
+          cvtsi2sd  xmm1, dword [rsp]
+          divsd     xmm1, xmm0
+          movq      [rsp], xmm1
+          vbroadcastsd ymm4, [rsp]
+          add       rsp, 8
 
 feigen:
 ; m = j * ba_t + a
@@ -192,7 +200,37 @@ feigen:
           fadd      qword [abcd]
           fstp      qword [m]
 
-; count hits of logistic map until any is at max
+          cmp       byte [mode], 0
+          jnz       feigen_dyn
+
+          call      rnd
+          vmovapd   ymm1, [r]
+          vbroadcastsd ymm2, [m]
+          vbroadcastsd ymm3, [one]
+          mov       ecx, 65535
+          xor       edx, edx
+
+do:
+          vmulpd    ymm0, ymm1, ymm4
+          vcvtpd2dq xmm0, ymm0
+          xchg      ecx, edx
+          mov       cl, 4
+
+dist:
+          pextrd    eax, xmm0, 0
+          pshufd    xmm0, xmm0, 57
+          lea       rbx, [v]
+          add       rbx, rax
+          add       rbx, rax
+          inc       word [rbx]
+          loop      dist
+          logistic
+          xchg      ecx, edx
+          loop      do
+          jmp       flush
+
+feigen_dyn:
+; count hits of logistic map until any in v hits max
           call      rnd
           vmovapd   ymm1, [r]
           vbroadcastsd ymm2, [m]
@@ -201,14 +239,14 @@ feigen:
           mov       edi, [n]
           xor       si, si
 
-row_do:
+dyn_do:
           vsubpd    ymm0, ymm1, ymm5
           vmulpd    ymm0, ymm0, ymm4
           vcvtpd2dq xmm0, ymm0
           mov       cl, 4
           mov       dl, cl
 
-dist:
+dyn_dist:
           pextrd    eax, xmm0, 0
           pshufd    xmm0, xmm0, 57
           cmp       eax, edi
@@ -225,21 +263,19 @@ oob:
           dec       dl
 
 cont:
-          loop      dist
+          loop      dyn_dist
           test      dl, dl
           jz        none
           xor       si, si
-          jmp       logistic
+          jmp       next
 
 none:
           inc       si
           jz        flush
 
-logistic:
-          vsubpd    ymm0, ymm3, ymm1
-          vmulpd    ymm0, ymm0, ymm1
-          vmulpd    ymm1, ymm0, ymm2
-          jmp       row_do
+next:
+          logistic
+          jmp       dyn_do
 
 ; format v inplace and write it.  erase all.
 flush:
@@ -250,9 +286,9 @@ flush:
 
 format:
           lodsw
-          xchg      al, ah
-          stosw
-          loop      format
+          xchg      al, ah  ; todo rather load/store to ymm0 and flip all the h/l bytes
+          stosw             ;      align v properly for this
+          loop      format  ;      and ecx needs to be scaled down accordingly
 
           lea       rsi, [v]
           mov       edx, [n]
@@ -277,7 +313,7 @@ main_leave:
 
 main_done:
           movzx     edi, al
-          mov       rax, 60
+          mov       eax, 60
           syscall
 
 main_err:

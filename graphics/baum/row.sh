@@ -7,26 +7,27 @@
 
 set -e
 
-a=${2:-3000000000000000}
-b=${3:-3003906250000000}
-u=1000000000000000
+o=${1}
+a=${2:-3750000000000000}
+b=${3:-3753906250000000}
 h=${4:-2160}
 w=${5:-3840}
 e=${6:-./feigen}
-q=${7:-256}
+q=${7:-1}  # columns
+u=1000000000000000
 f(){
  printf %016d $((10#$1))
 }
 k=$((u / q))
-seq "$q" |while read i
+seq $q |while read i
 do
 j=$((i - 1))
 c=$((j * k))
 d=$((i * k))
 av="$(f $a) $(f $b) $(f $c) $(f $d)"
-echo -n "$j: $av "
-(   echo -en "P5\n$w $h\n65535\n" &&
-       \time -f "%E" $e $av $h $w) |
-    pnmtojpeg >"$j.jpeg"
-done
+echo "$j: $av"
 
+( echo -en "P5\n$w $h\n65535\n" &&
+  $e $av $h $w ) | pnmtojpeg >"$o$j.jpeg"
+
+done

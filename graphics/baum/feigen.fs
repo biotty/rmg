@@ -3,12 +3,16 @@
 \ Assumes separate FP stack and down f>s
 1080 constant t
 1920 constant n
+1.0e 2.4e f/ fconstant se
 : linear ( n i FP a b -- FP i*{b-a}/n+a)
   fover f- s>f f* s>f f/ f+ ;
 create rdn 1 ,
 : rnd ( -- FP {0..1} )
   rdn dup @ 1103515245 * 12345 + dup rot
   ! 65536 / 0x7fff and s>f 32768.0e f/ ;
+: stim ( FP -- {0..255} )
+  fdup 0.0031308e f<= if 12.92e f*
+  else fln se f* fexp 1.055e f* 0.055e f- then ;
 : logistic ( FP y m -- FP y*m*{1-y})
   fover 1.0e fswap f- f* f* ; 
 : feig_row ( n addr FP m --)
@@ -25,8 +29,9 @@ create b 4.0e f,
   t 0 do v n cells erase
   t i a f@ b f@ linear n v feig_row
     n 0 do
-    v i cells + @ 8 rshift emit
-    loop
+    v i cells + @ s>f 65536.0e f/
+    stim 256.0e f* f>s emit
+    loop \ alt: @ 8 rshift emit
   loop ;
 : anum ( addr:cstr -- n)
   0 99 0 do over i + c@
