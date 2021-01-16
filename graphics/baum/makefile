@@ -1,22 +1,16 @@
 CXXFLAGS := -Wall -Wextra -Werror -std=c++14 -pedantic -O3
 
-.PHONY: all media clean sweep
+.PHONY: all media heavy_media clean sweep sweep_heavy
 
 all: feigen
 
 media: feigen.pnm
 
-# todo: a script generating just a
-#       PNM header of a certain kind
-#       and parameters.  even tho
-#       it's merely an echo, yes
-#       or rather, the tool can extract from
-#       various raw formats depending on
-#       file extension, and also from a
-#       grid of images
+heavy_media: feigen
+	./script.py
 
-feigen-ref.pnm: feigen.fs
-	gforth > $@ $<
+feigen-ref.jpeg: feigen.fs
+	gforth $< |pnmtojpeg >$@
 
 feigen-femto: feigen-femto.o
 	ld $^ -o $@
@@ -25,13 +19,16 @@ feigen-femto: feigen-femto.o
 	nasm -f elf64 $^
 
 feigen: feigen.cpp feigen-proc.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ -lpthread
+	$(CXX) $(CXXFLAGS) -o $@ $^ # -lpthread
+
+extract: extract.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:
-	@rm *.o
+	@rm -f *.o a.out core*
 
 sweep: clean
-	@rm -f feigen *.pnm
+	@rm -f feigen feigen-femto *.jpeg
 
 sweep_heavy: sweep
-	@rm -rf grid
+	@rm -rf y[0-9]*

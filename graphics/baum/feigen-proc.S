@@ -18,12 +18,11 @@ section   .text
 %endmacro
 
 feigen:
-          cvtsi2sd  xmm1, rsi
-       vbroadcastsd ymm4, xmm1
+          cvtsi2sd  xmm4, rsi
+       vbroadcastsd ymm4, xmm4
           vmovupd   ymm1, [rdx]
        vbroadcastsd ymm2, xmm0
        vbroadcastsd ymm3, [one]
-		  shr       ecx, 2
 		  cld
 
 do:
