@@ -5,13 +5,14 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
+#include <cmath>
 
 #include <vector>
 #include <string>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
-#include <algorithm>
+#include <numeric>
 
 using namespace std;
 
@@ -48,18 +49,9 @@ void produce_line(line & v, double m, double d, size_t k_iters, size_t k, size_t
     }
 }
 
-struct output_params { size_t w, i, n, x, s; string dir; };
+struct output_params { char * dir; size_t w, i, n, x, s; };
 
-string create_dir(size_t h, size_t i, size_t n)
-{
-    ostringstream buf;
-    buf << "y" << i << "-" << n << "." << h;
-    string r = buf.str();
-    mkdir(r.c_str(), 0755);
-    return r;
-}
-
-FILE * open_file(string dir, size_t x, const char * mode)
+FILE * open_file(char * dir, size_t x, const char * mode)
 {
     ostringstream buf;
     buf << dir << "/" << setfill('0') << setw(6) << x << ".pnm";
@@ -69,23 +61,47 @@ FILE * open_file(string dir, size_t x, const char * mode)
 void create_files(output_params par)
 {
     for (size_t x = par.x; x < par.w; x += par.s) {
-        FILE * grl_f = open_file(par.dir, x, "w");
-        fprintf(grl_f, "P5\n%zu %zu\n65535\n", par.s, par.n - par.i);
-        fclose(grl_f);
+        if (FILE * grl_f = open_file(par.dir, x, "w")) {
+            fprintf(grl_f, "P5\n%zu %zu\n65535\n", par.s, par.n - par.i);
+            fclose(grl_f);
+        }
     }
 }
 
-// note: not srgb gamma, but currenly ouputs linear even tho pnm
-
-void append_grl(count_t * counts, size_t s, FILE * f)
+void srgb_encode(double s, vector<uint8_t> & buf)
 {
-    double u = (1 << 16) / (1.0 + *max_element(counts, counts + s));
+    if (s <= 0.0031308) s *= 12.92;
+    else s = pow(s, 1.0 / 2.4) * 1.055 - 0.055;
+    uint16_t g = s * 65535;
+    buf.push_back(g >> 8);
+    buf.push_back(g & 255);
+}
+
+void append_grl(count_t * counts, size_t s, FILE * f,
+        count_t sum_min, count_t max_min)
+{
     vector<uint8_t> buf;
-    buf.reserve(s * 2);
-    for (size_t i = 0; i < s; i++) {
-        unsigned g = counts[i] * u;
-        buf.push_back(g >> 8);
-        buf.push_back(g);
+    count_t max_ = 0;
+    count_t sum_ = accumulate(counts, counts + s, 0,
+            [&max_](count_t a, count_t c){
+            if (max_ < c) max_ = c;
+            return a + c;
+            });
+    if (sum_ <= sum_min || max_ <= max_min) {
+        // note: this approach to discard images fails,
+        //       as some lines get zeroed even tho part
+        //       of an interesting output image.
+        //       rather take note whether some lines
+        //       were non-discarded and only otherwise
+        //       unlink the generated file and write a new
+        //       one by having a hole til the end of file.
+        buf.resize(s * 2);
+    } else {
+        buf.reserve(s * 2);
+        double u = 1. / (1. + max_);
+        for (size_t i = 0; i < s; i++) {
+            srgb_encode(counts[i] * u, buf);
+        }
     }
     if (buf.size() != fwrite(buf.data(), 1, buf.size(), f)) {
         fprintf(stderr, "short fwrite");
@@ -93,21 +109,24 @@ void append_grl(count_t * counts, size_t s, FILE * f)
     }
 }
 
-void append_files(output_params par, count_t * counts)
+void append_files(output_params par, count_t * counts,
+        count_t sum_min, count_t max_min)
 {
     for (size_t x = par.x; x < par.w; x += par.s) {
-        FILE * grl_f = open_file(par.dir, x, "a");
-        append_grl(counts + x, par.s, grl_f);
-        fclose(grl_f);
+        if (FILE * grl_f = open_file(par.dir, x, "a")) {
+            append_grl(counts + x, par.s, grl_f, sum_min, max_min);
+            fclose(grl_f);
+        }
     }
 }
 
 int main(int argc, char ** argv)
 {
-    if (argc != 8) {
-        fputs("args: w h i n x s p\n", stderr);
+    if (argc != 9) {
+        fputs("args: g w h i n x s p\n", stderr);
         return 1;
     }
+    char * g = *++argv;
     size_t w = atoi(*++argv);
     size_t h = atoi(*++argv);
     size_t i = atoi(*++argv);
@@ -119,14 +138,14 @@ int main(int argc, char ** argv)
     double a = 3.5;
     double b = 4.0;
     srand(time(NULL));
-    output_params par = {
-        w, i, n, x, s, create_dir(h, i, n) };
+    output_params par = { g, w, i, n, x, s };
     create_files(par);
+    count_t sum_min = 1.5 * 4 * z / ((w - x) / s);
     double d = (b - a) / h;
     for (size_t j = i; j < n; j++) {
         line v(w);
         produce_line(v, a + d * j, d, z, z);
-        append_files(par, v.data());
+        append_files(par, v.data(), sum_min, 15);
         fprintf(stderr, "\r%zu", j);
     }
     fprintf(stderr, "\n");

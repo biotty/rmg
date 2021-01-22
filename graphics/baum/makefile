@@ -19,7 +19,7 @@ feigen-femto: feigen-femto.o
 	nasm -f elf64 $^
 
 feigen: feigen.cpp feigen-proc.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ # -lpthread
+	$(CXX) $(CXXFLAGS) -o $@ $^ -lm # -lpthread
 
 extract: extract.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^
@@ -30,5 +30,5 @@ clean:
 sweep: clean
 	@rm -f feigen feigen-femto *.jpeg
 
-sweep_heavy: sweep
+heavy_sweep: sweep
 	@rm -rf y[0-9]*
