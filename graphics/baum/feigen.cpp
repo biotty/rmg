@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>
+#include <cassert>
 
 #include <vector>
 #include <string>
@@ -21,7 +22,7 @@ using line = vector<count_t>;
 using offset_t = uint32_t;  // the feigenbaum loop spits offsets, not spraying mem
 using buffer = vector<offset_t>;
 
-double rnd(double f = 1.0) { return rand() * f / RAND_MAX; }
+double rnd(double f = 1.0) { return rand() * f / (RAND_MAX + 1.); }
 void randomize(vector<double> & r) { for (auto & v : r) v = rnd(); }
 
 extern "C" void feigen(double m, offset_t * q, size_t n_line, double * r, size_t n_iters);
@@ -44,7 +45,8 @@ void produce_line(line & v, double m, double d, size_t k_iters, size_t k, size_t
      //     });
      // while (t) tds[--t].join();
         vector<buffer> buckets(n_buckets);
-        for (auto q : buf) buckets[q >> bucket_bits].push_back(q);
+        for (auto q : buf) if (q < n_line) buckets[q >> bucket_bits].push_back(q);
+                        // ^ check should not be neeeded
         for (auto p : buckets) for (auto q : p) ++v[q];
     }
 }
@@ -77,31 +79,13 @@ void srgb_encode(double s, vector<uint8_t> & buf)
     buf.push_back(g & 255);
 }
 
-void append_grl(count_t * counts, size_t s, FILE * f,
-        count_t sum_min, count_t max_min)
+void append_grl(count_t * counts, size_t s, FILE * f, count_t max_)
 {
     vector<uint8_t> buf;
-    count_t max_ = 0;
-    count_t sum_ = accumulate(counts, counts + s, 0,
-            [&max_](count_t a, count_t c){
-            if (max_ < c) max_ = c;
-            return a + c;
-            });
-    if (sum_ <= sum_min || max_ <= max_min) {
-        // note: this approach to discard images fails,
-        //       as some lines get zeroed even tho part
-        //       of an interesting output image.
-        //       rather take note whether some lines
-        //       were non-discarded and only otherwise
-        //       unlink the generated file and write a new
-        //       one by having a hole til the end of file.
-        buf.resize(s * 2);
-    } else {
-        buf.reserve(s * 2);
-        double u = 1. / (1. + max_);
-        for (size_t i = 0; i < s; i++) {
-            srgb_encode(counts[i] * u, buf);
-        }
+    buf.reserve(s * 2);
+    double u = 1. / (1. + max_);
+    for (size_t i = 0; i < s; i++) {
+        srgb_encode(counts[i] * u, buf);
     }
     if (buf.size() != fwrite(buf.data(), 1, buf.size(), f)) {
         fprintf(stderr, "short fwrite");
@@ -110,12 +94,34 @@ void append_grl(count_t * counts, size_t s, FILE * f,
 }
 
 void append_files(output_params par, count_t * counts,
-        count_t sum_min, count_t max_min)
+        vector<bool> & interest, size_t sum_min)
 {
-    for (size_t x = par.x; x < par.w; x += par.s) {
+    size_t i = 0;
+    for (size_t x = par.x; x < par.w; x += par.s, i++) {
         if (FILE * grl_f = open_file(par.dir, x, "a")) {
-            append_grl(counts + x, par.s, grl_f, sum_min, max_min);
+            count_t *p = counts + x;
+            count_t max_ = 0, sum_ = accumulate(p, p + par.s, 0,
+                    [&max_](count_t a, count_t c){
+                    if (max_ < c) max_ = c;
+                    return a + c;
+                    });
+            if (sum_ >= sum_min) {
+                interest[i] = true;
+            }
+            append_grl(p, par.s, grl_f, max_);
             fclose(grl_f);
+        }
+    }
+}
+
+void discard_files(output_params par, vector<bool> & interest)
+{
+    size_t i = 0;
+    for (size_t x = par.x; x < par.w; x += par.s, i++) {
+        if ( ! interest[i]) {
+            if (FILE * grl_f = open_file(par.dir, x, "w")) {
+                fclose(grl_f);
+            }
         }
     }
 }
@@ -140,13 +146,15 @@ int main(int argc, char ** argv)
     srand(time(NULL));
     output_params par = { g, w, i, n, x, s };
     create_files(par);
-    count_t sum_min = 1.5 * 4 * z / ((w - x) / s);
+    size_t q = (w - x) / s;
+    vector<bool> interest(q);
     double d = (b - a) / h;
     for (size_t j = i; j < n; j++) {
         line v(w);
         produce_line(v, a + d * j, d, z, z);
-        append_files(par, v.data(), sum_min, 15);
+        append_files(par, v.data(), interest, 15 * 4 * z / q);
         fprintf(stderr, "\r%zu", j);
     }
-    fprintf(stderr, "\n");
+    discard_files(par, interest);
+    fprintf(stderr, "\r        \r");
 }

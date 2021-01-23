@@ -2,12 +2,14 @@ CXXFLAGS := -Wall -Wextra -Werror -std=c++14 -pedantic -O3
 
 .PHONY: all media heavy_media clean sweep sweep_heavy
 
-all: feigen
+all: feigen feigen-femto
 
 media: feigen.pnm
 
-heavy_media: feigen
-	./script.py
+heavy_media: genfei
+
+genfei: feigen
+	./script.py genfei
 
 feigen-ref.jpeg: feigen.fs
 	gforth $< |pnmtojpeg >$@
@@ -31,4 +33,4 @@ sweep: clean
 	@rm -f feigen feigen-femto *.jpeg
 
 heavy_sweep: sweep
-	@rm -rf y[0-9]*
+	@rm -rf genfei
