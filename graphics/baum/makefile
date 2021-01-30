@@ -23,9 +23,6 @@ feigen-femto: feigen-femto.o
 feigen: feigen.cpp feigen-proc.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ -lm # -lpthread
 
-extract: extract.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $^
-
 clean:
 	@rm -f *.o a.out core*
 
