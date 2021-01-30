@@ -36,7 +36,3 @@ if len(argv) == 2:
             s("./feigen %s %d %d %d %d 0 %d %d" % (d,
                 total_w, total_h, y, y + image_h, image_w, k))
             s("./cnv.sh %s" % (d,))
-
-# zoom sequence with following engine, i.e
-# montage rose: rose: rose: rose: -geometry 70x46+0+0 -tile 2x2 jpeg:- |
-#     convert - -crop 50x50+10+10 -resize 500x500 ~/Desktop/try.jpeg
