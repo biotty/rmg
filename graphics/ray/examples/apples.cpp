@@ -18,18 +18,6 @@ double randd()
   return (double)rand() / ((double)RAND_MAX + 1);
 }
 
-struct polar {
-    double theta;
-    double phi;
-};
-
-polar sphere_uniform(double u, double v)
-{
-    double theta = 2 * pi * u;
-    double phi = acos(2 * v - 1);
-    return { theta, phi };
-}
-
 direction sphere_random()
 {
     direction r = zd;

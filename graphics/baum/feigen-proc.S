@@ -1,3 +1,5 @@
+;         Christian Sommerfeldt Øien
+;         All rights reserved
 bits      64
 default   rel
 global    feigen

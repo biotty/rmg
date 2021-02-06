@@ -3,6 +3,7 @@
 
 #include "cuboid.h"
 #include "plane.h"
+#include <stddef.h>
 
 #define INTER_H_EXPORT_INTER
 #include "inter.h"

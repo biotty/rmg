@@ -8,6 +8,7 @@
 #include "parabol.h"
 #include "hyperbol.h"
 #include "saddle.h"
+#include "cuboid.h"
 #include "inter.h"
 #include "mapping.h"
 #include "photo.h"
@@ -214,6 +215,31 @@ get_object(std::string name,
             saddle_->base.x = cross(saddle_->base.z, saddle_->base.x);
         }
         return saddle_;
+    }
+
+    if (name == "cuboid" || name == "-cuboid") {
+        point center;
+        direction axis;
+        direction x;
+        direction s;
+        std::cin >> center;
+        std::cin >> axis;
+        std::cin >> x;
+        std::cin >> s;
+        normalize(&axis);
+        normalize(&x);
+        auto cuboid_ = alloc<cuboid>();
+        *cuboid_ = cuboid{
+            direction{-center.x, -center.y, -center.z},
+            base_arg{x, axis}, s};
+        if (name[0] == '-') {
+            *fi = _cuboid_intersection;
+            *fn = _cuboid_normal;
+        } else {
+            *fi = cuboid_intersection;
+            *fn = cuboid_normal;
+        }
+        return cuboid_;
     }
 
     fail("scene object type \"%s\"?\n", name.c_str());

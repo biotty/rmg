@@ -4,7 +4,10 @@
 #
 # coordinates are in femto count integers
 # path to generated image, and optionally
-# the program to run, by default ./feigen
+# the program to run, by default ./feigen-femto
+#
+#                    Christian Sommerfeldt Øien
+#                    All rights reserved.
 
 set -e
 
@@ -23,7 +26,7 @@ while true
 do
 av="$(f $a) $(f $b) $(f $c) $(f $d)"
 echo -en "\r$av "
-(   echo -en "P5\n$w $h\n65535\n" &&
+(   ./pnm.sh $w $h &&
      \time -f "%E" $e $av $h $w y) |
     pnmtojpeg >"$o"
 echo -n "hit a, z, n or m"

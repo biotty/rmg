@@ -5,7 +5,6 @@
 
 #include "color.h"
 #include "ray.h"
-#include "stddef.h"
 
 typedef segment (* object_intersection)(const ray *, const void * object_arg, int * hit);
 typedef direction (* object_normal)(point, const void * object_arg, int hit);

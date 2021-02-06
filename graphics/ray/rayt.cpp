@@ -741,9 +741,11 @@ static resolution parse_resolution(char *s)
     std::exit(EXIT_FAILURE);
 }
 
+extern "C" bool image_hifi;
+
 args::args(int argc, char ** argv, const std::string & extra)
 {
-    std::string spec = "hj:m:n:r:t:";
+    std::string spec = "hij:m:n:r:t:";
     for (char c : extra) {
         if (std::isupper(c)) {
             spec.append(1, c);
@@ -753,6 +755,9 @@ args::args(int argc, char ** argv, const std::string & extra)
     int opt;
     while ((opt = getopt(argc, argv, spec.c_str())) != -1) {
         switch (opt) {
+        case 'i':
+            image_hifi = true;
+            break;
         case 'j':
             j = std::atoi(optarg);
             break;
@@ -1090,4 +1095,20 @@ direction truncicosa_faces[32] = {
     icosa_faces[19] * truncicosa_ratio};
 
 } // solids
+
+polar::operator direction() {
+    return {
+        cos(theta) * sin(phi),
+        sin(theta) * sin(phi),
+        cos(phi)
+    };
+}
+
+polar sphere_uniform(double u, double v)
+{
+    double theta = 2 * pi * u;
+    double phi = acos(2 * v - 1);
+    return { theta, phi };
+}
+
 } // rayt

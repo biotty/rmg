@@ -12,7 +12,7 @@ struct color {  // linear
 	real b;
 };
 
-struct compact_color {  // gamma-corrected values
+struct compact_color {  // gamma-corrected values (except when for filter)
     unsigned char r;
     unsigned char g;
     unsigned char b;
@@ -53,12 +53,19 @@ static inline real dec_stimulus(unsigned char c)
     return rpow(((s + 0.055) / 1.055), 2.4);
 }
 
-static inline unsigned char enc_stimulus(real s)
+static inline real stimulus_apply_gamma(real s)
 {
     if (s <= 0.0031308) s *= 12.92;
     else s = rpow(s, 1.0 / 2.4) * 1.055 - 0.055;
 
-    return (unsigned char)nearest(s * 255);
+    return s;
+}
+
+static inline void enc_hifi_stimulus(real s, unsigned char * a)
+{
+    unsigned int v = stimulus_apply_gamma(s) * 65535;
+    a[0] = v >> 8;
+    a[1] = v;
 }
 
 static inline color x_color(compact_color cc)
@@ -74,11 +81,18 @@ static inline color x_color(compact_color cc)
 static inline compact_color z_color(color c)
 {
     compact_color ret = {
-        enc_stimulus(c.r),
-        enc_stimulus(c.g),
-        enc_stimulus(c.b)
+        (unsigned char)nearest(stimulus_apply_gamma(c.r) * 255),
+        (unsigned char)nearest(stimulus_apply_gamma(c.g) * 255),
+        (unsigned char)nearest(stimulus_apply_gamma(c.b) * 255)
     };
     return ret;
+}
+
+static inline void zz_color(color c, unsigned char * enc)
+{
+    enc_hifi_stimulus(c.r, enc + 0);
+    enc_hifi_stimulus(c.g, enc + 2);
+    enc_hifi_stimulus(c.b, enc + 4);
 }
 
 // note: internal representation assumed by filter

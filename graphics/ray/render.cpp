@@ -22,8 +22,6 @@ struct Sequenced {
     Sequenced() : serial(SERIAL_END) {}
     operator bool() { return serial != SERIAL_END; }
 
-    template<typename U>
-    Sequenced(Sequenced<U> & seq, T v) : serial(seq.serial), value(v) {}
     Sequenced(serial_t serial, T v) : serial(serial), value(v) {}
 };
 
@@ -47,10 +45,10 @@ struct RasterJob {
         : input_serial(), x(), y(), w(width), h(height)
         , output_serial(), f(f), out(out) {}
 
-    void output(result r) {
+    bool output(result r) {
         std::lock_guard<std::mutex> guard(output_mutex);
         buffer.push_back(r);
-
+        const auto was_serial = output_serial;
         while (true) {
             auto it = std::find_if(buffer.begin(), buffer.end(),
                     [this](result & r)
@@ -63,6 +61,10 @@ struct RasterJob {
             buffer.erase(it);
             ++output_serial;
         }
+
+        return output_serial == was_serial && buffer.size() > 16;
+        /* signals situation of congestion due to out-of-order and
+         * number should rather be related to n_threads somehow */
     }
 
     Sequenced<type> input() {
@@ -81,7 +83,14 @@ struct RasterJob {
     }
 
     void run() {
-        while (auto s = input()) output({s, f(s.value)});
+        while (auto s = input()) {
+            if (output({s.serial, f(s.value)})) {
+                pthread_yield();
+                /* seems to in practice prevent a
+                 * congestion on the output ordering
+                 * buffer happening when f is quick */
+            }
+        }
     }
 };
 

@@ -6,10 +6,10 @@ all: feigen feigen-femto
 
 media: feigen.pnm
 
-heavy_media: genfei
+heavy_media: genfei.d
 
-genfei: feigen
-	./script.py genfei
+genfei.d: feigen genfei.py
+	./genfei.py
 
 feigen-ref.jpeg: feigen.fs
 	gforth $< |pnmtojpeg >$@
@@ -30,4 +30,4 @@ sweep: clean
 	@rm -f feigen feigen-femto *.jpeg
 
 heavy_sweep: sweep
-	@rm -rf genfei
+	@rm -rf genfei.d

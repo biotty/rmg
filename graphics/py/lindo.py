@@ -8,12 +8,9 @@ from rmg.math_ import degrees_unit, rnd
 from rmg.board import Board, Pencil
 from rmg.draw import Drawing, TreeBuilder
 from rmg.ls import Settings, System, OperationsVisitor
-from rmg.color import Optics, Color, white, black
-from rmg.space import Point, Direction
+from rmg.color import Color, white
 from argparse import ArgumentParser
-from subprocess import Popen, PIPE
 from sys import stdout, stdin, stderr, exit
-from os import environ
 
 
 def hue_palette(hue_count, s = 1, v = 1):

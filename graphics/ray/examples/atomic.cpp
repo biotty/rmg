@@ -189,8 +189,8 @@ world wgen::operator()(double seqt)
 
 int main(int argc, char ** argv)
 {
-    std::srand(std::time(nullptr));
     auto a{ args(argc, argv, "D") };
+    std::srand(std::time(nullptr));
     wgen g{
         .1, a.r.width /(double) a.r.height
     };

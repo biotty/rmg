@@ -5,8 +5,8 @@
 
 #include "color.h"
 #include "direction.h"
-extern int trace_max_hops;
 struct photo;
+extern int trace_max_hops;
 
 #include <array>
 #include <vector>
@@ -340,5 +340,15 @@ extern direction truncicosa_faces[32];
 constexpr double truncicosa_cr = 1.1940511957861941;
 
 } // solids
+
+struct polar {
+    double theta;
+    double phi;
+
+    operator direction();
+};
+
+polar sphere_uniform(double u, double v);
+
 } // rayt
 #endif

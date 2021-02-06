@@ -9,6 +9,9 @@
 #include <stdbool.h>
 
 
+bool image_hifi;
+
+
     static bool //note: exist in photo.c as well
 path_is_jpeg(const char * path)
 {
@@ -23,12 +26,15 @@ image_create(const char * path, int x, int y)
 {
     extern FILE * popen(const char *, const char *);
     char header[32];
-    const int n = sprintf(header, "P6\n%d %d 255\n", x, y);
+    const int n = sprintf(header, "P6\n%d %d %d\n", x, y,
+            image_hifi ? 65535 : 255);
     FILE * file = stdout;
     if (path) {
         if (path_is_jpeg(path)) {
             char cmd[256];
-            snprintf(cmd, sizeof cmd, "pnmtojpeg > %s", path);
+            snprintf(cmd, sizeof cmd, "pnmtojpeg%s > %s",
+                    image_hifi ? " --quality 90" : "",
+                    path);
             file = popen(cmd, "w");
         } else
             file = fopen(path, "wb+");
@@ -57,9 +63,15 @@ image_write(image image_, color color_)
 {
     FILE * file = image_;
     intensity_cap(&color_);
-    compact_color cc = z_color(color_);
-    unsigned char rgb[] = { cc.r, cc.g, cc.b };
-    fwrite(rgb, 1, 3, file);
+    if (image_hifi) {
+        unsigned char enc[6];
+        zz_color(color_, enc);
+        fwrite(enc, 1, sizeof enc, file);
+    } else {
+        compact_color cc = z_color(color_);
+        unsigned char rgb[] = { cc.r, cc.g, cc.b };
+        fwrite(rgb, 1, sizeof rgb, file);
+    }
 }
 
     void

@@ -11,7 +11,7 @@ unset a
 if [ -f $audio_mp3 ]
 then a=" -i $audio_mp3 -c:a aac -strict experimental -shortest"
 fi
-v=" -r 48 $(cat ${jpeg_prfx}video_opts 2>/dev/null) $video_mp4"
-c="ffmpeg -nostdin -y -v 16 -stats -f image2 -i ${jpeg_prfx}%d.jpeg$a$v"
+v=" -c:v libx264 -qmax:v 16 $(cat ${jpeg_prfx}video_opts 2>/dev/null) $video_mp4"
+c="ffmpeg -nostdin -y -v 16 -stats -framerate 30 -f image2 -i ${jpeg_prfx}%d.jpeg$a$v"
 echo $c
 $c

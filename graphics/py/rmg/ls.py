@@ -9,7 +9,7 @@ rightcat = COMPILE(r"([^_a-zA-Z])(?=\S)")
 from sys import stderr
 from random import random as rnd_1, seed as rnd_seed
 
-derive_last_n = 0  #nonzero to tweek to skip all-but-last-n on any (on-branch) axiom
+derive_last_n = 0  #nonzero to tweak to skip all-but-last-n on any (on-branch) axiom
 eval_globals = {}
 
 class Settings:
@@ -180,12 +180,12 @@ def parse_symbol(scanner):
 
 class Axiom:
     def __init__(self, fork):
-        self.dad = fork
+        self.parent = fork
         self.nodes = []
         self.mark(None)
 
     def mark(self, at):
-        assert not at or self.dad is None
+        assert not at or self.parent is None
         self.marked_at = at
 
     def marked(self):
@@ -237,7 +237,7 @@ class Axiom:
         return nodes
 
     def on_unique_tail_forks(self):
-        f = self.dad
+        f = self.parent
         if not f: return True
         if len(f.branches) != 1: return False
         if len(f.trunk.nodes) == f.index: return False
@@ -278,7 +278,7 @@ class Fork(Node):
     def derived_branches(self, f, rules):
         branches = []
         for b in self.branches:
-            assert b.dad == self, "inconsistent axiom structure"
+            assert b.parent == self, "inconsistent axiom structure"
             a = Axiom(f)
             a.nodes = b.derived_nodes(a, rules)
             branches.append(a)
@@ -337,22 +337,22 @@ def branches_match(match_branches, ignore_letter, branches, assignments):
     return i == len(match_branches)
 
 
-def left_context_matches(left_context, ignore_letter, matched_nodes, assignments, next_dad, as_dad = False):
-    if left_context.dad:
-        if not next_dad:
+def left_context_matches(left_context, ignore_letter, matched_nodes, assignments, next_parent, as_parent = False):
+    if left_context.parent:
+        if not next_parent:
             return False
         if not left_context_matches(
-               left_context.dad.trunk,
+               left_context.parent.trunk,
                ignore_letter,
-               next_dad.trunk.nodes[:next_dad.index + 1],
+               next_parent.trunk.nodes[:next_parent.index + 1],
                assignments,
-               next_dad.trunk.dad,
+               next_parent.trunk.parent,
                True):
             return False
-    exhaust = left_context.dad is not None
+    exhaust = left_context.parent is not None
     context_r = list(reversed(left_context.nodes))
     matched_r = list(reversed(matched_nodes))
-    if as_dad:
+    if as_parent:
         assert isinstance(context_r[0], Fork)
         assert isinstance(matched_r[0], Fork)
         return nodes_match(context_r[1:], ignore_letter, exhaust, matched_r[1:], assignments)
@@ -376,7 +376,7 @@ class Matcher:
 
     def left_matches(self, axiom, i, assignments):
         c = self.left_context.marked() or self.left_context
-        return left_context_matches(c, self.ignore_letter, axiom.nodes[:i], assignments, axiom.dad)
+        return left_context_matches(c, self.ignore_letter, axiom.nodes[:i], assignments, axiom.parent)
 
     def matches(self, axiom, i, assignments):
         n = axiom.nodes[i]
@@ -587,7 +587,7 @@ class System:
         self.axiom.parse_nodes(scanner)
 
     def __str__(self):
-        return str(self.axiom) + "\n" \
+        return str(self.axiom) + "\n"
                 + "\n".join([str(r) for r in self.rules])
 
     def derive_(self):
@@ -614,14 +614,14 @@ if __name__ == "__main__":
             print("%d:  %s" % (n, ls.axiom))
     else:
         print("selftest:")
-        ls = System("a () a () a [b] (a[) b ([c]) B [d] e [f X [z z][z]] " \
+        ls = System("a () a () a [b] (a[) b ([c]) B [d] e [f X [z z][z]] "
                          "(a[) b () b [c] (B [] e [f) X ([z][z]) Y")
         for n in range(4):
             ls.derive()
         assert str(ls.axiom) == \
             "a [b] [b [c]] [B [d] e [f X [z z][z]] [c]] [B [d] e [f Y [z z][z]] [c]]"
 
-        ls = System("a : '1' a : '2' " \
+        ls = System("a : '1' a : '2' "
             "() a:'xx'(a:'x') :'xx<x,xx>0' b:'xx+3'")
         ls.derive()
         assert str(ls.axiom) == "b:'4' a:'2'"

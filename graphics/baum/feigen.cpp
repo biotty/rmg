@@ -1,3 +1,6 @@
+//      © Christian Sommerfeldt Øien
+//      All rights reserved
+
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -28,7 +31,8 @@ void randomize(vector<double> & r) { for (auto & v : r) v = rnd(); }
 extern "C" void feigen(double m, offset_t * q, size_t n_line, double * r, size_t n_iters);
 // ^ parameter order layout as desired; rdi for stosd and rcx for loop, see feigen.S
 
-void produce_line(line & v, double m, double d, size_t k_iters, size_t k, size_t n_threads = 1)
+void produce_line(line & v, offset_t lower, offset_t upper,
+        double m, double d, size_t k_iters, size_t k, size_t n_threads = 1)
 {
     size_t n_line = v.size();
     vector<double> r(n_threads * 4);
@@ -45,13 +49,16 @@ void produce_line(line & v, double m, double d, size_t k_iters, size_t k, size_t
      //     });
      // while (t) tds[--t].join();
         vector<buffer> buckets(n_buckets);
-        for (auto q : buf) if (q < n_line) buckets[q >> bucket_bits].push_back(q);
-                        // ^ check should not be neeeded
+        for (auto q : buf) {
+            if (q >= lower && q < upper) {
+                buckets[q >> bucket_bits].push_back(q);
+            }
+        }
         for (auto p : buckets) for (auto q : p) ++v[q];
     }
 }
 
-struct output_params { char * dir; size_t w, i, n, x, s; };
+struct output_params { char * dir; size_t w, i, n, x, s, k; };
 
 FILE * open_file(char * dir, size_t x, const char * mode)
 {
@@ -62,11 +69,13 @@ FILE * open_file(char * dir, size_t x, const char * mode)
 
 void create_files(output_params par)
 {
-    for (size_t x = par.x; x < par.w; x += par.s) {
+    size_t h = par.w - par.s;
+    for (size_t x = par.x; x <= h; x += par.s) {
         if (FILE * grl_f = open_file(par.dir, x, "w")) {
             fprintf(grl_f, "P5\n%zu %zu\n65535\n", par.s, par.n - par.i);
             fclose(grl_f);
         }
+        if (par.k) break;
     }
 }
 
@@ -96,8 +105,9 @@ void append_grl(count_t * counts, size_t s, FILE * f, count_t max_)
 void append_files(output_params par, count_t * counts,
         vector<bool> & interest, size_t sum_min)
 {
+    size_t h = par.w - par.s;
     size_t i = 0;
-    for (size_t x = par.x; x < par.w; x += par.s, i++) {
+    for (size_t x = par.x; x <= h; x += par.s, i++) {
         if (FILE * grl_f = open_file(par.dir, x, "a")) {
             count_t *p = counts + x;
             count_t max_ = 0, sum_ = accumulate(p, p + par.s, 0,
@@ -111,25 +121,28 @@ void append_files(output_params par, count_t * counts,
             append_grl(p, par.s, grl_f, max_);
             fclose(grl_f);
         }
+        if (par.k) break;
     }
 }
 
 void discard_files(output_params par, vector<bool> & interest)
 {
+    size_t h = par.w - par.s;
     size_t i = 0;
-    for (size_t x = par.x; x < par.w; x += par.s, i++) {
+    for (size_t x = par.x; x <= h; x += par.s, i++) {
         if ( ! interest[i]) {
             if (FILE * grl_f = open_file(par.dir, x, "w")) {
                 fclose(grl_f);
             }
         }
+        if (par.k) break;
     }
 }
 
 int main(int argc, char ** argv)
 {
-    if (argc != 9) {
-        fputs("args: g w h i n x s p\n", stderr);
+    if (argc != 10) {
+        fputs("args: g w h i n x s p k\n", stderr);
         return 1;
     }
     char * g = *++argv;
@@ -140,18 +153,24 @@ int main(int argc, char ** argv)
     size_t x = atoi(*++argv);
     size_t s = atoi(*++argv);
     size_t p = atoi(*++argv);
+    size_t k = atoi(*++argv);
     size_t z = p >= 2 ? 40000u : p >= 1 ? 4000u : 400u;
     double a = 3.5;
     double b = 4.0;
     srand(time(NULL));
-    output_params par = { g, w, i, n, x, s };
+    output_params par = { g, w, i, n, x, s, k };
     create_files(par);
     size_t q = (w - x) / s;
     vector<bool> interest(q);
     double d = (b - a) / h;
+    offset_t lower = x;
+    offset_t upper = w;
+    if (k) {
+        upper = lower + s;
+    }
     for (size_t j = i; j < n; j++) {
         line v(w);
-        produce_line(v, a + d * j, d, z, z);
+        produce_line(v, lower, upper, a + d * j, d, z, z);
         append_files(par, v.data(), interest, 15 * 4 * z / q);
         fprintf(stderr, "\r%zu", j);
     }

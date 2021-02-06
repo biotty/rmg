@@ -47,11 +47,11 @@ struct plastic_optics : optics {
         const double h = plastics[i].h * pi / 180;
         const double s = linear(1 - .1 * plastics[i].s, 0, t);
         const double v = linear(1 - .1 * plastics[i].v, .98, t);
-        reflection_filter = from_hsv(h, .15 * s, v * (.15 + .05 * (int)y));
+        reflection_filter = from_hsv(h, .15 * s, v * (.125 + .05 * (int)y)); // alt: .125 --> .15
         absorption_filter = black;
         refraction_index = linear(glass_ri, 1, t);
-        refraction_filter = from_hsv(h, .55 * s, v * (.95 - .05 * (int)y));
-        passthrough_filter = from_hsv(h, .35 * s, v * .85);
+        refraction_filter = from_hsv(h, .5 * s, v * (.975 - .05 * (int)y));  // alt: .5 .975 --> .55 .95
+        passthrough_filter = from_hsv(h, .3 * s, v * .875);  // alt: .3 .875 --> .35 .85
     }
 };
 
@@ -80,6 +80,7 @@ namespace factory {
         unsigned x_n;
         unsigned y_n;
         unsigned modus;
+        rotation intro;
         double e;
         double s;
     };
@@ -97,34 +98,39 @@ namespace factory {
         }
 
         point c = f.p + zd * (f.h / 2 - s);
+        direction mxd = modus_direction(f.modus);
+        direction myd = modus_direction(f.modus + 1);
+        direction mzd = zd;
         double vt = 0;
         if (t > .8) {
             vt = delinear(.8, 1, t);
         } else if (t < .3) {
             c.z += square(delinear(.3, 0, t) * 4);
             if (t < .2) vt = delinear(.2, 0, t);
+
+            rotation i = f.intro;
+            i.angle *= square(delinear(.3, 0, t) * M_SQRT2);
+            rot_(mxd, i);
+            rot_(myd, i);
+            rot_(mzd, i);
         }
 
         assert(f.x_n && f.y_n);
-
         const auto optou = plastic_optics{ f.plastic_i, plastic_optics::location::outer, vt };
-        const direction mxd = modus_direction(f.modus);
-        const direction myd = modus_direction(f.modus + 1);
         const point g = c + mxd * (.5 * (f.x_n - 1)) + myd * (.5 * (f.y_n - 1));
-
         blocks.push_back({{
             cuboid{g,
-                zd, mxd, {f.x_n - tiny_d, f.y_n - tiny_d, f.h - tiny_d}},
-            inv_cuboid{g +- zd * (height / 6),
-                zd, mxd, {bump_d + (f.x_n - 1), bump_d + (f.y_n - 1), f.h}},
+                mzd, mxd, {f.x_n - tiny_d, f.y_n - tiny_d, f.h - tiny_d}},
+            inv_cuboid{g +- mzd * (height / 6),
+                mzd, mxd, {bump_d + (f.x_n - 1), bump_d + (f.y_n - 1), f.h}},
             }, optou, {}});
         for (unsigned y_i = 0; y_i < f.y_n; y_i++) {
             for (unsigned x_i = 0; x_i < f.x_n; x_i++) {
                 const point bc = c + mxd * x_i + myd * y_i;
                 blocks.push_back({{
-                    cylinder{bc, bump_d / 2 - tiny_d, zd},
-                    inv_plane{c + zd * (f.h / 2 - tiny_d), zd},
-                    plane{c + zd * (f.h / 2 + height / 6 - tiny_d), zd},
+                    cylinder{bc, bump_d / 2 - tiny_d, mzd},
+                    inv_plane{c + mzd * (f.h / 2 - tiny_d), mzd},
+                    plane{c + mzd * (f.h / 2 + height / 6 - tiny_d), mzd},
                     }, optou, {}});
             }
         }
@@ -134,9 +140,9 @@ namespace factory {
             for (unsigned x_j = 1; x_j < f.x_n; x_j++) {
                 blocks.push_back({{
                     cylinder{c + mxd * (x_j - .5) + myd * (y_j - .5),
-                        trunk_r - tiny_d, zd},
-                    inv_plane{c +- zd * (f.h / 2 - tiny_d), zd},
-                    plane{c + zd * (f.h / 2 - tiny_d), zd},
+                        trunk_r - tiny_d, mzd},
+                    inv_plane{c +- mzd * (f.h / 2 - tiny_d), mzd},
+                    plane{c + mzd * (f.h / 2 - tiny_d), mzd},
                     }, optin, {}});
             }
         }
@@ -145,9 +151,9 @@ namespace factory {
             unsigned n = max(f.x_n, f.y_n);
             for (unsigned k = 1; k < n; k++) {
             blocks.push_back({{
-                cylinder{c + md * (k - .5), height / 6 - tiny_d, zd},
-                inv_plane{c +- zd * (f.h / 2 - tiny_d), zd},
-                plane{c + zd * (f.h / 2 - tiny_d), zd},
+                cylinder{c + md * (k - .5), height / 6 - tiny_d, mzd},
+                inv_plane{c +- mzd * (f.h / 2 - tiny_d), mzd},
+                plane{c + mzd * (f.h / 2 - tiny_d), mzd},
                 }, optin, {}});
             }
         }
@@ -296,7 +302,9 @@ done:
 
         fixtures.push_back({
                 p, rands(N_PLASTICS),  // alt: hue set to srand(8)
-                z_n * h_unit, x_n, y_n, best.modus, e, 0 });
+                z_n * h_unit, x_n, y_n, best.modus,
+                rotation{ sphere_uniform(randd(), randd()), randd() },
+                e, 0 });
     }
     h += 1 / .35;
 }
