@@ -732,8 +732,8 @@ static resolution parse_resolution(char *s)
 
 [[ noreturn ]] static void usage(const char * pn, const std::string & extra)
 {
-    std::cerr << "Usage: " << pn << " [-j jobs] [-m hops] [-n frames]"
-        " [-r WxH] [-t 0..1]";
+    std::cerr << "Usage: " << pn << " [-i] [-j jobs] [-m hops] [-n frames]"
+        " [-r WxH] [-t at]";
     if ( ! extra.empty()) {
         std::cerr << " [-" << extra << " x]";
     }
@@ -803,6 +803,7 @@ std::string args::get(char opt)
 
 void args::run(world_gen_f wg)
 {
+    std::cerr<<t<<"\n";
     if (n) sequence(wg, n, path, r, j);
     else render(wg(t), path, r, j);
 }

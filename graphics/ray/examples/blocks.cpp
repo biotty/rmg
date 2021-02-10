@@ -1,7 +1,7 @@
 #include "rayt.hpp"
-#include "sky.h"
 
 #include <vector>
+#include <array>
 #include <limits>
 #include <cstdlib>
 #include <ctime>
@@ -22,26 +22,24 @@ unsigned rands(unsigned n)
     return static_cast<unsigned>(floor(randd() * n));
 }
 
-#define N_PLASTICS 10
-struct {
-    unsigned h, s, v;
-} plastics[N_PLASTICS] = {
-    {  0, 1, 1},
-    {151, 0, 2},
-    {242, 2, 1},
-    { 51, 1, 1},
-    {208, 2, 0},
-    {315, 2, 2},
-    { 82, 0, 2},
-    { 26, 0, 1},
-    {208, 0, 1},
-    {266, 4, 0},
+struct hsv { unsigned h, s, v; };
+array<hsv, 10> plastics {
+    hsv{  0, 1, 1},
+    hsv{151, 0, 2},
+    hsv{242, 2, 1},
+    hsv{ 51, 1, 1},
+    hsv{208, 2, 0},
+    hsv{315, 2, 2},
+    hsv{ 82, 0, 2},
+    hsv{ 26, 0, 1},
+    hsv{208, 0, 1},
+    hsv{266, 4, 0}
 };
 
 struct plastic_optics : optics {
     enum class location { inner, outer };
     plastic_optics(unsigned i, location y, double t) {
-        assert(i < N_PLASTICS);
+        assert(i < plastics.size());
         assert(t >= 0);
         assert(t <= 1);
         const double h = plastics[i].h * pi / 180;
@@ -82,20 +80,15 @@ namespace factory {
         unsigned modus;
         rotation intro;
         double e;
-        double s;
     };
 
-    void make(vector<object> &blocks, fixture & f, double s)
+    void make(vector<object> &blocks, const fixture & f, double s)
     {
-        if (s < f.p.z + f.e) return;
-        if (f.s < 0) return;
+        const double b = f.p.z + f.e;
+        if (s < b) return;
 
-        if (f.s == 0) f.s = s;
-        const double t = (s - f.s) * .35;
-        if (t >= 1) {
-            f.s = -1;
-            return;
-        }
+        const double t = (s - b) * .35;
+        if (t >= 1) return;
 
         point c = f.p + zd * (f.h / 2 - s);
         direction mxd = modus_direction(f.modus);
@@ -232,7 +225,20 @@ namespace factory {
     };  // end: struct reserver
 } // end: namespace factory
 
+    color
+sky_a(direction d)
+{ return { (d.x + 1) * 0.5, (d.y + 1) * 0.5, 1 - (d.z + 1) * 0.5 }; }
+
+    color
+sky_b(direction d)
+{ return { (-d.y + 1) * 0.5, (d.x + 1) * 0.5, 1 - (d.z + 1) * 0.5 }; }
+
+    color
+sky_c(direction d)
+{ return { (-d.x + 1) * 0.5, (-d.y + 1) * 0.5, 1 - (d.z + 1) * 0.5 }; }
+
 struct wgen {
+    array<sky_f, 3> skies = { sky_a, sky_b, sky_c };
     double eye_phi, eye_tan, r, h;
     vector<factory::fixture> fixtures;
     wgen(unsigned board_n, unsigned n_blocks);
@@ -301,10 +307,10 @@ done:
         }
 
         fixtures.push_back({
-                p, rands(N_PLASTICS),  // alt: hue set to srand(8)
+                p, rands(plastics.size()),  // alt: hue set to srand(8)
                 z_n * h_unit, x_n, y_n, best.modus,
                 rotation{ sphere_uniform(randd(), randd()), randd() },
-                e, 0 });
+                e });
     }
     h += 1 / .35;
 }
@@ -322,7 +328,8 @@ world wgen::operator()(double seqt)
         + zd * r * .7 * (eye_tan + sin(seqt * 4 * pi));
     const point focus = o +- zd * 1.8;
 
-    return { observer{ eye, focus, right * r }, rgb_sky, blocks, {} };
+    return { observer{ eye, focus, right * r },
+        skies[seqt * skies.size()], blocks, {} };
 }
 
 } // namespace ""

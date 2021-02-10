@@ -158,6 +158,7 @@ void help()
 "-h         output this help to stdandard err\n"
 "-i PATH    filename of PNG image to start with\n"
 "-m N       output-image pixel-widths per fluid-cell\n"
+"-M MODE    0:random 1:whirlpool\n"  // TODO: rather have a func on cell rotations
 "-n N       count of output-images to produce\n"
 "-o PATH    prefix for path to JPEG output-files\n"
 "-q N       number of force-spots applied to fluid\n"
@@ -165,14 +166,14 @@ void help()
 "-s N       seed for random-number-generator\n"
 "-v REAL    normal and exceptional viscosity, respectively\n"
 "-V REAL\n\n"
-"-I         read 'i j a w r i j ...'\n"
-"-R W,H     resolution override\n";
+"-I         read 'i j a w r ..repeated for force-spots'\n"
+"-R WxH     resolution, instead of as input\n";
 }
 
 
 int main(int argc, char **argv)
 {
-    int n = 512;
+    int n = 512, M = 0;
     time_t seed = 0;
     unsigned p = 2, q = 9, m = 4;
     std::vector<ColorMatch> d_exc, v_exc;
@@ -183,7 +184,7 @@ int main(int argc, char **argv)
     bool is_to_read = false;
 
     int opt;
-    while ((opt = getopt(argc, argv, "c:C:d:D:hi:m:n:o:p:q:s:v:V:R:I")) >= 0)
+    while ((opt = getopt(argc, argv, "c:C:d:D:hi:m:M:n:o:p:q:s:v:V:R:I")) >= 0)
     switch (opt) {
         default: return 1;
         case 'c':
@@ -208,6 +209,7 @@ int main(int argc, char **argv)
         case 'h': help(); return 0;
         case 'i': photo_filename = optarg; break;
         case 'm': m = std::atoi(optarg); break;
+        case 'M': M = std::atoi(optarg); break;
         case 'n': n = std::atoi(optarg); break;
         case 'o': image_prefix = optarg; break;
         case 'p': p = std::atoi(optarg); break;
@@ -265,12 +267,29 @@ int main(int argc, char **argv)
         pos.push_back(Position(i, j));
         // ^ pick prng sequence for just positions
     }
-    for (unsigned k = 0; k < p; ++k) {
-        functions.push_back(new ExtraFunction(pos[k], .98 + rnd(.04)));
-    }
-    for (unsigned k = p; k < p + q; ++k) {
-        functions.push_back(new JetFunction(pos[k],
-                    rnd(6.283), rnd(.01), .1 + rnd(.9), fp));
+    if (M == 0) {
+        for (unsigned k = 0; k < p; ++k) {
+            functions.push_back(new ExtraFunction(pos[k], .98 + rnd(.04)));
+        }
+        for (unsigned k = p; k < p + q; ++k) {
+            functions.push_back(new JetFunction(pos[k],
+                        rnd(M_PI * 2), rnd(.01), .1 + rnd(.9), fp));
+        }
+    } else {
+        XY center{ .5 * w, .5 * h };
+        double inv_max_r = 2 / XY{ (double)w, (double)h }.abs();
+        for (unsigned k = 0; k < p; ++k) {
+            XY at{ (double)pos[k].j, (double)pos[k].i };
+            double t = inv_max_r * (at - center).abs();
+            functions.push_back(new ExtraFunction(pos[k], linear(.98, 1.02, t)));
+        }
+        for (unsigned k = p; k < p + q; ++k) {
+            XY at{ (double)pos[k].j, (double)pos[k].i };
+            XY v = at - center;
+            double t = inv_max_r * v.abs();
+            double a = atan2(v.y, v.x);
+            functions.push_back(new JetFunction(pos[k], a + .5 * M_PI, 0, t, fp));
+        }
     }
     pos.clear(); // nice: done with these
     if (is_to_read) {
