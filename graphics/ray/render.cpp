@@ -10,6 +10,7 @@
 #include <utility>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 
 
 using serial_t = int;
@@ -34,37 +35,43 @@ struct RasterJob {
     using type = std::pair<decltype(x), decltype(y)>;
 
     std::mutex output_mutex;
+    std::condition_variable cv;
     serial_t output_serial;
     using result = Sequenced<color>;
-    std::vector<result> buffer;
+    std::vector<result> output_buffer;
+    const size_t max_output_buffer_size;
     std::function<color(type)> f;
     image out;
 
     RasterJob(int width, int height,
-            std::function<color(type)> f, image out)
+            std::function<color(type)> f, image out, size_t mobs)
         : input_serial(), x(), y(), w(width), h(height)
-        , output_serial(), f(f), out(out) {}
+        , output_serial(), max_output_buffer_size(mobs), f(f), out(out) {}
 
     bool output(result r) {
-        std::lock_guard<std::mutex> guard(output_mutex);
-        buffer.push_back(r);
-        const auto was_serial = output_serial;
-        while (true) {
-            auto it = std::find_if(buffer.begin(), buffer.end(),
-                    [this](result & r)
-                    { return output_serial == r.serial; });
-            if (it == buffer.end())
-                break;
+        {
+            std::lock_guard<std::mutex> guard(output_mutex);
+            output_buffer.push_back(r);
+            const auto was_serial = output_serial;
+            while (true) {
+                auto it = std::find_if(output_buffer.begin(), output_buffer.end(),
+                        [this](result & r)
+                        { return output_serial == r.serial; });
+                if (it == output_buffer.end())
+                    break;
 
-            image_write(out, it->value);
+                image_write(out, it->value);
 
-            buffer.erase(it);
-            ++output_serial;
+                output_buffer.erase(it);
+                ++output_serial;
+            }
+
+            if (output_serial == was_serial && output_buffer.size() > max_output_buffer_size) {
+                return true;
+            }
         }
-
-        return output_serial == was_serial && buffer.size() > 16;
-        /* signals situation of congestion due to out-of-order and
-         * number should rather be related to n_threads somehow */
+        cv.notify_all();
+        return false;
     }
 
     Sequenced<type> input() {
@@ -85,10 +92,11 @@ struct RasterJob {
     void run() {
         while (auto s = input()) {
             if (output({s.serial, f(s.value)})) {
-                pthread_yield();
-                /* seems to in practice prevent a
-                 * congestion on the output ordering
-                 * buffer happening when f is quick */
+                std::unique_lock<std::mutex> lk(output_mutex);
+                for (const auto was_serial = output_serial;
+                        was_serial == output_serial;
+                        cv.wait(lk))
+                    ;
             }
         }
     }
@@ -138,7 +146,7 @@ render(const char * path, int width, int height,
                 return trace(observer_ray(obs, width /(real) height,
                             (p.first + (real).5) / width,
                             (p.second + (real).5) / height), w);
-            }, out};
+            }, out, 16 };
         std::vector<std::thread> workers;
         for (unsigned i = 0; i < n_threads; i++)
             workers.emplace_back(&RasterJob::run, &job);

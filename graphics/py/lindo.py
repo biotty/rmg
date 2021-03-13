@@ -114,6 +114,7 @@ ap.add_argument("-r", "--resolution", type=str, default="1280x720")
 ap.add_argument("-s", "--random-seed", type=int)
 ap.add_argument("-u", "--unit-turn-degrees", type=float, default=360)
 ap.add_argument("-G", "--display-mode", action="store_true")
+ap.add_argument("-V", "--svg-mode", default=True, action="store_false")
 ap.add_argument("-H", "--expression-help", action="store_true")
 ap.add_argument("-I", "--order-independent", action="store_true")
 ap.add_argument("self_test_mode", nargs="*")
@@ -149,18 +150,29 @@ tree_builder = TreeBuilder(drawing,
         u_default = degrees_unit(options.default_turn),
         hook = Hook(options.palette_breadth, options.palette_index))
 ls.axiom.visit_by(operating_visitor(tree_builder))
+drawing.rescale()
+width, height = [int(s) for s in options.resolution.split("x")]
 
-if options.display_mode:
+if options.svg_mode:
+    from rmg import graphics
+    pen = graphics.Pencil(stdout, (width, height))
+    drawing.render(pen)
+    pen.done()
+
+elif options.display_mode:
     from rmg.display import Display
     d = Display(options.order_independent)
-    drawing.rescale()
     drawing.render(d.pencil())
     d.run()
 else:
     stderr.write("Rendering drawing at %s\n" % (options.resolution,))
-    width, height = [int(s) for s in options.resolution.split("x")]
     board = Board.mono(width, height, white)
-    drawing.rescale()
     drawing.render(Pencil(board))
     stderr.write("Writing board to %s\n" % (options.image_path,))
     board.save(options.image_path, gray = (options.palette_breadth == 0))
+
+#
+# example invokation:
+#
+# lindo.py -d 25 -c 4 -e "f ()f() f f-[-f+f+f]+[+f-f-f]" > out.svg
+#

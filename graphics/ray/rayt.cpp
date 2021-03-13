@@ -803,7 +803,6 @@ std::string args::get(char opt)
 
 void args::run(world_gen_f wg)
 {
-    std::cerr<<t<<"\n";
     if (n) sequence(wg, n, path, r, j);
     else render(wg(t), path, r, j);
 }

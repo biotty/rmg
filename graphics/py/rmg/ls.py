@@ -587,8 +587,8 @@ class System:
         self.axiom.parse_nodes(scanner)
 
     def __str__(self):
-        return str(self.axiom) + "\n"
-                + "\n".join([str(r) for r in self.rules])
+        return str(self.axiom) + ("\n"
+                "\n".join([str(r) for r in self.rules]))
 
     def derive_(self):
         d = Axiom(None)
