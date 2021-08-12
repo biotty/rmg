@@ -1,4 +1,4 @@
-# Random Media Generators
+# Rho Media Generators
 
 ## Provided Tools
 
