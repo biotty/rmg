@@ -2,98 +2,13 @@
 //      All rights reserved
 
 #include "render.hpp"
+#include "work.hpp"
 #include "image.h"
 
 #include <iostream>
 #include <algorithm>
-#include <functional>
 #include <utility>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-
-
-using serial_t = int;
-#define SERIAL_END -1
-template<typename T>
-struct Sequenced {
-    serial_t serial;
-    T value;
-
-    Sequenced() : serial(SERIAL_END) {}
-    operator bool() { return serial != SERIAL_END; }
-
-    Sequenced(serial_t serial, T v) : serial(serial), value(v) {}
-};
-
-
-struct RasterJob {
-    std::mutex input_mutex;
-    serial_t input_serial;
-    int x, y, w, h;
-
-    using type = std::pair<decltype(x), decltype(y)>;
-
-    std::mutex output_mutex;
-    std::condition_variable cv;
-    serial_t output_serial;
-    using result = Sequenced<color>;
-    std::vector<result> output_buffer;
-    const size_t lim_output_buffer_size;
-    std::function<color(type)> f;
-    image out;
-
-    RasterJob(int width, int height,
-            std::function<color(type)> f, image out, size_t mobs)
-        : input_serial(), x(), y(), w(width), h(height)
-        , output_serial(), lim_output_buffer_size(mobs), f(f), out(out) {}
-
-    void output(result r) {
-        std::unique_lock<std::mutex> lk(output_mutex);
-        output_buffer.push_back(r);
-        const auto was_serial = output_serial;
-        while (true) {
-            auto it = std::find_if(output_buffer.begin(), output_buffer.end(),
-                    [this](result & r)
-                    { return output_serial == r.serial; });
-            if (it == output_buffer.end())
-                break;
-
-            image_write(out, it->value);
-
-            output_buffer.erase(it);
-            ++output_serial;
-        }
-
-        if (output_serial == was_serial && output_buffer.size() > lim_output_buffer_size) {
-            cv.wait(lk);
-        } else {
-            lk.unlock();
-            cv.notify_all();
-        }
-    }
-
-    Sequenced<type> input() {
-        if (y == h) {
-            return {};
-        }
-        std::lock_guard<std::mutex> guard(input_mutex);
-
-        type r{x, y};
-
-        if (++x == w) {
-            ++y;
-            x = 0;
-        }
-        return {input_serial++, r};
-    }
-
-    void run() {
-        while (auto s = input()) {
-            output({s.serial, f(s.value)});
-        }
-    }
-};
+#include <cstdlib>
 
 
     ray
@@ -134,16 +49,17 @@ render(const char * path, int width, int height,
                             (x + (real).5) / width,
                             (y + (real).5) / height), w));
     } else {
-        RasterJob job{width, height,
-            [&obs, width, height, &w](typename RasterJob::type p){
+        work<color> q{n_threads, 16, width * height,
+            [width, height, &obs, &w](int seq_i) {
+                div_t d = div(seq_i, width);
                 return trace(observer_ray(obs, width /(real) height,
-                            (p.first + (real).5) / width,
-                            (p.second + (real).5) / height), w);
-            }, out, 16 };
-        std::vector<std::thread> workers;
-        for (unsigned i = 0; i < n_threads; i++)
-            workers.emplace_back(&RasterJob::run, &job);
-        for (auto & t : workers) t.join();
+                            (d.rem + (real).5) / width,
+                            (d.quot + (real).5) / height), w);
+            }
+        };
+        while (q.more()) {
+            image_write(out, q.get_result());
+        }
     }
     image_close(out);
 }
