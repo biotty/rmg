@@ -1,4 +1,4 @@
-CXXFLAGS := -Wall -Wextra -Werror -std=c++17 -pedantic -O3
+CXXFLAGS := -Wall -Wextra -Werror -std=c++2a -pedantic -O3
 CFLAGS := -Wall -Wextra -Werror -std=c11 -O3
 LDFLAGS := -lm -pthread
 
