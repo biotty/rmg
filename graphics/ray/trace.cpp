@@ -6,7 +6,7 @@
 #include <cassert>
 #include <iostream>
 
-int trace_max_hops = 11;
+int trace_max_hops = 19;
 bool trace_eliminate_direct_sky = false;
 color trace_direct_sky = {.8, .8, .8};
 bool trace_transparent_on_equal_index = false;
@@ -125,7 +125,7 @@ refraction_trace(ray ray_, const scene_object * so,
         float optics_refraction_index,
         compact_color optics_refraction_filter,
         detector & detector_, direction det_head,
-        const world & w, color * result)
+        const world & w, color * result, compact_color * reflection_filter)
 {
     const ptrdiff_t i = so - &w.scene_[0];
     int outside_i = firstset(detector_.inside);
@@ -152,11 +152,14 @@ refraction_trace(ray ray_, const scene_object * so,
         outside_refraction_index
             = w.scene_[outside_i].optics.refraction_index;
         if (0 == outside_refraction_index) {
-            if (debug) {
-                if (detector_.hop != trace_max_hops)  // <-- view MAY be inside
+            if (enters) {
+                if (debug && detector_.hop != trace_max_hops)  // <-- view MAY be inside
                     std::cerr << "we got inside opaque object " << i << "\n";
+            } else {
+                const scene_object * outside = &w.scene_[outside_i];
+                *reflection_filter = outside->optics.reflection_filter;
+                return opaque;
             }
-            return opaque;
         }
     }
     if (trace_transparent_on_equal_index
@@ -177,6 +180,7 @@ refraction_trace(ray ray_, const scene_object * so,
     }
     ray_.head = refraction(ray_.head, det_head, refraction_index);
     if (is_DISORIENTED(&ray_.head)) {
+        saturated_add(reflection_filter, optics_refraction_filter);
         return total_reflect;
     }
     *result = trace_hop(ray_, optics_refraction_filter, detector_, w);
@@ -245,11 +249,10 @@ ray_trace(detector & detector_, ray t, const world & w)
                 surface, closest_object,
                 optics->refraction_index,
                 optics->refraction_filter,
-                detector_, t.head, w, &refraction_color);
+                detector_, t.head, w,
+                &refraction_color, &reflection_filter);
         if (r == reflect || r == transparent) {
             color_add(&detected, refraction_color);
-        } else if (r == total_reflect) {
-            saturated_add(&reflection_filter, optics->refraction_filter);
         }
     }
     if (r != transparent) {
