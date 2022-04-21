@@ -33,6 +33,12 @@ static color ray_trace(detector &, ray, const world &);
 trace(ray t, const world & w)
 {
     const size_t q = w.scene_.size();
+
+    assert(surface_ranks.size() == q);
+    // ^ internal consistency check, as world is all-public
+    // alternative: replace public scene_assigned with
+    // private scene_ and public add(obj) member
+
     detector detector_{trace_max_hops, {1, 1, 1}, bitarray(q)};
     init_inside(detector_.inside, w.scene_, &t);
     if (debug && firstset(detector_.inside) >= 0)
@@ -120,6 +126,20 @@ enum refraction_ret {
     transparent,
 };
 
+    void world::scene_assigned()
+{
+    for (auto & object : scene_) {
+        color c = x_color(object.optics.refraction_filter);
+        color_add(&c, x_color(object.optics.passthrough_filter));
+        surface_ranks.push_back(c.r + c.g + c.b);
+    }
+}
+
+    bool prefer_alternate_surface(const world & w, int i, int i_alt)
+{
+    return w.surface_ranks[i_alt] < w.surface_ranks[i] * .5;
+}
+
     static enum refraction_ret
 refraction_trace(ray ray_, const scene_object * so,
         float optics_refraction_index,
@@ -149,17 +169,21 @@ refraction_trace(ray ray_, const scene_object * so,
     if ( ! enters) outside_i = firstset(detector_.inside);
     float outside_refraction_index = 1.0;
     if (outside_i >= 0) {
-        outside_refraction_index
-            = w.scene_[outside_i].optics.refraction_index;
-        if (0 == outside_refraction_index) {
+        const scene_object * outside = &w.scene_[outside_i];
+        outside_refraction_index = outside->optics.refraction_index;
+        if (0 >= outside_refraction_index) {
             if (enters) {
                 if (debug && detector_.hop != trace_max_hops)  // <-- view MAY be inside
                     std::cerr << "we got inside opaque object " << i << "\n";
             } else {
-                const scene_object * outside = &w.scene_[outside_i];
                 *reflection_filter = outside->optics.reflection_filter;
-                return opaque;
             }
+            return opaque;
+        }
+
+        if (prefer_alternate_surface(w, i, outside_i)) {
+            *reflection_filter = outside->optics.reflection_filter;
+            optics_refraction_filter = outside->optics.refraction_filter;
         }
     }
     if (trace_transparent_on_equal_index
@@ -243,7 +267,9 @@ ray_trace(detector & detector_, ray t, const world & w)
     }
     enum refraction_ret r = opaque;
     compact_color reflection_filter = optics->reflection_filter;
-    if (optics->refraction_index) {
+    if (optics->refraction_index < 0) {
+        color_add(&detected, x_color(optics->refraction_filter));
+    } else if (optics->refraction_index > 0) {
         color refraction_color;
         r = refraction_trace(
                 surface, closest_object,

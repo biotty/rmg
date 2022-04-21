@@ -21,6 +21,8 @@ struct world {
     scene_sky sky;
     spots spots_;
     scene scene_;
+    void scene_assigned();
+    std::vector<float> surface_ranks;
     world(scene_sky sky, del_f inter_f, del_f decoration_f);
     world(const world&) = delete;
     world(world&&) = default;

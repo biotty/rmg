@@ -32,15 +32,25 @@ struct wgen {
         double r;
         direction v;
         double h;
-        bool is_bullet;
+        int type;
     };
     vector<droplet_fixture> droplet_fixtures;
 
+    optics led_optics(double hue) {
+        return {
+            black,
+            black,
+            -10,
+            from_hsv(hue, 1, 1),
+            black
+        };
+    };
+
     optics bullet_optics(double hue) {
         return {
-         /* white * .8, */ from_hsv(hue, .1, .9),
+            from_hsv(hue, .1, .9),
             black,
-            0,
+            1.2,
             black,
             black
         };
@@ -48,11 +58,11 @@ struct wgen {
 
     optics droplet_optics(double hue) {
         return {
-         /* white * .1, */ from_hsv(hue, .1, .03),
+            from_hsv(hue, .1, .03),
             black,
             water_ri,
-         /* white * .9, */ from_hsv(hue, .25, .9),
-         /* white * .8 */ from_hsv(hue, .3, .95)
+            from_hsv(hue, .25, .9),
+            from_hsv(hue, .3, .95)
         };
     };
 
@@ -65,11 +75,18 @@ wgen::wgen(int n, double eye_at_face) : eye_at_face(eye_at_face)
     eye_phi = randd() * pi * 2;
     for (int i=0; i<n; i++) {
         point p = o + sphere_random() * 2 * randd();
-        double r = (randd() + 1) * .6;
+        double r = (randd() + 1) * .8;
         direction v = sphere_random() * 2 * randd();
         double h = randd() * pi * 2;
-        bool is_bullet = 0 == i % 3;
-        droplet_fixture f = { p, r, v, h, is_bullet };
+        int type = i % 10 - 5;
+        if (type <= 0) {
+            type = 0;
+            v = v * .1;
+            r *= .1;
+        } else if (type > 2) {
+            type = 2;
+        }
+        droplet_fixture f = { p, r, v, h, type };
         droplet_fixtures.push_back(f);
     }
 }
@@ -78,7 +95,13 @@ world wgen::operator()(double seqt)
 {
     vector<object> objects;
     for (auto f : droplet_fixtures) {
-        const auto opts = ! f.is_bullet ? droplet_optics(f.h) : bullet_optics(f.h);
+        optics opts = {};
+        switch (f.type) {
+        case 0: opts = led_optics(f.h); break;
+        case 1: opts = bullet_optics(f.h); break;
+        case 2: opts = droplet_optics(f.h); break;
+        default: assert(0);
+        }
         const point ca = f.p + f.v * (seqt - .5);
 
         auto droplet_obj = object{ inter { sphere{ca, f.r} }, opts, {} };
@@ -109,5 +132,5 @@ int main(int argc, char ** argv)
     cout << "SRAND=" << s << "\n";
     srand(s);
     auto a = args(argc, argv, "E");
-    a.run(wgen(16, strtof(a.get('E').c_str(), nullptr)));
+    a.run(wgen(100, strtof(a.get('E').c_str(), nullptr)));
 }

@@ -364,6 +364,7 @@ main(int argc, char *argv[])
         assert(i == world_.scene_.size());
         get_scene_object(i, world_);
     }
+    world_.scene_assigned();
 
     world_.sky = get_scene_sky();
     get_spots(world_.spots_);

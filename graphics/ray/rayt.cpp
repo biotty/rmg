@@ -692,6 +692,7 @@ make(const rayt::world & w)
         make(w.obs), world{sky_, delete_inter, delete_decoration}
     };
     for (auto & o : w.s) make(o, ret.second);
+    ret.second.scene_assigned();
     for (auto & s : w.ls)
         ret.second.spots_.push_back({s.p, s.c});
     return ret;
