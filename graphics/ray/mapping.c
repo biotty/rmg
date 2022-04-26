@@ -73,8 +73,8 @@ texture_map(const texture_application * t, const photo * ph, real x, real y,
     static void
 zoom_(const real r, real * x, real * y, bool repeat)
 {
-    *x = *x * r + .5;
-    *y = *y * r + .5;
+    *x *= r;
+    *y *= r;
     if (repeat) {
         mod1(x);
         mod1(y);

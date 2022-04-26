@@ -230,11 +230,15 @@ struct mapping_f
     direction x;
     surface_f f;
 };
+
 void mul_(mapping_f & m, point at, double);
 void mov_(mapping_f & m, direction offset);
 void rot_(mapping_f & m, point at, rotation);
 
 using textmap = std::variant<texture, mapping_f>;
+
+textmap textmap_mapping(surface_f f);
+textmap textmap_texture(surface s, str n);
 
 struct object {
     inter si;
