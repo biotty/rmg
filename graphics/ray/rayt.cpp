@@ -241,13 +241,24 @@ void rot_(shape & s, point at, rotation ro)
     std::visit([at, ro](auto & arg) { arg._rot(at, ro); }, s);
 }
 
-void angular::_mul(double factor) { r *= factor; }
+void angular::_mul(double /*factor*/) {}
 void angular::_mov(direction) {}
 void angular::_rot(point, rotation ro) { rot_(d, ro); }
 
 void mov_(angular &, point, double) {}
 void mov_(common_geometric & arg, point at, double factor)
 { arg.p = at + (arg.p - at) * factor; }
+
+textmap textmap_mapping(surface_f f)
+{
+    return mapping_f{ origo, 1, zd, xd, f };
+}
+
+textmap textmap_texture(str n, surface s)
+{
+    // todo: not support only angular
+    return angular{ zd, xd, 1, n, s };
+}
 
     void
 mul_(texture & s, point at, double factor)
@@ -600,7 +611,12 @@ make(rayt::axial1 tx, object_decoration * df)
 make_c(rayt::color c)
 { return z_filter(c); }
 
+struct photo;
 struct surface_decoration_arg {
+    photo * is_null;  // unbreak decoration_delete which assumes a texture
+    // note that it is not *specified* that the first attribute here is at the
+    // same offset as the photo in the C structs texture_..._arg since we have
+    // the std::function member below.  however, it "typically works fine".
     point o;
     real r;
     base_arg base;
@@ -636,7 +652,7 @@ make(rayt::textmap const & tm, object_decoration * df, world & world_)
     } else {
         auto const & mf = std::get<rayt::mapping_f>(tm);
         using D = surface_decoration_arg;
-        da = new (alloc<D>()) D{mf.p, 1 / mf.r, make_base(mf.d, mf.x), mf.f};
+        da = new (alloc<D>()) D{nullptr, mf.p, 1 / mf.r, make_base(mf.d, mf.x), mf.f};
         *df = surface_decoration_;
     }
     world_.decoration_args.push_back(da);
@@ -692,6 +708,7 @@ make(const rayt::world & w)
         make(w.obs), world{sky_, delete_inter, delete_decoration}
     };
     for (auto & o : w.s) make(o, ret.second);
+    ret.second.scene_assigned();
     for (auto & s : w.ls)
         ret.second.spots_.push_back({s.p, s.c});
     return ret;

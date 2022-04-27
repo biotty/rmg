@@ -6,10 +6,11 @@
 #include <cassert>
 #include <iostream>
 
-int trace_max_hops = 11;
+int trace_max_hops = 19;
 bool trace_eliminate_direct_sky = false;
 color trace_direct_sky = {.8, .8, .8};
 bool trace_transparent_on_equal_index = false;
+double alternate_surface_factor = .5;
 
 world::world(scene_sky sky, del_f inter_f, del_f decoration_f)
     : sky(sky), del_inter(inter_f), del_decoration(decoration_f)
@@ -33,6 +34,12 @@ static color ray_trace(detector &, ray, const world &);
 trace(ray t, const world & w)
 {
     const size_t q = w.scene_.size();
+
+    assert(w.surface_ranks.size() == q);
+    // ^ internal consistency check, as world is all-public
+    // alternative: replace public scene_assigned with
+    // private scene_ and public add(obj) member
+
     detector detector_{trace_max_hops, {1, 1, 1}, bitarray(q)};
     init_inside(detector_.inside, w.scene_, &t);
     if (debug && firstset(detector_.inside) >= 0)
@@ -78,7 +85,7 @@ passthrough_apply(color * color_, const object_optics * so,
 static const color black = {0, 0, 0};
 
     static color
-spot_absorption(const ray & surface, const object_optics * so,
+spot_absorption(const ray & surface, compact_color absorption_filter,
         const world & w, bitarray & inside)
 {
     color sum_ = black;
@@ -86,7 +93,7 @@ spot_absorption(const ray & surface, const object_optics * so,
     for (size_t i = 0; i < n; i++) {
         const light_spot & ls = w.spots_[i];
         color color_ = ls.light;
-        filter(&color_, so->absorption_filter);
+        filter(&color_, absorption_filter);
         if (ignorable_color(color_)) continue;
         direction to_spot = distance_vector(surface.endpoint, ls.spot);
         normalize(&to_spot);
@@ -120,15 +127,47 @@ enum refraction_ret {
     transparent,
 };
 
-    static enum refraction_ret
-refraction_trace(ray ray_, const scene_object * so,
-        float optics_refraction_index,
-        compact_color optics_refraction_filter,
-        detector & detector_, direction det_head,
-        const world & w, color * result)
+    void world::scene_assigned()
 {
-    const ptrdiff_t i = so - &w.scene_[0];
+    for (auto & object : scene_) {
+        color c = x_color(object.optics.refraction_filter);
+        color_add(&c, x_color(object.optics.passthrough_filter));
+        surface_ranks.push_back(c.r + c.g + c.b);
+    }
+}
+
+    bool prefer_alternate_optics(const world & w, int i, int i_alt)
+{
+    return w.surface_ranks[i_alt] < w.surface_ranks[i] * alternate_surface_factor;
+}
+
+    void decorate(const scene_object * so, const ray & surface,
+            compact_color * reflection_filter,
+            compact_color * absorption_filter,
+            compact_color * refraction_filter)
+{
+    const object_optics * optics = &so->optics;
+    object_optics auto_store;
+    if (so->decoration) {
+        so->decoration(&surface,
+                so->decoration_arg,
+                &auto_store, &so->optics);
+        optics = &auto_store;
+    }
+    *reflection_filter = optics->reflection_filter;
+    *absorption_filter = optics->absorption_filter;
+    *refraction_filter = optics->refraction_filter;
+}
+
+    static enum refraction_ret
+refraction_trace(ray surface, const scene_object * so,
+        detector & detector_, direction det_head,
+        const world & w, color * result,
+        compact_color * reflection_filter,
+        compact_color * absorption_filter)
+{
     int outside_i = firstset(detector_.inside);
+    const ptrdiff_t i = so - &w.scene_[0];
     const bool enters = (outside_i != i);
 
     class scoped_bit_flipper {
@@ -147,39 +186,73 @@ refraction_trace(ray ray_, const scene_object * so,
     scoped_bit_flipper sbf(detector_.inside, i, enters);
 
     if ( ! enters) outside_i = firstset(detector_.inside);
+
+    const float optics_refraction_index = so->optics.refraction_index;
+    if (optics_refraction_index <= 0) {
+        // todo: consolidate with similar call-site of decorate below
+        compact_color refraction_filter;
+        decorate(so, surface, reflection_filter, absorption_filter, &refraction_filter);
+        if (optics_refraction_index < 0) { [[unlikely]]
+            *result = x_color(refraction_filter);
+            return transparent;
+        }
+        return opaque;
+    }
+
     float outside_refraction_index = 1.0;
     if (outside_i >= 0) {
-        outside_refraction_index
-            = w.scene_[outside_i].optics.refraction_index;
-        if (0 == outside_refraction_index) {
-            if (debug) {
-                if (detector_.hop != trace_max_hops)  // <-- view MAY be inside
-                    std::cerr << "we got inside opaque object " << i << "\n";
+        const scene_object * outside = &w.scene_[outside_i];
+        outside_refraction_index = outside->optics.refraction_index;
+        if (0 >= outside_refraction_index) {
+            if (enters) { [[unlikely]]
+                if (detector_.hop == trace_max_hops) {
+                    *result = black;
+                    return transparent;
+                } else { [[unlikely]] // rather, cannot happen
+                    if (debug)
+                        std::cerr << "we got inside opaque object " << i << "\n";
+                }
+            } else {
+                so = outside;
             }
-            return opaque;
+        } else if (prefer_alternate_optics(w, i, outside_i)) {
+            so = outside;
         }
+    }
+
+    compact_color refraction_filter;
+    decorate(so, surface, reflection_filter, absorption_filter, &refraction_filter);
+
+    if (0 >= so->optics.refraction_index) {
+        if (so->optics.refraction_index < 0) { [[unlikely]]
+            *result = x_color(refraction_filter);
+            return transparent;
+        }
+        return opaque;
     }
     if (trace_transparent_on_equal_index
             && so->decoration == nullptr
             && outside_refraction_index
             == optics_refraction_index) {
-        ray_.head = det_head;
+        surface.head = det_head;
         compact_color transparent_ = {255, 255, 255};
-        *result = trace_hop(ray_, transparent_, detector_, w);
+        *result = trace_hop(surface, transparent_, detector_, w);
         return transparent;
     }
-    real refraction_index;
+
+    real refraction_ratio;
     if (enters) {
-        refraction_index = outside_refraction_index / optics_refraction_index;
+        refraction_ratio = outside_refraction_index / optics_refraction_index;
     } else {
-        refraction_index = optics_refraction_index / outside_refraction_index;
-        scale(&ray_.head, -1);
+        refraction_ratio = optics_refraction_index / outside_refraction_index;
+        scale(&surface.head, -1);
     }
-    ray_.head = refraction(ray_.head, det_head, refraction_index);
-    if (is_DISORIENTED(&ray_.head)) {
+    surface.head = refraction(surface.head, det_head, refraction_ratio);
+    if (is_DISORIENTED(&surface.head)) {
+        saturated_add(reflection_filter, refraction_filter);
         return total_reflect;
     }
-    *result = trace_hop(ray_, optics_refraction_filter, detector_, w);
+    *result = trace_hop(surface, refraction_filter, detector_, w);
     return reflect;
 }
 
@@ -217,39 +290,30 @@ ray_trace(detector & detector_, ray t, const world & w)
         }
         return sky(detector_, t.head, w.sky);
     }
+    assert(det_inside_i == firstset(detector_.inside));
 
     const ptrdiff_t i = closest_object - &w.scene_[0];
     assert(i >= 0 && i < static_cast<ptrdiff_t>(w.scene_.size()));
-    const object_optics * optics = &closest_object->optics;
-    object_optics auto_store;
-    if (closest_object->decoration) {
-        closest_object->decoration(&surface,
-                closest_object->decoration_arg,
-                &auto_store, &closest_object->optics);
-        optics = &auto_store;
-    }
-    const int inside_i = firstset(detector_.inside);
-    if (inside_i < 0) {
-        const color absorbed = spot_absorption(
-                surface, optics, w, detector_.inside);
-        // consider: function of angle so that up at angle_max
-        //           gives 1/cos(a) factor and stays there up
-        //           to a right angle.
-        color_add(&detected, absorbed);
-    }
+
     enum refraction_ret r = opaque;
-    compact_color reflection_filter = optics->reflection_filter;
-    if (optics->refraction_index) {
+    compact_color reflection_filter = {};
+    compact_color absorption_filter = {};
+    float hit_refraction_index = closest_object->optics.refraction_index;
+    if (hit_refraction_index < 0) {
+        // for a non-optics object, do neither consider
+        // decoration nor alternate-surface.
+        // this is why reflection and absorption is being
+        // initialized to black above.
+        const object_optics * optics = &closest_object->optics;
+        color_add(&detected, x_color(optics->refraction_filter));
+    } else {
         color refraction_color;
         r = refraction_trace(
                 surface, closest_object,
-                optics->refraction_index,
-                optics->refraction_filter,
-                detector_, t.head, w, &refraction_color);
+                detector_, t.head, w,
+                &refraction_color, &reflection_filter, &absorption_filter);
         if (r == reflect || r == transparent) {
             color_add(&detected, refraction_color);
-        } else if (r == total_reflect) {
-            saturated_add(&reflection_filter, optics->refraction_filter);
         }
     }
     if (r != transparent) {
@@ -261,6 +325,13 @@ ray_trace(detector & detector_, ray t, const world & w)
         const scene_object * io = &w.scene_[det_inside_i];
         passthrough_apply(&detected, &io->optics,
                 distance(t.endpoint, surface.endpoint));
+    } else {
+        const color absorbed = spot_absorption(
+                surface, absorption_filter, w, detector_.inside);
+        // consider: function of angle so that up at angle_max
+        //           gives 1/cos(a) factor and stays there up
+        //           to a right angle.
+        color_add(&detected, absorbed);
     }
 
     return detected;
