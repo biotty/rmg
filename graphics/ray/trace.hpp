@@ -5,8 +5,8 @@
 
 #include "sky.h"
 #include "scene.hpp"
+#include <cstdlib>
 
-constexpr bool debug = false;
 constexpr bool verbose = false;
 
 struct light_spot {

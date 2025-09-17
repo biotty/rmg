@@ -25,9 +25,9 @@ typedef struct compact_color compact_color;
 
 static inline void saturated_add(compact_color * x, compact_color y)
 {
-    const int r_ = x->r + y.r;
-    const int g_ = x->g + y.g;
-    const int b_ = x->b + y.b;
+    unsigned int r_ = x->r + y.r;
+    unsigned int g_ = x->g + y.g;
+    unsigned int b_ = x->b + y.b;
     x->r = r_ < 256 ? r_ : 255;
     x->g = g_ < 256 ? g_ : 255;
     x->b = b_ < 256 ? b_ : 255;
