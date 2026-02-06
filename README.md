@@ -9,10 +9,8 @@ material was publicly available; i-e standard gamma-correction,
 the points on an arhcimedic body, the SDL2 interface, the MIDI format.
 It resulted from curiousity and study of friendly material on
 subjects such as optics, fluid-mechanics, vocal-formants and fractals.
-Note that unfortunately the material provided in scientific
-communities are neither open nor friendly, which is why I thought
-good to try and democratize these fascinating subjects.  Maybe
-it may thus engage or at least inspire some fun programming.
+I thought good to try and democratize these fascinating subjects.
+Maybe it may thus engage or at least inspire some fun programming.
 
 ## Provided Tools
 
