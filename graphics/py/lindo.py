@@ -100,7 +100,6 @@ def examples():
     parametric.derive(2)
 
 ap = ArgumentParser()
-ap.add_argument("-a", "--auto-test", action="store_true")
 ap.add_argument("-b", "--palette-breadth", type=int, default=32)
 ap.add_argument("-c", "--derivations-count", type=int, default=6)
 ap.add_argument("-d", "--default-turn", type=float, default=90)
@@ -114,7 +113,6 @@ ap.add_argument("-r", "--resolution", type=str, default="1280x720")
 ap.add_argument("-s", "--random-seed", type=int)
 ap.add_argument("-u", "--unit-turn-degrees", type=float, default=360)
 ap.add_argument("-G", "--display-mode", action="store_true")
-ap.add_argument("-V", "--svg-mode", default=True, action="store_false")
 ap.add_argument("-H", "--expression-help", action="store_true")
 ap.add_argument("-I", "--order-independent", action="store_true")
 ap.add_argument("self_test_mode", nargs="*")
@@ -141,7 +139,6 @@ ls = System(options.l_system_expression or stdin.read())
 ls.derive(options.derivations_count, lambda n: stderr.write(str(n) + "\r"))
 stderr.write("\r")
 if options.print_axiom: stderr.write("%s\n" % (ls.axiom))
-if not options.image_path: exit()
 
 stderr.write("Drawing resulting axiom\n")
 drawing = Drawing()
@@ -153,13 +150,7 @@ ls.axiom.visit_by(operating_visitor(tree_builder))
 drawing.rescale()
 width, height = [int(s) for s in options.resolution.split("x")]
 
-if options.svg_mode:
-    from rmg import graphics
-    pen = graphics.Pencil(stdout, (width, height))
-    drawing.render(pen)
-    pen.done()
-
-elif options.display_mode:
+if options.display_mode:
     from rmg.display import Display
     d = Display(options.order_independent)
     drawing.render(d.pencil())
@@ -172,7 +163,7 @@ else:
     board.save(options.image_path, gray = (options.palette_breadth == 0))
 
 #
-# example invokation:
-#
-# lindo.py -d 25 -c 4 -e "f ()f() f f-[-f+f+f]+[+f-f-f]" > out.svg
+# example invocation:
+# # note: first install python3-numpy python3-pygame netpbm
+# ./lindo.py -d 25 -c 4 -e "f ()f() f f-[-f+f+f]+[+f-f-f]"
 #
